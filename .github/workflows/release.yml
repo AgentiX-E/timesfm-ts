@@ -159,9 +159,12 @@ jobs:
       - run: pnpm build
 
       - name: Publish to npm
-        run: pnpm -r --filter './packages/*' publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for pkg in timesfm-core timesfm-xreg timesfm-cli; do
+            cd "packages/${pkg}"
+            npm publish --access public
+            cd ../..
+          done
 
       - name: npm publish summary
         run: |
