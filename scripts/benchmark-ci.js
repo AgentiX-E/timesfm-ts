@@ -324,8 +324,8 @@ async function main() {
   // ── Output Reports ─────────────────────────────────────────────────────────
   const doJson = outJson || outAll;
   const doMd = outMd || outAll;
-  const jsonPath = outJson === true ? 'benchmark-report.json' : outJson;
-  const mdPath = outMd === true ? 'benchmark-report.md' : outMd;
+  const jsonPath = outJson && typeof outJson === 'string' ? outJson : 'benchmark-report.json';
+  const mdPath = outMd && typeof outMd === 'string' ? outMd : 'benchmark-report.md';
 
   if (doJson && jsonPath) {
     fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));

@@ -3,21 +3,41 @@
   "model": {
     "version": "2.5",
     "variant": "200m",
-    "hf_revision": "000000000000",
-    "exported_at": "2026-06-26T00:00:00Z"
+    "hf_revision": "1d952420fba8",
+    "exported_at": "2026-06-26T18:11:01Z"
   },
   "onnx": {
     "input_name": "inputs",
-    "input_shape": [1, 16, 64],
+    "input_shape": [
+      1,
+      16,
+      64
+    ],
     "outputs": {
-      "input_emb": [1, 16, 1280],
-      "output_emb": [1, 16, 1280],
-      "output_ts": [1, 16, 1280],
-      "output_qs": [1, 16, 10240]
+      "input_emb": [
+        1,
+        16,
+        1280
+      ],
+      "output_emb": [
+        1,
+        16,
+        1280
+      ],
+      "output_ts": [
+        1,
+        16,
+        1280
+      ],
+      "output_qs": [
+        1,
+        16,
+        10240
+      ]
     },
     "opset": 18,
-    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-    "size_bytes": 928514048
+    "sha256": "407de5668fa6e0d86471a2a40a260fa2e90c2337eccccfa3975673c3084ebed2",
+    "size_bytes": 928183299
   },
   "architecture": {
     "input_patch_len": 32,
@@ -26,11 +46,24 @@
     "num_layers": 20,
     "num_heads": 16,
     "model_dims": 1280,
-    "quantiles": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    "quantiles": [
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9
+    ],
     "context_limit": 16384
   },
   "processing": {
     "preprocessing": "revin",
-    "postprocessing": ["flip_invariance", "quantile_crossing_fix"]
+    "postprocessing": [
+      "flip_invariance",
+      "quantile_crossing_fix"
+    ]
   }
 }

@@ -12,3 +12,7 @@ models/*.onnx-descriptor.json
 !models/model-descriptor.json
 docs/api/
 __pycache__/
+models/timesfm-2.5-descriptor.json
+models/timesfm-2.5.onnx.meta.json
+benchmark-report.json
+benchmark-report.md
