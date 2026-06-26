@@ -1,1 +1,4 @@
+#!/usr/bin/env sh
+# Clear NODE_OPTIONS to avoid sandbox shim interference
+unset NODE_OPTIONS
 pnpm exec lint-staged
