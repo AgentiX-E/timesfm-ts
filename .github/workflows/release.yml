@@ -31,7 +31,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -149,7 +149,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -160,11 +160,9 @@ jobs:
 
       - name: Publish to npm (OIDC trusted publishing)
         run: |
-          npm config set provenance true
-          pnpm -r --filter './packages/*' publish \
-            --access public \
-            --no-git-checks \
-            --provenance
+          for pkg in packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli; do
+            npm publish -w "$pkg" --access public --provenance
+          done
 
       - name: npm publish summary
         run: |
@@ -189,7 +187,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
