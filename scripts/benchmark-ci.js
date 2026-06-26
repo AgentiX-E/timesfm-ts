@@ -208,10 +208,13 @@ async function main() {
     // Close raw ONNX session before loading the full model to save memory
     session.release?.();
 
-    // Dynamically import the full TimesFM model from the built dist
-    const { TimesFMModel, createForecastConfig } = require(
-      path.join(__dirname, '..', 'packages', 'timesfm-core', 'dist', 'index.js'),
+    // Dynamically import the full TimesFM model from the built dist.
+    // dist/ is compiled as ESNext modules, so we must use dynamic import()
+    // (require() would fail with ERR_MODULE_NOT_FOUND for ESM output).
+    const core = await import(
+      path.join(__dirname, '..', 'packages', 'timesfm-core', 'dist', 'index.js')
     );
+    const { TimesFMModel, createForecastConfig } = core;
 
     const nSeries = 5;
     const horizon = 12;
