@@ -142,6 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      contents: read # Required for actions/checkout
       id-token: write # Required for OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
