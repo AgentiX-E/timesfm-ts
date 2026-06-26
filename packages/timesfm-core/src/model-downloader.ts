@@ -2,15 +2,19 @@
  * TimesFM Model Downloader
  *
  * Downloads the pre-exported TimesFM 2.5 200M ONNX model from:
- *   1. GitHub Releases (primary) — {REPO}/releases/download/v{VERSION}/timesfm-2.5.onnx
+ *   1. GitHub Releases (primary) — {REPO}/releases/download/model-latest/timesfm-2.5.onnx
  *   2. HuggingFace → export on the fly (requires Python + PyTorch)
  *
  * The npm packages are code-only (~100 KB).  The 885 MB model is stored
- * as a GitHub Release asset and fetched on first use.
+ * as a GitHub Release asset under the model-latest channel and fetched on first use.
+ *
+ * The model descriptor (model-descriptor.json) is also fetched from the
+ * model-latest channel to provide the expected SHA-256 checksum for
+ * integrity verification of the downloaded ONNX file.
  *
  * Features:
  *   - Streaming download (no 885 MB heap buffer)
- *   - SHA-256 integrity verification
+ *   - SHA-256 integrity verification (via model-descriptor.json from model-latest channel)
  *   - Progress callback
  *   - Automatic cache management
  *
@@ -36,48 +40,16 @@ import { createHash } from 'node:crypto';
 // ─── Configuration ──────────────────────────────────────────────────────────
 
 const REPO = 'AgentiX-E/agentix-timesfm-ts';
-const MODEL_VERSION = '0.1.0';
+const MODEL_CHANNEL = 'model-latest';
 const MODEL_FILENAME = 'timesfm-2.5.onnx';
+const DESCRIPTOR_FILENAME = 'model-descriptor.json';
 /** Expected model size in bytes (885 MB). */
 const EXPECTED_MODEL_SIZE = 885 * 1024 * 1024;
 /** Minimum size for a valid cached model (800 MB — generous tolerance). */
 const MIN_CACHED_SIZE = 800 * 1024 * 1024;
 
-const GITHUB_RELEASE_URL = `https://github.com/${REPO}/releases/download/v${MODEL_VERSION}/${MODEL_FILENAME}`;
-
-/**
- * Resolve the expected SHA-256 checksum for the model.
- *
- * In production (GitHub Releases), the checksum is stored alongside the model
- * as a metadata JSON file.  In local development, the file may not exist
- * and checksum verification is skipped.
- */
-function resolveChecksum(dest: string): string | null {
-  try {
-    const metaPath = dest.replace(/\.onnx$/, '.onnx.meta.json');
-    if (!existsSync(metaPath)) {
-      // Try project-local metadata
-      const localMeta = path.join(
-        path.dirname(import.meta.url ? new URL(import.meta.url).pathname : '.'),
-        '..',
-        '..',
-        '..',
-        '..',
-        'models',
-        'timesfm-2.5.onnx.meta.json',
-      );
-      if (existsSync(localMeta)) {
-        const meta = JSON.parse(fs.readFileSync(localMeta, 'utf-8'));
-        return meta.sha256 ?? null;
-      }
-      return null;
-    }
-    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
-    return meta.sha256 ?? null;
-  } catch {
-    return null;
-  }
-}
+const GITHUB_RELEASE_URL = `https://github.com/${REPO}/releases/download/${MODEL_CHANNEL}/${MODEL_FILENAME}`;
+const META_URL = `https://github.com/${REPO}/releases/download/${MODEL_CHANNEL}/${DESCRIPTOR_FILENAME}`;
 
 /** Default cache directory (platform-aware). */
 function defaultCacheDir(): string {
@@ -126,6 +98,18 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
 
   // Ensure directory
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+
+  // Fetch model descriptor from model-latest channel for SHA-256 verification
+  let expectedSha256: string | null = null;
+  try {
+    const metaResp = await fetch(META_URL, { redirect: 'follow' });
+    if (metaResp.ok) {
+      const meta = await metaResp.json() as { onnx?: { sha256?: string } };
+      expectedSha256 = meta?.onnx?.sha256 ?? null;
+    }
+  } catch {
+    // Meta fetch failed — skip checksum verification, rely on size check only
+  }
 
   const url = options.url ?? GITHUB_RELEASE_URL;
   log(
@@ -217,15 +201,14 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
 
     // Verify checksum
     const checksum = hasher.digest('hex');
-    const expectedChecksum = resolveChecksum(dest);
-    if (expectedChecksum && checksum !== expectedChecksum) {
+    if (expectedSha256 && checksum !== expectedSha256) {
       try {
         fs.unlinkSync(tmpDest);
       } catch {
         /* best-effort */
       }
       throw new Error(
-        `Checksum mismatch!\n  Expected: ${expectedChecksum}\n  Got:      ${checksum}`,
+        `Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${checksum}`,
       );
     }
 

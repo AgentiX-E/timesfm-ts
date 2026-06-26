@@ -5,6 +5,11 @@ on:
     - cron: '0 2 * * *' # Daily at 2 AM UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,22 +20,40 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install TimesFM
-        run: pip install "timesfm[torch]"
-
-      - name: Check for new HuggingFace version
+      # --check-latest --diff uses only stdlib (urllib + json),
+      # no numpy/onnx/torch needed (fixed by lazy imports in export-onnx.py)
+      - name: Compare HF revision vs committed descriptor
         id: version-check
         run: |
-          python3 scripts/export-onnx.py \
-            --check-latest \
-            -m google/timesfm-2.5-200m-pytorch
-        continue-on-error: true
+          if python3 scripts/export-onnx.py --check-latest --diff; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No new HF revision detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            SHA=$(python3 -c "
+import urllib.request, json
+r = urllib.request.urlopen('https://huggingface.co/api/models/google/timesfm-2.5-200m-pytorch', timeout=10)
+data = json.loads(r.read())
+print(data['sha'][:12])
+")
+            echo "sha=${SHA}" >> $GITHUB_OUTPUT
+            echo "New HF revision detected: ${SHA}"
+          fi
 
-      - name: Create issue for new version
-        if: steps.version-check.outcome == 'failure'
+      - name: Trigger model release
+        if: steps.version-check.outputs.changed == 'true'
+        run: |
+          gh workflow run model-release.yml
+          echo "Triggered model-release.yml for new HF revision"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create model-update issue
+        if: steps.version-check.outputs.changed == 'true'
         uses: actions/github-script@v7
         with:
           script: |
+            const sha = '${{ steps.version-check.outputs.sha }}';
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -42,14 +65,21 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: 'New TimesFM model version detected on HuggingFace',
+                title: `New TimesFM model version detected on HuggingFace (rev ${sha})`,
                 body: [
-                  'A new version of `google/timesfm-2.5-200m-pytorch` has been detected.',
+                  `A new version of \`google/timesfm-2.5-200m-pytorch\` has been detected.`,
                   '',
-                  '### Action required',
-                  '1. Review the changes in the new model version',
-                  '2. Run `pnpm run pipeline` to export and test the new model',
-                  '3. Create a new GitHub Release with the updated ONNX model',
+                  `**HF revision:** \`${sha}\``,
+                  '',
+                  '### Automated actions',
+                  '- Model release workflow has been triggered automatically',
+                  '- A new `model-${sha}` release will be created after validation',
+                  '- The `model-latest` channel will be updated',
+                  '',
+                  '### Manual verification',
+                  '1. Review the model release workflow run',
+                  '2. Run `pnpm run pipeline` to export and test locally',
+                  '3. Verify integration tests pass with the new model',
                   '',
                   '> Auto-detected by the Nightly Model Check workflow.',
                 ].join('\n'),

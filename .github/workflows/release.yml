@@ -79,62 +79,6 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 2 — Export TimesFM 2.5 ONNX Model
-  # ═══════════════════════════════════════════════════════════════════════════
-  export-model:
-    needs: quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    outputs:
-      sha256: ${{ steps.checksum.outputs.sha256 }}
-      model_size: ${{ steps.checksum.outputs.model_size }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Export TimesFM 2.5 ONNX
-        run: |
-          pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
-          python3 scripts/export-onnx.py \
-            --model google/timesfm-2.5-200m-pytorch \
-            --output models/timesfm-2.5.onnx
-        timeout-minutes: 20
-
-      - name: Calculate SHA-256 checksum
-        id: checksum
-        run: |
-          SHA256=$(sha256sum models/timesfm-2.5.onnx | cut -d' ' -f1)
-          SIZE=$(stat -c%s models/timesfm-2.5.onnx)
-          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
-          echo "model_size=${SIZE}" >> $GITHUB_OUTPUT
-          SIZE_MB=$(echo "scale=1; ${SIZE}/1048576" | bc)
-          cat > models/timesfm-2.5.onnx.meta.json <<META
-          {
-            "source": "google/timesfm-2.5-200m-pytorch",
-            "version": "${{ github.ref_name }}",
-            "exported_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "sha256": "${SHA256}",
-            "size_bytes": ${SIZE},
-            "size_mb": ${SIZE_MB},
-            "input_shape": "[1, 16, 64]",
-            "opset_version": 18
-          }
-          META
-          echo "Model exported: ${SIZE_MB} MB"
-          echo "SHA-256: ${SHA256}"
-
-      - name: Upload model as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: timesfm-onnx-model
-          path: |
-            models/timesfm-2.5.onnx
-            models/timesfm-2.5.onnx.meta.json
-          retention-days: 1
-
-  # ═══════════════════════════════════════════════════════════════════════════
   # Stage 3 — Publish npm Packages
   # ═══════════════════════════════════════════════════════════════════════════
   publish-npm:
@@ -181,7 +125,7 @@ jobs:
   # Stage 4 — GitHub Release with Model + Docs
   # ═══════════════════════════════════════════════════════════════════════════
   github-release:
-    needs: [export-model, publish-npm]
+    needs: publish-npm
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -206,30 +150,41 @@ jobs:
           path: docs/api/
           retention-days: 30
 
-      - name: Download model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: timesfm-onnx-model
-          path: release-assets/
+      - name: Get latest model release info
+        id: model-info
+        run: |
+          MODEL_URL=$(gh release view model-latest --json url -q .url 2>/dev/null || echo "")
+          if [ -n "$MODEL_URL" ]; then
+            echo "url=${MODEL_URL}" >> $GITHUB_OUTPUT
+          else
+            echo "url=" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         run: |
           NOTES_FILE=".github/release-notes/${GITHUB_REF_NAME}.md"
+          MODEL_URL="${{ steps.model-info.outputs.url }}"
+          MODEL_NOTE=""
+          if [ -n "$MODEL_URL" ]; then
+            MODEL_NOTE="### ONNX Model${NEWLINE}${NEWLINE}The latest ONNX model is available at: [model-latest release](${MODEL_URL})${NEWLINE}${NEWLINE}Download: \`npx @agentix-e/timesfm-cli setup\`"
+          fi
+
           if [ -f "$NOTES_FILE" ]; then
             gh release create ${{ github.ref_name }} \
-              release-assets/timesfm-2.5.onnx \
-              release-assets/timesfm-2.5.onnx.meta.json \
-              --title "TimesFM 2.5 200M — ${{ github.ref_name }}" \
+              --title "agentix-timesfm-ts — ${{ github.ref_name }}" \
               --notes-file "$NOTES_FILE"
           else
+            NOTES_CONTENT="### npm Packages${NEWLINE}${NEWLINE}| Package | Version |${NEWLINE}|---------|---------|${NEWLINE}| \`@agentix-e/timesfm-core\` | ${{ github.ref_name }} |${NEWLINE}| \`@agentix-e/timesfm-xreg\` | ${{ github.ref_name }} |${NEWLINE}| \`@agentix-e/timesfm-cli\` | ${{ github.ref_name }} |${NEWLINE}${NEWLINE}${MODEL_NOTE}"
             gh release create ${{ github.ref_name }} \
-              release-assets/timesfm-2.5.onnx \
-              release-assets/timesfm-2.5.onnx.meta.json \
-              --title "TimesFM 2.5 200M — ${{ github.ref_name }}" \
-              --generate-notes
+              --title "agentix-timesfm-ts — ${{ github.ref_name }}" \
+              --notes "${NOTES_CONTENT}"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEWLINE: $'\n'
 
       - name: Release summary
         run: |

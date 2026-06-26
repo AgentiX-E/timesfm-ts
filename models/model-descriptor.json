@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "model": {
+    "version": "2.5",
+    "variant": "200m",
+    "hf_revision": "000000000000",
+    "exported_at": "2026-06-26T00:00:00Z"
+  },
+  "onnx": {
+    "input_name": "inputs",
+    "input_shape": [1, 16, 64],
+    "outputs": {
+      "input_emb": [1, 16, 1280],
+      "output_emb": [1, 16, 1280],
+      "output_ts": [1, 16, 1280],
+      "output_qs": [1, 16, 10240]
+    },
+    "opset": 18,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "size_bytes": 928514048
+  },
+  "architecture": {
+    "input_patch_len": 32,
+    "output_patch_len": 128,
+    "output_quantile_len": 1024,
+    "num_layers": 20,
+    "num_heads": 16,
+    "model_dims": 1280,
+    "quantiles": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    "context_limit": 16384
+  },
+  "processing": {
+    "preprocessing": "revin",
+    "postprocessing": ["flip_invariance", "quantile_crossing_fix"]
+  }
+}

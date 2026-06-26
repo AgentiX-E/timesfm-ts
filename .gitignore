@@ -7,6 +7,8 @@ coverage/
 .env
 .DS_Store
 models/*.onnx
-models/*.onnx*
+models/*.onnx.meta.json
+models/*.onnx-descriptor.json
+!models/model-descriptor.json
 docs/api/
 __pycache__/

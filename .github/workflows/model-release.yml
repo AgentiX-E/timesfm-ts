@@ -1,0 +1,195 @@
+name: Model Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force re-release even if this HF revision already has a release'
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      force:
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      hf_sha: ${{ steps.check.outputs.hf_sha }}
+      tag: ${{ steps.check.outputs.tag }}
+      should_release: ${{ steps.check.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: Detect HF revision
+        id: check
+        run: |
+          SHA=$(python3 -c "
+          import requests, json
+          r = requests.get('https://huggingface.co/api/models/google/timesfm-2.5-200m-pytorch', timeout=10)
+          data = json.loads(r.text)
+          print(data['sha'][:12])
+          ")
+          TAG="model-${SHA}"
+          echo "hf_sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            if [ "${{ inputs.force }}" = "true" ]; then
+              echo "should_release=true" >> $GITHUB_OUTPUT
+              echo "Tag ${TAG} exists but force=true — re-releasing"
+            else
+              echo "should_release=false" >> $GITHUB_OUTPUT
+              echo "Tag ${TAG} already exists — skipping"
+            fi
+          else
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "New HF revision ${SHA} — releasing"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  export-model:
+    needs: detect
+    if: needs.detect.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      sha256: ${{ steps.checksum.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
+      - name: Export TimesFM 2.5 → ONNX
+        run: |
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx
+      - name: Compute checksum
+        id: checksum
+        run: |
+          SHA256=$(sha256sum models/timesfm-2.5.onnx | cut -d' ' -f1)
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: |
+            models/timesfm-2.5.onnx
+            models/model-descriptor.json
+          retention-days: 1
+
+  validate:
+    needs: export-model
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Download model
+        uses: actions/download-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: models/
+      - name: Install & build
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Run integration tests
+        run: pnpm test
+        env:
+          TIMESFM_TEST_MODEL: models/timesfm-2.5.onnx
+      - name: Run benchmark
+        run: pnpm run benchmark
+        env:
+          TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
+
+  release:
+    needs: [detect, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download model
+        uses: actions/download-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: release-assets/
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ needs.detect.outputs.tag }}"
+          SHA="${{ needs.detect.outputs.hf_sha }}"
+
+          # Create versioned release
+          gh release create "${TAG}" \
+            release-assets/timesfm-2.5.onnx \
+            release-assets/model-descriptor.json \
+            --title "TimesFM 2.5 ONNX — HF rev ${SHA}" \
+            --notes "Automatically exported from \`google/timesfm-2.5-200m-pytorch\`.
+
+          **HuggingFace revision:** \`${SHA}\`
+
+          ### Assets
+          - \`timesfm-2.5.onnx\` — ONNX model (~885 MB)
+          - \`model-descriptor.json\` — Architecture descriptor + SHA-256"
+
+          # Move rolling model-latest tag
+          gh release delete model-latest --yes 2>/dev/null || true
+          git tag -f model-latest
+          git push -f origin model-latest
+          gh release create model-latest \
+            release-assets/timesfm-2.5.onnx \
+            release-assets/model-descriptor.json \
+            --title "TimesFM 2.5 ONNX — Latest (HF rev ${SHA})" \
+            --notes "Rolling pointer to the latest validated TimesFM ONNX model.
+
+          **Current HF revision:** \`${SHA}\`
+
+          This release is automatically updated when a new model version is detected."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-manifest:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download descriptor
+        uses: actions/download-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: models/
+      - name: Commit updated descriptor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add models/model-descriptor.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(model): update descriptor to HF rev ${{ needs.detect.outputs.hf_sha }}"
+            git push
+          fi
