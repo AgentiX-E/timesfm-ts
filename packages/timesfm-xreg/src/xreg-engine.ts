@@ -474,20 +474,12 @@ export async function forecastWithCovariates(
     // 3. Fit linear model on residuals
     // 4. Combine: final = pointForecast + xreg_prediction
 
-    // Recompile with returnBackcast=true to avoid mutating the original config.
-    // Falls back gracefully if model doesn't have compile (e.g., test mocks).
-    let tsResult: ForecastOutput;
-
-    if (typeof model.compile === 'function') {
-      const tempFc = { ...fc, returnBackcast: true };
-      model.compile(tempFc);
-      tsResult = await model.forecast(fc.maxHorizon, params.inputs);
-      // Restore original config
-      model.compile(fc);
-    } else {
-      // Mock model — just set the flag on a copy
-      tsResult = await model.forecast(fc.maxHorizon, params.inputs);
-    }
+    // Recompile with returnBackcast=true to get backcast for residual computation,
+    // then restore the original config. Uses compile() to avoid mutating ForecastConfig.
+    const tempFc = { ...fc, returnBackcast: true };
+    model.compile(tempFc);
+    const tsResult = await model.forecast(fc.maxHorizon, params.inputs);
+    model.compile(fc);
 
     // Step 2: Compute residuals using backcast (historical reconstruction)
     const targets: Float32Array[] = params.inputs.map((s, i) => {
@@ -497,26 +489,22 @@ export async function forecastWithCovariates(
 
     // Use the backcast portion matching the training window
     const residuals: Float32Array[] = [];
-    if (tsResult.backcast) {
-      for (let s = 0; s < numSeries; s++) {
-        const residual = new Float32Array(trainLens[s]);
-        const contextLen = tsResult.backcast[s]?.length ?? 0;
-        // The backcast covers the entire context; we use the last trainLens[s] portion
-        const backcastOffset = contextLen - trainLens[s];
-        for (let t = 0; t < trainLens[s]; t++) {
-          const backcastVal =
-            backcastOffset + t >= 0 && backcastOffset + t < contextLen
-              ? tsResult.backcast[s][backcastOffset + t]
-              : 0;
-          residual[t] = targets[s][t] - backcastVal;
-        }
-        residuals.push(residual);
+    const backcasts = tsResult.backcast;
+    if (!backcasts) {
+      throw new Error(
+        'timesfm + xreg mode requires backcast. Ensure the model was compiled with returnBackcast=true.',
+      );
+    }
+
+    for (let s = 0; s < numSeries; s++) {
+      const residual = new Float32Array(trainLens[s]);
+      const contextLen = backcasts[s].length;
+      const backcastOffset = contextLen - trainLens[s];
+
+      for (let t = 0; t < trainLens[s]; t++) {
+        residual[t] = targets[s][t] - backcasts[s][backcastOffset + t];
       }
-    } else {
-      // Fallback if backcast not available: use raw targets as residuals
-      for (let s = 0; s < numSeries; s++) {
-        residuals.push(new Float32Array(targets[s]));
-      }
+      residuals.push(residual);
     }
 
     // Step 3: Fit linear model on residuals
