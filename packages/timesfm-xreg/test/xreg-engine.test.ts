@@ -222,10 +222,11 @@ describe('forecastWithCovariates', () => {
     expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
   });
 
-  it('timesfm + xreg mode recompiles to enable backcast transparently', async () => {
+  it('timesfm + xreg mode uses configOverrides (no global recompile)', async () => {
     // Verify that timesfm + xreg works even when the model was initially
     // compiled with returnBackcast=false — the engine transparently
-    // recompiles to enable it, then restores the original config.
+    // uses configOverrides to request backcast, then the stored config
+    // is left unchanged (no race condition window).
     const horizon = 8;
     const contextLen = 40;
     const totalLen = contextLen + horizon;
@@ -252,7 +253,7 @@ describe('forecastWithCovariates', () => {
     expect(result.pointForecast.length).toBe(1);
     expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
 
-    // Original config should be restored
+    // Stored config must be untouched — configOverrides are per-call only
     expect(model.forecastConfig?.returnBackcast).toBe(false);
 
     // Restore default config for subsequent tests

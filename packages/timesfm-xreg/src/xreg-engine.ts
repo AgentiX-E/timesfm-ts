@@ -469,17 +469,16 @@ export async function forecastWithCovariates(
   } else {
     // "timesfm + xreg" mode
     //
-    // 1. Forecast with TimesFM (request backcast for residual computation)
+    // 1. Forecast with TimesFM (request backcast via configOverrides — no
+    //    global state mutation, avoiding race conditions on concurrent calls)
     // 2. Compute residuals = target - backcast
     // 3. Fit linear model on residuals
     // 4. Combine: final = pointForecast + xreg_prediction
 
-    // Recompile with returnBackcast=true to get backcast for residual computation,
-    // then restore the original config. Uses compile() to avoid mutating ForecastConfig.
-    const tempFc = { ...fc, returnBackcast: true };
-    model.compile(tempFc);
-    const tsResult = await model.forecast(fc.maxHorizon, params.inputs);
-    model.compile(fc);
+    // Request backcast inline via configOverrides (caller's compiled config is never mutated).
+    const tsResult = await model.forecast(fc.maxHorizon, params.inputs, {
+      configOverrides: { returnBackcast: true },
+    });
 
     // Step 2: Compute residuals using backcast (historical reconstruction)
     const targets: Float32Array[] = params.inputs.map((s, i) => {

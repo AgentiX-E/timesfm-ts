@@ -172,7 +172,12 @@ export class TimesFMModel implements ITimesFMModel {
       throw new Error('Model not compiled. Call compile() before forecast().');
     }
 
-    const fc = this._forecastConfig;
+    // Per-call config overrides (used internally by XReg covariate workflows
+    // for returnBackcast without mutating global state).  The stored config
+    // on the model instance is never modified.
+    const fc: ForecastConfig = options?.configOverrides
+      ? { ...this._forecastConfig, ...options.configOverrides }
+      : this._forecastConfig;
     const signal = options?.signal;
     const onProgress = options?.onProgress;
 

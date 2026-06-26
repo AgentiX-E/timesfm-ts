@@ -238,6 +238,15 @@ export interface ForecastCallOptions {
   signal?: AbortSignal;
   /** Progress callback (called at phase boundaries and step increments). */
   onProgress?: ProgressCallback;
+  /**
+   * Per-call overrides for ForecastConfig fields.
+   *
+   * These apply only to this single `forecast()` invocation — the stored
+   * config on the model instance is never mutated.  Useful for
+   * covariate workflows that need `returnBackcast: true` without
+   * a global recompile (avoiding race conditions).
+   */
+  configOverrides?: Partial<ForecastConfig>;
 }
 
 // ---------------------------------------------------------------------------
