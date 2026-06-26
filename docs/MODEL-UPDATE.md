@@ -117,10 +117,12 @@ If a future TimesFM model version has a different architecture, updating `export
 
 ## Troubleshooting
 
-| Issue                               | Solution                                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------ |
-| Nightly check not detecting changes | Verify `models/model-descriptor.json` is committed with the current HF revision            |
-| Model release fails                 | Check the workflow run logs; force re-run with `force: true`                               |
-| `downloadModel()` fails             | Verify `model-latest` release exists and contains both `.onnx` and `model-descriptor.json` |
-| Engine rejects model                | Descriptor schema > `ENGINE_SUPPORTED_SCHEMA` — upgrade `@agentix-e/timesfm-core`          |
-| Local tests need model              | Export locally: `python3 scripts/export-onnx.py` or `pnpm run pipeline:export`             |
+| Issue                                | Solution                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Nightly check not detecting changes  | Verify `models/model-descriptor.json` is committed with the current HF revision            |
+| Model release fails                  | Check the workflow run logs; force re-run with `force: true`                               |
+| `downloadModel()` fails              | Verify `model-latest` release exists and contains both `.onnx` and `model-descriptor.json` |
+| `downloadModel()` fails behind proxy | Set `HTTPS_PROXY` or `TIMESFM_PROXY_URL` environment variables (see README Proxy section)  |
+| `downloadModel()` fails with 407     | Proxy authentication required — set `TIMESFM_PROXY_USERNAME` and `TIMESFM_PROXY_PASSWORD`  |
+| Engine rejects model                 | Descriptor schema > `ENGINE_SUPPORTED_SCHEMA` — upgrade `@agentix-e/timesfm-core`          |
+| Local tests need model               | Export locally: `python3 scripts/export-onnx.py` or `pnpm run pipeline:export`             |

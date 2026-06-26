@@ -73,7 +73,7 @@ await model.dispose();
 
 ```bash
 # Node.js — One-click: Download → Export → Validate → Test → Benchmark
-npm run pipeline
+pnpm run pipeline
 
 # Or pure Node.js
 node scripts/pipeline.js
@@ -147,7 +147,7 @@ ONNX Runtime:
 ============================================================
 ```
 
-### 2.2 Model File Specifications
+### 2.3 Model File Specifications
 
 | Property | Value                                                          |
 | -------- | -------------------------------------------------------------- |
@@ -161,7 +161,7 @@ ONNX Runtime:
 | Output 4 | `output_qs: [batch, patches, 10240]` (1024 steps×10 quantiles) |
 | Backend  | ONNX Runtime: CPU / CUDA / DirectML                            |
 
-### 2.3 Hardware Requirements
+### 2.4 Hardware Requirements
 
 | Component      | Minimum      | Recommended       |
 | -------------- | ------------ | ----------------- |

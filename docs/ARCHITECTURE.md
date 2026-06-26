@@ -93,7 +93,7 @@ Two-phase autoregressive decoding:
 1. **Prefill**: Single forward pass on full context → extract last output patch
 2. **AR Decode**: Autoregressively generate future patches, each feeding the last median prediction as the next input seed
 
-KV Cache is computed but **deferred** — the ONNX model manages its own internal cache, avoiding wasting hundreds of MB.
+KV Cache is computed but **deferred** — the ONNX model manages its own internal cache, so the external `kv-cache.ts` module (marked `@experimental`) is **not used** by the current ONNX inference path. It exists as a prepared implementation for a potential future pure-TypeScript Transformer.
 
 ### 4. Postprocessor Pipeline
 
@@ -195,7 +195,7 @@ IInferenceEngine — pluggable backend (ONNX)
 
 1. **Functional core, imperative shell**: All utility functions are pure; only `TimesFMModel` manages state
 2. **Interface-based abstraction**: `IInferenceEngine` decouples the model from ONNX Runtime
-3. **Frozen configuration singletons**: `TIMESFM_25_CONFIG` is `Object.freeze()`d
+3. **Self-describing models**: `model-descriptor.json` is the single source of truth for architecture constants — `fromPretrained()` resolves `ModelConfig` via `resolveModelConfig()` from the descriptor, falling back to `TIMESFM_25_CONFIG` only when no descriptor is present
 4. **Zero-dependency core**: Only `onnxruntime-node` (dynamic import); all tensor math is hand-rolled
 5. **Python parity**: Every source file cites the corresponding Python source for cross-verification
 6. **Progressive disclosure**: Public API exports both high-level (`TimesFMModel`) and advanced (`decode`, `preprocess`, `revin`) APIs

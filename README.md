@@ -37,7 +37,7 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 | `@agentix-e/timesfm-xreg` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg) | Covariate regression extension (Ridge + OneHot)                           |
 | `@agentix-e/timesfm-cli`  | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-cli?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-cli)   | CLI tool (includes `timesfm setup` auto model download)                   |
 
-> **Layered strategy**: npm packages contain only code (~150 KB), models (885 MB) are downloaded on-demand via GitHub Releases.
+> **Layered strategy**: npm packages contain only code (~150 KB), models (885 MB zip / ~928 MB ONNX) are downloaded on-demand via GitHub Releases.
 
 ## Quick Start
 
@@ -127,13 +127,13 @@ agentix-timesfm-ts/
 │   │   │       ├── stats.ts        # Welford running statistics
 │   │   │       ├── revin.ts        # RevIN normalization
 │   │   │       └── tensor-utils.ts # Low-level tensor ops
-│   │   └── test/               # 67 tests
+│   │   └── test/               # 237 tests (unit) + 26 integration tests
 │   ├── timesfm-xreg/           # Covariate regression
 │   │   ├── src/
 │   │   │   ├── index.ts
 │   │   │   ├── xreg-engine.ts     # Ridge regression engine
 │   │   │   └── one-hot-encoder.ts # Scikit-learn compatible OHE
-│   │   └── test/               # 10 tests
+│   │   └── test/               # 18 tests
 │   └── timesfm-cli/            # CLI tool
 │       ├── src/
 │       │   ├── cli.ts          # Commander-based CLI
