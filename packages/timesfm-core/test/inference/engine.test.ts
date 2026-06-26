@@ -19,9 +19,9 @@ import { getTestModelPath } from '../helpers';
 const MODEL_PATH = getTestModelPath();
 const mc = TIMESFM_25_CONFIG;
 
-// The real exported ONNX model has fixed shape [1, 16, 64]
+// The real exported ONNX model has fixed shape [1, MODEL_PATCHES, tokenizerInputDims]
 const MODEL_BATCH = 1;
-const MODEL_PATCHES = 16;
+const MODEL_PATCHES = mc.exportedPatches;
 
 // ---------------------------------------------------------------------------
 // Helpers: generate realistic input patterns
@@ -224,9 +224,9 @@ describe('KV Cache', () => {
   it('creates cache with correct dimensions', () => {
     const batchSize = 2;
     const maxCacheSize = 64;
-    const numLayers = 20;
-    const numHeads = 16;
-    const headDim = 80;
+    const numLayers = mc.numLayers;
+    const numHeads = mc.numHeads;
+    const headDim = mc.headDim;
 
     const cache = createKVCache(batchSize, maxCacheSize, numLayers, numHeads, headDim);
 

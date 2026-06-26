@@ -5,7 +5,8 @@
  * Used by decode-loop.test.ts and other tests that need a fake engine.
  */
 
-import type { IInferenceEngine, RawModelOutput } from '../src/types';
+import { TIMESFM_25_CONFIG } from '@agentix-e/timesfm-core';
+import type { IInferenceEngine, RawModelOutput, ModelConfig } from '@agentix-e/timesfm-core';
 
 export interface MockEngineOptions {
   /** Output scale factor (default: 1.0). Higher values = larger outputs. */
@@ -27,11 +28,16 @@ export class MockInferenceEngine implements IInferenceEngine {
   private _scale: number;
   private _callCount: { value: number };
   private _outputShape: { patches: number; perPatch: number };
+  private readonly _mc: ModelConfig;
 
-  constructor(options: MockEngineOptions = {}) {
+  constructor(options: MockEngineOptions = {}, config: ModelConfig = TIMESFM_25_CONFIG) {
+    const mc = config;
+    this._mc = mc;
     this._scale = options.scale ?? 1.0;
     this._callCount = options.callCount ?? { value: 0 };
-    this._outputShape = options.outputShape ?? { patches: 16, perPatch: 128 * 10 };
+    const patches = options.outputShape?.patches ?? mc.exportedPatches;
+    const perPatch = options.outputShape?.perPatch ?? mc.outputPatchLen * mc.numQuantiles;
+    this._outputShape = { patches, perPatch };
   }
 
   async load(_modelPath: string): Promise<void> {
@@ -51,7 +57,7 @@ export class MockInferenceEngine implements IInferenceEngine {
    *
    * outputTimeSeries: shape [batchSize, patches * perPatch]
    *   Filled with scale * (b + 1) for batch element b.
-   * outputQuantileSpread: shape [batchSize, outputQuantileLen * numQuantiles]
+   * outputQuantileSpread: shape [batchSize, this._mc.outputQuantileLen * this._mc.numQuantiles]
    *   Filled with scale * (b + 1) * 0.5.
    */
   async forward(inputs: Float32Array[], _masks: Uint8Array[]): Promise<RawModelOutput> {
@@ -60,7 +66,7 @@ export class MockInferenceEngine implements IInferenceEngine {
     const batchSize = inputs.length;
     const { patches, perPatch } = this._outputShape;
     const tsl = patches * perPatch;
-    const qsLen = 1024 * 10; // outputQuantileLen * numQuantiles
+    const qsLen = this._mc.outputQuantileLen * this._mc.numQuantiles;
 
     const outputTimeSeries: Float32Array[] = [];
     const outputQuantileSpread: Float32Array[] = [];
@@ -78,7 +84,7 @@ export class MockInferenceEngine implements IInferenceEngine {
       qs.fill(val * 0.5);
       outputQuantileSpread.push(qs);
 
-      const emb = new Float32Array(patches * 1280);
+      const emb = new Float32Array(patches * this._mc.modelDims);
       emb.fill(val);
       inputEmbeddings.push(emb);
       outputEmbeddings.push(emb);

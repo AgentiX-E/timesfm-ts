@@ -92,8 +92,8 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 2.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16; // 512/32
-      const horizon = 128; // = outputPatchLen → numDecodeSteps = 0
+      const numPatches = Math.floor(512 / MC.inputPatchLen); // 512/32
+      const horizon = MC.outputPatchLen; // numDecodeSteps = 0
 
       const result = await decode(
         engine,
@@ -116,7 +116,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine();
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 1; // 1 <= 128 → numDecodeSteps = 0
 
       const result = await decode(
@@ -162,7 +162,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine();
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
 
       const result = await decode(
         engine,
@@ -184,7 +184,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ callCount: callCounter });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
 
       await decode(
         engine,
@@ -210,7 +210,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0, callCount: callCounter });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 129; // floor((129-1)/128) = 1
 
       await decode(
@@ -234,7 +234,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ callCount: callCounter });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 385; // floor((385-1)/128) = 3
 
       await decode(
@@ -256,7 +256,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 513; // floor((513-1)/128) = 4
 
       const result = await decode(
@@ -294,7 +294,7 @@ describe('decode (with MockInferenceEngine)', () => {
       );
 
       for (const ar of result.arOutputs!) {
-        expect(ar.length).toBe(MC.outputPatchLen); // batchSize=1 * 128
+        expect(ar.length).toBe(MC.outputPatchLen); // batchSize=1
       }
     });
   });
@@ -306,7 +306,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const batchSize = 3;
 
       const result = await decode(
@@ -329,7 +329,7 @@ describe('decode (with MockInferenceEngine)', () => {
   // ── contextMu/Sigma padding tests ────────────────────────────────────
 
   describe('contextMu / contextSigma padding', () => {
-    it('pads to batchSize * modelPatches (16) entries', async () => {
+    it('pads to batchSize * exportedPatches entries', async () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       // maxContext=128 → numInputPatches=4 (< 16)
@@ -361,7 +361,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       // sigma = 1e-7 (below 1e-6 threshold)
       const tinySigma = makeContextSigma(1, numPatches);
       for (const s of tinySigma) s[0] = 1e-7;
@@ -389,7 +389,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
 
       const result = await decode(
         engine,
@@ -412,7 +412,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
 
       const result = await decode(
         engine,
@@ -443,7 +443,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 257; // floor((257-1)/128) = 2 steps
 
       let secondCallMasks: Uint8Array[] = [];
@@ -490,7 +490,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 4096);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 4096; // floor((4096-1)/128) = 31 steps
 
       const result = await decode(
@@ -528,9 +528,9 @@ describe('decode (with MockInferenceEngine)', () => {
         MC,
       );
 
-      // The ONNX model has fixed 16-patch output.
-      // decode trims to min(numInputPatches=32, modelPatches=16) = 16 patches
-      const effectivePatches = 16; // modelPatches (exported ONNX shape)
+      // The ONNX model has exportedPatches-patch output.
+      // decode trims to min(numInputPatches, exportedPatches) patches
+      const effectivePatches = MC.exportedPatches; // exported ONNX shape
       expect(result.pfOutputs[0].length).toBe(
         effectivePatches * MC.outputPatchLen * MC.numQuantiles,
       );
@@ -545,7 +545,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 257; // floor((257-1)/128) = 2 steps
 
       const result = await decode(
@@ -562,7 +562,7 @@ describe('decode (with MockInferenceEngine)', () => {
 
       // arOutputs contain the concatenated seeds for each step
       expect(result.arOutputs).not.toBeNull();
-      // Each arOutput entry is batchSize * outputPatchLen = 128 floats
+      // Each arOutput entry is batchSize * outputPatchLen floats
       for (const ar of result.arOutputs!) {
         expect(ar.length).toBe(MC.outputPatchLen);
       }
@@ -572,7 +572,7 @@ describe('decode (with MockInferenceEngine)', () => {
       const engine = new MockInferenceEngine({ scale: 1.0 });
       engine.load('test');
       const fc = makeForecastConfig(512, 256);
-      const numPatches = 16;
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
       const horizon = 257; // 2 AR steps
 
       // Use non-zero initial stats

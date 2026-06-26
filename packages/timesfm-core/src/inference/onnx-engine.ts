@@ -2,8 +2,8 @@
  * ONNX Runtime inference engine for TimesFM.
  *
  * Production-grade inference engine backed by `onnxruntime-node`.
- * Handles fixed-shape exported models (batch=1, patches=16) by
- * padding variable-length inputs and running sequential batch elements.
+ * Handles fixed-shape exported models by padding variable-length
+ * inputs and running sequential batch elements.
  */
 
 import {
@@ -20,9 +20,6 @@ const PROVIDER_MAP: Record<string, string> = {
   dml: 'DmlExecutionProvider',
 };
 
-/** The fixed shape of the exported TimesFM 2.5 ONNX model. */
-const EXPORTED_PATCHES = 16;
-
 // ---------------------------------------------------------------------------
 // TimesFMInferenceEngine
 // ---------------------------------------------------------------------------
@@ -33,7 +30,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   private _ortModule: typeof import('onnxruntime-node') | null = null;
   private _loaded = false;
-  private _config: ModelConfig;
+  private readonly _config: ModelConfig;
   private _executionProvider: string;
 
   constructor(
@@ -68,10 +65,11 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
   /**
    * Run inference for a batch of variable-length patched time series.
    *
-   * The exported ONNX model has fixed shape [1, 16, 64].  We process
-   * each batch element sequentially, padding/truncating to exactly 16
-   * patches.  Padding patches are zero-filled with mask=1 so the
-   * transformer's causal mask ignores them.
+   * The exported ONNX model has a fixed patch count defined by
+   * `this._config.exportedPatches` and `this._config.tokenizerInputDims`.
+   * We process each batch element sequentially, padding/truncating to exactly the
+   * model's expected number of patches.  Padding patches are zero-filled with
+   * mask=1 so the transformer's causal mask ignores them.
    *
    * Batch elements are processed concurrently via Promise.all for
    * maximum throughput when perCoreBatchSize > 1.
@@ -85,7 +83,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
     const session = this._session;
     const batchSize = inputs.length;
     const inputPatchLen = this._config.inputPatchLen;
-    const tokenizerLen = inputPatchLen * 2; // 64
+    const tokenizerLen = this._config.tokenizerInputDims;
 
     // Run all batch elements concurrently
     const results = await Promise.all(
@@ -94,11 +92,11 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
         const mask = masks[b];
         const numInputPatches = Math.floor(input.length / inputPatchLen);
 
-        // Build padded input: always [1, 16, 64]
-        const flatInputs = new Float32Array(1 * EXPORTED_PATCHES * tokenizerLen);
-        const copyPatches = Math.min(numInputPatches, EXPORTED_PATCHES);
+        // Build padded input to match exported model shape
+        const flatInputs = new Float32Array(1 * this._config.exportedPatches * tokenizerLen);
+        const copyPatches = Math.min(numInputPatches, this._config.exportedPatches);
 
-        for (let p = 0; p < EXPORTED_PATCHES; p++) {
+        for (let p = 0; p < this._config.exportedPatches; p++) {
           const basePatch = p * tokenizerLen;
           if (p < copyPatches) {
             for (let i = 0; i < inputPatchLen; i++) {
@@ -115,7 +113,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
 
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
         const feeds: Record<string, import('onnxruntime-node').Tensor> = {
-          inputs: new ort.Tensor('float32', flatInputs, [1, EXPORTED_PATCHES, tokenizerLen]),
+          inputs: new ort.Tensor('float32', flatInputs, [1, this._config.exportedPatches, tokenizerLen]),
         };
 
         const sessionResults = await session.run(feeds);

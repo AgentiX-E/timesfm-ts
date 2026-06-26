@@ -69,15 +69,14 @@ export async function decode(
   signal?: AbortSignal,
 ): Promise<DecodeResult> {
   const batchSize = normedInputs.length;
-  // The ONNX model always processes EXPORTED_PATCHES (16) patches internally
-  const modelPatches = 16;
   const numInputPatches = Math.floor(fc.maxContext / mc.inputPatchLen);
 
-  // Pad contextMu/contextSigma to modelPatches entries for RevIN
+  // Pad contextMu/contextSigma to match the exported model's patch count
   const paddedContextMu: Float32Array[] = [];
   const paddedContextSigma: Float32Array[] = [];
+
   for (let b = 0; b < batchSize; b++) {
-    for (let p = 0; p < modelPatches; p++) {
+    for (let p = 0; p < mc.exportedPatches; p++) {
       if (p < numInputPatches) {
         paddedContextMu.push(contextMu[b * numInputPatches + p]);
         paddedContextSigma.push(contextSigma[b * numInputPatches + p]);
@@ -96,13 +95,13 @@ export async function decode(
   const { outputTimeSeries, outputQuantileSpread } = rawOutput;
 
   // Denormalise prefill outputs
-  // outputTimeSeries is [batch][modelPatches * outputPatchLen * numQuantiles]
+  // outputTimeSeries is [batch][mc.exportedPatches * outputPatchLen * numQuantiles]
   const pfDenormed = revinBatch4D(
     outputTimeSeries,
     paddedContextMu,
     paddedContextSigma,
     true,
-    modelPatches,
+    mc.exportedPatches,
     mc.outputPatchLen,
     mc.numQuantiles,
   );
@@ -119,11 +118,11 @@ export async function decode(
   const quantileSpreads: Float32Array[] = [];
   for (let b = 0; b < batchSize; b++) {
     const qsLen = mc.outputQuantileLen * mc.numQuantiles;
-    const perPatch = outputQuantileSpread[b].length / modelPatches;
+    const perPatch = outputQuantileSpread[b].length / mc.exportedPatches;
     const lastPatchQS = outputQuantileSpread[b].slice(outputQuantileSpread[b].length - perPatch);
     // Denormalise — process per-patch blocks rather than per-element
-    const lastMu = paddedContextMu[(b + 1) * modelPatches - 1][0];
-    const lastSigma = paddedContextSigma[(b + 1) * modelPatches - 1][0];
+    const lastMu = paddedContextMu[(b + 1) * mc.exportedPatches - 1][0];
+    const lastSigma = paddedContextSigma[(b + 1) * mc.exportedPatches - 1][0];
     const safeS = lastSigma < 1e-6 ? 1.0 : lastSigma;
     const denormed = new Float32Array(qsLen);
     for (let o = 0; o < mc.outputQuantileLen; o++) {
