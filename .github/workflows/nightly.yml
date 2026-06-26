@@ -1,0 +1,58 @@
+name: Nightly Model Check
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install TimesFM
+        run: pip install "timesfm[torch]"
+
+      - name: Check for new HuggingFace version
+        id: version-check
+        run: |
+          python3 scripts/export-onnx.py \
+            --check-latest \
+            -m google/timesfm-2.5-200m-pytorch
+        continue-on-error: true
+
+      - name: Create issue for new version
+        if: steps.version-check.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['model-update'],
+            });
+
+            if (issues.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'New TimesFM model version detected on HuggingFace',
+                body: [
+                  'A new version of `google/timesfm-2.5-200m-pytorch` has been detected.',
+                  '',
+                  '### Action required',
+                  '1. Review the changes in the new model version',
+                  '2. Run `pnpm run pipeline` to export and test the new model',
+                  '3. Create a new GitHub Release with the updated ONNX model',
+                  '',
+                  '> Auto-detected by the Nightly Model Check workflow.',
+                ].join('\n'),
+                labels: ['model-update'],
+              });
+            }

@@ -1,0 +1,13 @@
+{
+  "entryPoints": ["packages/timesfm-core/src/index.ts"],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "tsconfig": "packages/timesfm-core/tsconfig.json",
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "includeVersion": true,
+  "readme": "none",
+  "hideGenerator": true,
+  "sort": ["source-order"],
+  "categorizeByGroup": true
+}

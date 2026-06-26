@@ -1,0 +1,13 @@
+node_modules/
+dist/
+*.tsbuildinfo
+# Temp ONNX external data files (not needed — models are single-file)
+*.onnx.data
+coverage/
+.env
+.DS_Store
+pnpm-lock.yaml
+models/*.onnx
+models/*.onnx*
+# Generated TypeDoc API docs
+docs/api/

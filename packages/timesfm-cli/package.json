@@ -1,0 +1,47 @@
+{
+  "name": "@agentix/timesfm-cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for TimesFM time-series forecasting",
+  "main": "./dist/cli.js",
+  "bin": {
+    "timesfm": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "@agentix/timesfm-core": "workspace:*",
+    "@agentix/timesfm-xreg": "workspace:*",
+    "commander": "^13.0.0",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "timesfm",
+    "cli",
+    "forecasting",
+    "time-series",
+    "csv",
+    "command-line"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

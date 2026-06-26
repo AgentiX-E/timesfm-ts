@@ -1,0 +1,48 @@
+{
+  "name": "@agentix/timesfm-xreg",
+  "version": "0.1.0",
+  "description": "Exogenous covariates regression extension for TimesFM",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "@agentix/timesfm-core": "workspace:*",
+    "ml-matrix": "^6.12.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "timesfm",
+    "covariates",
+    "xreg",
+    "time-series",
+    "forecasting",
+    "ridge-regression",
+    "one-hot-encoder"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

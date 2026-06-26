@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/timesfm-core" },
+    { "path": "packages/timesfm-xreg" },
+    { "path": "packages/timesfm-cli" }
+  ]
+}

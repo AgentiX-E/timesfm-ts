@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  # ─── Lint & Format ──────────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+
+  # ─── Unit Tests (no model required — fast feedback) ────────────────────
+  unit-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        node-version: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+      - run: pnpm vitest run --config vitest.unit.config.ts
+
+  # ─── Build check (TypeScript compile) ──────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        node-version: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+
+  # ─── Integration Tests (requires ONNX model) ──────────────────────────
+  integration-test:
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+
+      # Cache ONNX model to avoid repeated 885 MB download
+      - name: Cache ONNX model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v1
+
+      # Export test model from HuggingFace (requires Python + PyTorch)
+      - name: Export TimesFM ONNX model
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          pip install "timesfm[torch]" onnx onnxruntime torch
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx \
+            --skip-validation
+        timeout-minutes: 15
+
+      - run: pnpm test
+      - run: pnpm test:coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # ─── Benchmark ─────────────────────────────────────────────────────────
+  benchmark:
+    needs: [integration-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+
+      # Restore cached model from integration-test cache key
+      - name: Restore cached ONNX model
+        uses: actions/cache/restore@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v1
+          fail-on-cache-miss: true
+
+      - name: Run benchmark
+        run: pnpm benchmark
+        timeout-minutes: 5
+        env:
+          TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx

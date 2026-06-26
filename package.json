@@ -1,0 +1,76 @@
+{
+  "name": "agentix-timesfm-ts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting",
+  "workspaces": [
+    "packages/timesfm-core",
+    "packages/timesfm-xreg",
+    "packages/timesfm-cli"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli",
+    "build:core": "tsc -b packages/timesfm-core",
+    "build:xreg": "tsc -b packages/timesfm-xreg",
+    "build:cli": "tsc -b packages/timesfm-cli",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "clean": "rimraf packages/*/dist packages/*/tsconfig.tsbuildinfo coverage",
+    "dev": "tsx packages/timesfm-cli/src/cli.ts",
+    "pipeline": "node scripts/pipeline.js",
+    "pipeline:quick": "node scripts/pipeline.js --quick",
+    "pipeline:export": "node scripts/pipeline.js --export",
+    "pipeline:test": "node scripts/pipeline.js --test",
+    "pipeline:benchmark": "node scripts/pipeline.js --benchmark",
+    "check-latest": "node scripts/pipeline.js --check-latest",
+    "export:model": "python3 scripts/export-onnx.py --output models/timesfm-2.5.onnx",
+    "check:latest": "python3 scripts/export-onnx.py --check-latest -m google/timesfm-2.5-200m-pytorch",
+    "check:model": "node packages/timesfm-core/scripts/check-model.js --model models/timesfm-2.5.onnx",
+    "benchmark": "node packages/timesfm-core/scripts/real-benchmark.js",
+    "ci": "pnpm build && pnpm lint && pnpm test:unit && pnpm test:coverage",
+    "docs:generate": "typedoc",
+    "publish:all": "pnpm -r --filter './packages/*' publish --access public",
+    "release": "node scripts/pipeline.js && gh release create v$(node -p \"require('./package.json').version\") models/timesfm-2.5.onnx --title \"TimesFM 2.5 200M ONNX\" --notes \"Pre-exported TimesFM 2.5 200M ONNX model for agentix-timesfm-ts.\""
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "@vitest/coverage-v8": "^3.2.6",
+    "eslint": "^10.5.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.4",
+    "rimraf": "^5.0.0",
+    "tsx": "^4.0.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts"
+  },
+  "keywords": [
+    "timesfm",
+    "time-series",
+    "forecasting",
+    "foundation-model",
+    "transformer",
+    "onnx",
+    "zero-shot",
+    "typescript"
+  ]
+}

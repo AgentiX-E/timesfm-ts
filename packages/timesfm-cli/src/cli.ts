@@ -1,0 +1,134 @@
+#!/usr/bin/env node
+/* eslint-disable no-console */
+/**
+ * TimesFM CLI — command-line time-series forecasting.
+ *
+ * Usage:
+ *   # First time: download model
+ *   timesfm setup
+ *
+ *   # Forecast
+ *   timesfm forecast --horizon 24 input.csv
+ *   timesfm forecast --model ./custom.onnx --horizon 52 input.csv
+ */
+
+import { Command } from 'commander';
+import { existsSync } from 'node:fs';
+import { csvForecast, type CSVForecastOptions } from './csv-forecast';
+
+const program = new Command();
+
+program
+  .name('timesfm')
+  .description('Zero-shot time series forecasting with TimesFM (Node.js)')
+  .version('0.1.0');
+
+// ─── setup — download model ────────────────────────────────────────────────
+
+let _lastSetupPath: string | null = null;
+
+program
+  .command('setup')
+  .description('Download the TimesFM 2.5 200M ONNX model (~885 MB)')
+  .option('-f, --force', 'Force re-download even if already cached')
+  .option(
+    '-o, --output <path>',
+    'Custom output path (default: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)',
+  )
+  .action(async (options: Record<string, unknown>) => {
+    try {
+      const core = await import('@agentix/timesfm-core');
+      const dest = await core.downloadModel({
+        force: options.force === true,
+        dest: options.output as string | undefined,
+      });
+      _lastSetupPath = dest;
+      console.log(`\nModel ready: ${dest}`);
+      console.log(`   Run: timesfm forecast --horizon 24 your-data.csv`);
+    } catch (err) {
+      console.error('Error:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
+// ─── forecast ──────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the model path with this priority:
+ *   1. Explicit `--model` flag
+ *   2. `TIMESFM_MODEL_PATH` environment variable
+ *   3. Path from the last `timesfm setup -o <path>` in this session
+ *   4. Default cache path (~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)
+ *   5. Auto-download to default cache path
+ */
+async function resolveModelPath(explicitPath: string | undefined): Promise<string> {
+  // 1. Explicit --model flag
+  if (explicitPath) return explicitPath;
+
+  const core = await import('@agentix/timesfm-core');
+
+  // 2. Environment variable
+  const envPath = process.env.TIMESFM_MODEL_PATH;
+  if (envPath && existsSync(envPath)) return envPath;
+
+  // 3. Last setup path (in-process memory)
+  if (_lastSetupPath && existsSync(_lastSetupPath)) return _lastSetupPath;
+
+  // 4. Default cache
+  const cached = core.getCachedModelPath();
+  if (cached) return cached;
+
+  // 5. Auto-download
+  console.error('No model found. Downloading TimesFM 2.5 200M…');
+  return core.downloadModel();
+}
+
+program
+  .command('forecast')
+  .description('Forecast time series from a CSV file')
+  .argument('<input>', 'Path to input CSV file')
+  .requiredOption('-H, --horizon <number>', 'Forecast horizon (number of steps)', parseInt)
+  .option('-m, --model <path>', 'Path to TimesFM ONNX model (auto-download if omitted)')
+  .option('-d, --date-col <name>', 'Date column name (default: "date")', 'date')
+  .option('-v, --value-cols <names>', 'Comma-separated value column names (default: all numeric)')
+  .option('-o, --output <path>', 'Output file path (default: stdout)')
+  .option('--output-format <format>', 'Output format: csv or json', 'csv')
+  .option('--context <number>', 'Max context length', parseInt, 1024)
+  .option('--no-normalize', 'Disable input normalization')
+  .option('--no-flip-invariance', 'Disable flip invariance')
+  .option('--no-positive', 'Disable positive-value inference')
+  .option('--no-fix-quantile-crossing', 'Disable quantile crossing fix')
+  .option('--no-continuous-quantile-head', 'Disable continuous quantile head')
+  .action(async (input: string, options: Record<string, unknown>) => {
+    try {
+      const resolvedPath = await resolveModelPath(options.model as string | undefined);
+      if (!resolvedPath) {
+        throw new Error('Failed to resolve model path.');
+      }
+
+      const forecastOptions: CSVForecastOptions = {
+        inputPath: input,
+        horizon: options.horizon as number,
+        modelPath: resolvedPath,
+        dateCol: (options.dateCol as string) || 'date',
+        valueCols: options.valueCols
+          ? (options.valueCols as string).split(',').map((s: string) => s.trim())
+          : undefined,
+        outputPath: options.output as string | undefined,
+        outputFormat: ((options.outputFormat as string) || 'csv') as 'csv' | 'json',
+        maxContext: (options.context as number) || 1024,
+        normalizeInputs: options.normalize !== false,
+        forceFlipInvariance: options.flipInvariance !== false,
+        inferIsPositive: options.positive !== false,
+        fixQuantileCrossing: options.fixQuantileCrossing !== false,
+        useContinuousQuantileHead: options.continuousQuantileHead !== false,
+      };
+
+      await csvForecast(forecastOptions);
+    } catch (err) {
+      console.error('Error:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
+program.parse();

@@ -1,0 +1,48 @@
+{
+  "name": "@agentix/timesfm-core",
+  "version": "0.1.0",
+  "description": "Core inference engine for TimesFM — zero-shot time series forecasting",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "onnxruntime-node": "^1.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "keywords": [
+    "timesfm",
+    "time-series",
+    "forecasting",
+    "foundation-model",
+    "transformer",
+    "onnx",
+    "zero-shot",
+    "typescript"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
