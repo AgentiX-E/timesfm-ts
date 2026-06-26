@@ -12,6 +12,7 @@ import {
   type ForecastConfig,
   type ModelConfig,
 } from './types';
+import { ConfigValidationError } from './errors';
 
 /**
  * Validate and normalise a ForecastConfig against a ModelConfig.
@@ -45,7 +46,7 @@ export function validateAndNormalizeConfig(
 
   // --- Hard limits ---
   if (maxContext + maxHorizon > mc.contextLimit) {
-    throw new RangeError(
+    throw new ConfigValidationError(
       `Context + horizon (${maxContext} + ${maxHorizon} = ${
         maxContext + maxHorizon
       }) exceeds the model's context limit (${mc.contextLimit}).`,
@@ -53,7 +54,7 @@ export function validateAndNormalizeConfig(
   }
 
   if (fc.useContinuousQuantileHead && maxHorizon > mc.outputQuantileLen) {
-    throw new RangeError(
+    throw new ConfigValidationError(
       `Continuous quantile head requires maxHorizon ≤ ${mc.outputQuantileLen}, got ${maxHorizon}.`,
     );
   }

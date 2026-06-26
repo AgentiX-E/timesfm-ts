@@ -49,6 +49,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { createWriteStream, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { DownloadError, ChecksumMismatchError } from './errors';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -263,12 +264,13 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     const proxyHint = proxyConfig
       ? `\nProxy was configured (${proxyConfig.url}). Verify proxy credentials and connectivity.`
       : '';
-    throw new Error(
+    throw new DownloadError(
       `Failed to download model (HTTP ${response.status}): ${url}\n` +
         `If the model is not available as a GitHub Release, export it locally:\n` +
         `  pip install "timesfm[torch]" onnx onnxruntime torch\n` +
         `  python scripts/export-onnx.py --output ${dest}` +
         proxyHint,
+      response.status,
     );
   }
 
@@ -278,7 +280,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
 
   const fileStream = createWriteStream(tmpZip);
   const reader = response.body?.getReader();
-  if (!reader) throw new Error('No response body — cannot download model');
+  if (!reader) throw new DownloadError('No response body — cannot download model', 0);
 
   let received = 0;
   const startTime = Date.now();
@@ -326,7 +328,10 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     // Verify zip size
     const zipSize = fs.statSync(tmpZip).size;
     if (total > 0 && zipSize !== total) {
-      throw new Error(`Download incomplete: expected ${total} bytes, got ${zipSize} bytes.`);
+      throw new DownloadError(
+        `Download incomplete: expected ${total} bytes, got ${zipSize} bytes.`,
+        0,
+      );
     }
 
     // Extract zip → cacheDir (gives timesfm-2.5.onnx + model-descriptor.json)
@@ -348,7 +353,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       const actualSha256 = sha256File(dest);
       if (actualSha256 !== expectedSha256) {
         cleanupPartial(cacheDir);
-        throw new Error(
+        throw new ChecksumMismatchError(
           `Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${actualSha256}`,
         );
       }
@@ -420,12 +425,13 @@ async function extractZip(zipPath: string, outDir: string): Promise<void> {
         ? 'Install unzip: brew install unzip'
         : 'Install unzip: apt-get install unzip  or  yum install unzip';
 
-  throw new Error(
+  throw new DownloadError(
     `Failed to extract model zip. Tried 3 backends — all failed:\n` +
       errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n') +
       `\n\nPlatform-specific fix: ${installHint}` +
       `\n\nAlternatively, extract manually:\n` +
       `  unzip ${zipPath} -d ${outDir}`,
+    0,
   );
 }
 

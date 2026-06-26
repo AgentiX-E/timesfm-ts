@@ -5,6 +5,18 @@
  * a decoder-only foundation model for zero-shot time-series forecasting.
  */
 
+// ---- Errors (public hierarchy) ----
+export {
+  TimesFMError,
+  ModelNotCompiledError,
+  ModelNotFoundError,
+  ConfigValidationError,
+  HorizonExceededError,
+  DownloadError,
+  ProxyAuthError,
+  ChecksumMismatchError,
+} from './errors';
+
 // ---- Public API ----
 export { TimesFMModel } from './model';
 

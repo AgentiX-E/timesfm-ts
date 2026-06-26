@@ -38,6 +38,7 @@ import {
   type CovariateForecastParams,
   type CovariateForecastOutput,
 } from './types';
+import { ModelNotFoundError, ModelNotCompiledError, HorizonExceededError } from './errors';
 import { validateAndNormalizeConfig } from './config';
 import { TimesFMInferenceEngine } from './inference/onnx-engine';
 import { preprocess } from './preprocessor';
@@ -81,7 +82,7 @@ export class TimesFMModel implements ITimesFMModel {
    */
   static async fromPretrained(options: ModelLoadOptions): Promise<TimesFMModel> {
     if (!options.modelPath) {
-      throw new Error(
+      throw new ModelNotFoundError(
         'modelPath is required. Provide the path to a TimesFM ONNX model file.\n' +
           'To obtain a model:\n' +
           '  1. Run: python scripts/export-onnx.py (if you have the TimesFM PyTorch model)\n' +
@@ -169,7 +170,7 @@ export class TimesFMModel implements ITimesFMModel {
     options?: ForecastCallOptions,
   ): Promise<ForecastOutput> {
     if (!this._compiled || !this._forecastConfig) {
-      throw new Error('Model not compiled. Call compile() before forecast().');
+      throw new ModelNotCompiledError('Model not compiled. Call compile() before forecast().');
     }
 
     // Per-call config overrides (used internally by XReg covariate workflows
@@ -185,7 +186,7 @@ export class TimesFMModel implements ITimesFMModel {
     signal?.throwIfAborted();
 
     if (horizon > fc.maxHorizon) {
-      throw new Error(`Horizon ${horizon} exceeds maxHorizon ${fc.maxHorizon}.`);
+      throw new HorizonExceededError(`Horizon ${horizon} exceeds maxHorizon ${fc.maxHorizon}.`);
     }
 
     // Pad batch to globalBatchSize
