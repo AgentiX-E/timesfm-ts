@@ -3,14 +3,143 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip full test suite (for hotfix releases)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
   packages: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  # ─── Publish npm packages ──────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 1 — Quality Gates
+  # ═══════════════════════════════════════════════════════════════════════════
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+
+      - name: Lint & Format
+        run: |
+          pnpm lint
+          pnpm format:check
+
+      - name: Unit Tests (no ONNX model)
+        run: pnpm test:unit
+
+      - name: Full Test Suite (with real ONNX model)
+        if: ${{ !inputs.skip_tests }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Export model for testing
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          pip install "timesfm[torch]" onnx onnxruntime torch
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx \
+            --skip-validation
+        timeout-minutes: 15
+
+      - name: Run tests + coverage
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          pnpm test
+          pnpm test:coverage
+
+      - name: Upload coverage
+        if: ${{ !inputs.skip_tests }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 2 — Export TimesFM 2.5 ONNX Model
+  # ═══════════════════════════════════════════════════════════════════════════
+  export-model:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      sha256: ${{ steps.checksum.outputs.sha256 }}
+      model_size: ${{ steps.checksum.outputs.model_size }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Export TimesFM 2.5 ONNX
+        run: |
+          pip install "timesfm[torch]" onnx onnxruntime torch
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx
+        timeout-minutes: 20
+
+      - name: Calculate SHA-256 checksum
+        id: checksum
+        run: |
+          SHA256=$(sha256sum models/timesfm-2.5.onnx | cut -d' ' -f1)
+          SIZE=$(stat -c%s models/timesfm-2.5.onnx)
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+          echo "model_size=${SIZE}" >> $GITHUB_OUTPUT
+          SIZE_MB=$(echo "scale=1; ${SIZE}/1048576" | bc)
+          cat > models/timesfm-2.5.onnx.meta.json <<META
+          {
+            "source": "google/timesfm-2.5-200m-pytorch",
+            "version": "${{ github.ref_name }}",
+            "exported_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "sha256": "${SHA256}",
+            "size_bytes": ${SIZE},
+            "size_mb": ${SIZE_MB},
+            "input_shape": "[1, 16, 64]",
+            "opset_version": 18
+          }
+          META
+          echo "Model exported: ${SIZE_MB} MB"
+          echo "SHA-256: ${SHA256}"
+
+      - name: Upload model as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: |
+            models/timesfm-2.5.onnx
+            models/timesfm-2.5.onnx.meta.json
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 3 — Publish npm Packages
+  # ═══════════════════════════════════════════════════════════════════════════
   publish-npm:
+    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -23,40 +152,113 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm test:unit || true
-      - run: |
+
+      - name: Publish to npm
+        run: |
           pnpm -r --filter './packages/*' publish \
             --access public \
             --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # ─── Export and release ONNX model ────────────────────────────────────
-  release-model:
+      - name: npm publish summary
+        run: |
+          echo "### 📦 npm Packages Published" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          for pkg in packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli; do
+            name=$(node -p "require('./${pkg}/package.json').name")
+            version=$(node -p "require('./${pkg}/package.json').version")
+            echo "| \`${name}\` | ${version} |" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 4 — GitHub Release with Model + Docs
+  # ═══════════════════════════════════════════════════════════════════════════
+  github-release:
+    needs: [export-model, publish-npm]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: pnpm/action-setup@v4
         with:
-          python-version: '3.11'
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
-      - name: Export TimesFM 2.5 ONNX model
-        run: |
-          pip install "timesfm[torch]" onnx onnxruntime torch
-          python3 scripts/export-onnx.py \
-            --model google/timesfm-2.5-200m-pytorch \
-            --output models/timesfm-2.5.onnx
-        timeout-minutes: 15
+      - run: pnpm install --frozen-lockfile
 
-      - name: Create GitHub Release with model asset
+      - name: Generate TypeDoc API docs
+        run: pnpm docs:generate
+
+      - name: Upload API docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: docs/api/
+          retention-days: 30
+
+      - name: Download model artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: timesfm-onnx-model
+          path: release-assets/
+
+      - name: Create GitHub Release
         run: |
-          gh release create ${{ github.ref_name }} \
-            models/timesfm-2.5.onnx \
-            models/timesfm-2.5.onnx.meta.json \
-            --title "TimesFM 2.5 200M ONNX — ${{ github.ref_name }}" \
-            --generate-notes
+          NOTES_FILE=".github/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            gh release create ${{ github.ref_name }} \
+              release-assets/timesfm-2.5.onnx \
+              release-assets/timesfm-2.5.onnx.meta.json \
+              --title "TimesFM 2.5 200M — ${{ github.ref_name }}" \
+              --notes-file "$NOTES_FILE"
+          else
+            gh release create ${{ github.ref_name }} \
+              release-assets/timesfm-2.5.onnx \
+              release-assets/timesfm-2.5.onnx.meta.json \
+              --title "TimesFM 2.5 200M — ${{ github.ref_name }}" \
+              --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "### 🚀 Release ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Asset | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| timesfm-2.5.onnx | Pre-exported TimesFM 2.5 200M ONNX model |" >> $GITHUB_STEP_SUMMARY
+          echo "| timesfm-2.5.onnx.meta.json | SHA-256 checksum + metadata |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 5 — Deploy API Docs to GitHub Pages (ready, disabled by default)
+  # ═══════════════════════════════════════════════════════════════════════════
+  deploy-docs:
+    needs: github-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: false # Enable by removing this line after Pages is configured
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-docs
+          path: docs/api/
+
+      - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/api/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
