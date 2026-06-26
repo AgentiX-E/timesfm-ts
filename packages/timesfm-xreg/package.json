@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@agentix/timesfm-core": "workspace:*",
-    "ml-matrix": "^6.12.0"
+    "ml-matrix": "^6.13.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
