@@ -151,7 +151,7 @@ jobs:
           version: 10
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
 
@@ -160,7 +160,6 @@ jobs:
 
       - name: Publish to npm (OIDC)
         run: |
-          unset NODE_AUTH_TOKEN
           for pkg in timesfm-core timesfm-xreg timesfm-cli; do
             cd "packages/${pkg}"
             npm publish --access public --provenance
