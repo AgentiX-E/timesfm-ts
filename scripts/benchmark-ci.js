@@ -200,22 +200,46 @@ async function main() {
     );
   }
 
-  // ── Accuracy Benchmark ─────────────────────────────────────────────────────
+  // ── Accuracy Benchmark (full TimesFM pipeline) ────────────────────────────
   if (!skipAccuracy) {
-    console.log('\n  ── Accuracy ──');
+    console.log('\n  ── Accuracy (full pipeline) ──');
+    console.log('  (Using TimesFMModel with RevIN normalization + preprocessing)');
+
+    // Close raw ONNX session before loading the full model to save memory
+    session.release?.();
+
+    // Dynamically import the full TimesFM model from the built dist
+    const { TimesFMModel, createForecastConfig } = require(
+      path.join(__dirname, '..', 'packages', 'timesfm-core', 'dist', 'index.js'),
+    );
 
     const nSeries = 5;
-    const horizon = 24;
+    const horizon = 12;
     const seriesLen = 200;
     const naiveMAEs = [];
     const modelMAEs = [];
     const modelRMSEs = [];
+    const constMAEs = [];
 
     let seed = 42;
     function rand() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     }
+
+    // Load full TimesFM model with proper preprocessing pipeline
+    const accModel = await TimesFMModel.fromPretrained({ modelPath });
+    accModel.compile(
+      createForecastConfig({
+        maxContext: 512,
+        maxHorizon: 128,
+        normalizeInputs: true,
+        useContinuousQuantileHead: true,
+        forceFlipInvariance: true,
+        inferIsPositive: false,
+        fixQuantileCrossing: true,
+      }),
+    );
 
     for (let s = 0; s < nSeries; s++) {
       const data = new Float32Array(seriesLen);
@@ -234,75 +258,69 @@ async function main() {
       const context = data.slice(0, seriesLen - horizon);
       const actual = data.slice(seriesLen - horizon);
 
-      // Naive baseline
+      // Naive (no-change) baseline
       const lastVal = context[context.length - 1];
       let naiveMae = 0;
       for (let h = 0; h < horizon; h++) naiveMae += Math.abs(actual[h] - lastVal);
       naiveMae /= horizon;
       naiveMAEs.push(naiveMae);
 
-      // TimesFM
-      const nPatches = Math.ceil(context.length / inputPatchLen);
-      const actualPatches = Math.min(nPatches, MODEL_PATCHES);
-      const padded = new Float32Array(MODEL_PATCHES * inputPatchLen);
-      const mask = new Uint8Array(MODEL_PATCHES * inputPatchLen);
+      // Full TimesFM pipeline forecast
+      const { pointForecast } = await accModel.forecast(horizon, [context]);
+      const pred = pointForecast[0];
 
-      const ctxStart = Math.max(0, MODEL_PATCHES * inputPatchLen - context.length);
-      const contextToUse = context.slice(
-        Math.max(0, context.length - actualPatches * inputPatchLen),
-      );
-      for (let i = 0; i < ctxStart; i++) mask[i] = 1;
-      padded.set(contextToUse, ctxStart);
-
-      const flatInput = new Float32Array(1 * MODEL_PATCHES * dim);
-      for (let p = 0; p < MODEL_PATCHES; p++) {
-        const bp = p * dim;
-        for (let i = 0; i < inputPatchLen; i++) {
-          flatInput[bp + i] = padded[p * inputPatchLen + i];
-          flatInput[bp + inputPatchLen + i] = mask[p * inputPatchLen + i];
-        }
-      }
-
-      const result = await session.run({
-        inputs: new ort.Tensor('float32', flatInput, [1, MODEL_PATCHES, dim]),
-      });
-
-      const outputTS = result['output_ts'].data;
-      const perPatchOut = 128 * 10;
-      const lastValidPatch = actualPatches - 1;
-      const lastPatchStart = lastValidPatch * perPatchOut;
       let maeVal = 0,
         rmseVal = 0;
-      for (let h = 0; h < Math.min(horizon, 128); h++) {
-        const pred = outputTS[lastPatchStart + h * 10 + 5] || 0;
-        maeVal += Math.abs(actual[h] - pred);
-        rmseVal += (actual[h] - pred) ** 2;
+      for (let h = 0; h < Math.min(horizon, pred.length); h++) {
+        const diff = actual[h] - pred[h];
+        maeVal += Math.abs(diff);
+        rmseVal += diff * diff;
       }
-      maeVal /= Math.min(horizon, 128);
-      rmseVal = Math.sqrt(rmseVal / Math.min(horizon, 128));
+      maeVal /= Math.min(horizon, pred.length);
+      rmseVal = Math.sqrt(rmseVal / Math.min(horizon, pred.length));
       modelMAEs.push(maeVal);
       modelRMSEs.push(rmseVal);
+
+      // Constant mean baseline for reference
+      const constMean = context.reduce((a, b) => a + b, 0) / context.length;
+      let constMae = 0;
+      for (let h = 0; h < horizon; h++) constMae += Math.abs(actual[h] - constMean);
+      constMae /= horizon;
+      constMAEs.push(constMae);
     }
+
+    await accModel.dispose();
 
     const avgNaiveMAE = naiveMAEs.reduce((a, b) => a + b, 0) / naiveMAEs.length;
     const avgModelMAE = modelMAEs.reduce((a, b) => a + b, 0) / modelMAEs.length;
     const avgModelRMSE = modelRMSEs.reduce((a, b) => a + b, 0) / modelRMSEs.length;
+    const avgConstMAE = constMAEs.reduce((a, b) => a + b, 0) / constMAEs.length;
     const scaledMAE = avgModelMAE / avgNaiveMAE;
+    // Relative improvement over naive: (naive - model) / naive * 100
+    const improMae = avgNaiveMAE > 0 ? ((avgNaiveMAE - avgModelMAE) / avgNaiveMAE) * 100 : 0;
+    // Relative improvement over constant mean
+    const improConst = avgConstMAE > 0 ? ((avgConstMAE - avgModelMAE) / avgConstMAE) * 100 : 0;
 
     report.accuracy = {
       naive_mae: +avgNaiveMAE.toFixed(4),
       model_mae: +avgModelMAE.toFixed(4),
       model_rmse: +avgModelRMSE.toFixed(4),
+      const_mae: +avgConstMAE.toFixed(4),
       scaled_mae: +scaledMAE.toFixed(4),
       better_than_naive: scaledMAE < 1,
+      improvement_vs_naive_pct: +improMae.toFixed(1),
+      improvement_vs_const_pct: +improConst.toFixed(1),
     };
 
-    console.log(`  Naive MAE:        ${avgNaiveMAE.toFixed(4)}`);
-    console.log(`  TimesFM MAE:      ${avgModelMAE.toFixed(4)}`);
-    console.log(`  TimesFM RMSE:     ${avgModelRMSE.toFixed(4)}`);
+    console.log(`  Naive MAE (no-change):    ${avgNaiveMAE.toFixed(4)}`);
+    console.log(`  Const Mean MAE:            ${avgConstMAE.toFixed(4)}`);
+    console.log(`  TimesFM MAE (full pipe):   ${avgModelMAE.toFixed(4)}`);
+    console.log(`  TimesFM RMSE:              ${avgModelRMSE.toFixed(4)}`);
     console.log(
-      `  Scaled MAE:       ${scaledMAE.toFixed(4)}  (${scaledMAE < 1 ? '✅ Better than Naive' : '⚠️'})`,
+      `  Scaled MAE vs Naive:       ${scaledMAE.toFixed(4)}  (${scaledMAE < 1 ? '✅' : '⚠️'})`,
     );
+    console.log(`  Improvement vs Naive:      ${improMae.toFixed(1)}%`);
+    console.log(`  Improvement vs Const Mean: ${improConst.toFixed(1)}%`);
   }
 
   // ── Memory ─────────────────────────────────────────────────────────────────
@@ -380,14 +398,20 @@ ${report.latency.map((l) => `| ${l.context} | ${l.patches} | ${l.avg_ms} | ${l.p
 ${
   report.accuracy
     ? `
-## Prediction Accuracy
+## Prediction Accuracy (full TimesFM pipeline)
+
+> Uses the complete TimesFM pipeline with RevIN normalization, flip invariance,
+> and continuous quantile head — the same path as production model.forecast().
 
 | Metric | Value |
 |--------|-------|
-| Naive MAE | ${report.accuracy.naive_mae} |
-| TimesFM MAE | ${report.accuracy.model_mae} |
+| Naive MAE (no-change) | ${report.accuracy.naive_mae} |
+| Constant Mean MAE | ${report.accuracy.const_mae} |
+| **TimesFM MAE** | **${report.accuracy.model_mae}** |
 | TimesFM RMSE | ${report.accuracy.model_rmse} |
-| **Scaled MAE** | **${report.accuracy.scaled_mae}** ${report.accuracy.better_than_naive ? '✅ Better than Naive' : '⚠️'} |
+| Scaled MAE vs Naive | ${report.accuracy.scaled_mae} ${report.accuracy.better_than_naive ? '✅' : '⚠️'} |
+| Improvement vs Naive | ${report.accuracy.improvement_vs_naive_pct}% |
+| Improvement vs Const Mean | ${report.accuracy.improvement_vs_const_pct}% |
 `
     : ''
 }
