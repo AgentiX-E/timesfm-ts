@@ -32,11 +32,11 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 
 ## Packages
 
-| Package                 | npm             | Description                                                               |
-| ----------------------- | --------------- | ------------------------------------------------------------------------- |
-| `@agentix/timesfm-core` | To be published | Core inference engine + preprocessing + postprocessing + model downloader |
-| `@agentix/timesfm-xreg` | To be published | Covariate regression extension (Ridge + OneHot)                           |
-| `@agentix/timesfm-cli`  | To be published | CLI tool (includes `timesfm setup` auto model download)                   |
+| Package                   | npm             | Description                                                               |
+| ------------------------- | --------------- | ------------------------------------------------------------------------- |
+| `@agentix-e/timesfm-core` | To be published | Core inference engine + preprocessing + postprocessing + model downloader |
+| `@agentix-e/timesfm-xreg` | To be published | Covariate regression extension (Ridge + OneHot)                           |
+| `@agentix-e/timesfm-cli`  | To be published | CLI tool (includes `timesfm setup` auto model download)                   |
 
 > **Layered strategy**: npm packages contain only code (~150 KB), models (885 MB) are downloaded on-demand via GitHub Releases.
 
@@ -45,7 +45,7 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 ### Option 1 — npm install (recommended, code only)
 
 ```bash
-npm install @agentix/timesfm-cli
+npm install @agentix-e/timesfm-cli
 
 # Auto download model ~885 MB (first time only)
 npx timesfm setup
@@ -57,7 +57,7 @@ npx timesfm forecast --horizon 24 data.csv
 ### Option 2 — Programmatic usage
 
 ```typescript
-import { TimesFMModel, downloadModel, createForecastConfig } from '@agentix/timesfm-core';
+import { TimesFMModel, downloadModel, createForecastConfig } from '@agentix-e/timesfm-core';
 
 // Auto download model (first time only, cached thereafter)
 const modelPath = await downloadModel();

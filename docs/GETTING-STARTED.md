@@ -32,7 +32,7 @@ pnpm build
 ### Minimal Example (requires ONNX model file, see Section 2)
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix/timesfm-core';
+import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
 
 // 1. Load model
 const model = await TimesFMModel.fromPretrained({
@@ -179,7 +179,7 @@ ONNX Runtime:
 Core class through which all operations are performed.
 
 ```typescript
-import { TimesFMModel } from '@agentix/timesfm-core';
+import { TimesFMModel } from '@agentix-e/timesfm-core';
 ```
 
 #### `fromPretrained(options)`
@@ -198,7 +198,7 @@ const model = await TimesFMModel.fromPretrained({
 Compile forecast configuration. Must be called before `forecast()`.
 
 ```typescript
-import { createForecastConfig } from '@agentix/timesfm-core';
+import { createForecastConfig } from '@agentix-e/timesfm-core';
 
 model.compile(
   createForecastConfig({
@@ -238,7 +238,7 @@ await model.dispose();
 ### 3.2 Full Example: Single Series Forecast
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix/timesfm-core';
+import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
 
 async function main() {
   // Load
@@ -328,11 +328,11 @@ console.log(`80% CI Coverage: ${((withinCI / H) * 100).toFixed(1)}%`);
 
 ### 3.5 Covariate Forecasting (XReg)
 
-Requires `@agentix/timesfm-xreg`:
+Requires `@agentix-e/timesfm-xreg`:
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix/timesfm-core';
-import { forecastWithCovariates } from '@agentix/timesfm-xreg';
+import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
+import { forecastWithCovariates } from '@agentix-e/timesfm-xreg';
 
 const model = await TimesFMModel.fromPretrained({
   modelPath: './models/timesfm-2.5.onnx',
@@ -540,7 +540,7 @@ quantileForecast: [numSeries, horizon, 10]       — Full quantile distribution
 ### Useful Constants
 
 ```typescript
-import { QUANTILE_INDICES } from '@agentix/timesfm-core';
+import { QUANTILE_INDICES } from '@agentix-e/timesfm-core';
 
 // QUANTILE_INDICES.MEAN → 0
 // QUANTILE_INDICES.Q10  → 1

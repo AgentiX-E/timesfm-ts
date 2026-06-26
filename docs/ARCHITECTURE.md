@@ -8,12 +8,12 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     @agentix/timesfm-cli                     │
+│                     @agentix-e/timesfm-cli                     │
 │  Commander-based CLI: setup (model download) + forecast      │
 └──────────────────────────┬──────────────────────────────────┘
                            │ uses
 ┌──────────────────────────▼──────────────────────────────────┐
-│                   @agentix/timesfm-core                      │
+│                   @agentix-e/timesfm-core                      │
 │  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌───────────┐ │
 │  │  Model   │  │  Config  │  │ Preprocess │  │Postprocess│ │
 │  │  (API)   │  │ (types)  │  │  (pipeline)│  │ (pipeline)│ │
@@ -40,7 +40,7 @@
 └─────────────────────────────────────────────────────────────┘
                            │ uses (optional)
 ┌──────────────────────────▼──────────────────────────────────┐
-│                   @agentix/timesfm-xreg                      │
+│                   @agentix-e/timesfm-xreg                      │
 │  Ridge regression + OneHotEncoder for exogenous covariates   │
 │  Modes: "xreg + timesfm" | "timesfm + xreg"                 │
 └─────────────────────────────────────────────────────────────┘
@@ -69,7 +69,7 @@ model.dispose();
 - **Private constructor + static factory**: Ensures async initialization is enforced
 - **`compile()` returns `this`**: Enables method chaining
 - **`ITimesFMModel` interface**: Enables testable separation of concerns
-- **`forecastWithCovariates()`**: Dynamically imports `@agentix/timesfm-xreg` when available
+- **`forecastWithCovariates()`**: Dynamically imports `@agentix-e/timesfm-xreg` when available
 
 ### 2. Preprocessor Pipeline
 
@@ -204,10 +204,10 @@ IInferenceEngine — pluggable backend (ONNX)
 
 ## Package Sizes
 
-| Package                 | Code Size | Dependencies                              |
-| ----------------------- | --------- | ----------------------------------------- |
-| `@agentix/timesfm-core` | ~100 KB   | `onnxruntime-node` (dynamic)              |
-| `@agentix/timesfm-xreg` | ~30 KB    | `ml-matrix`                               |
-| `@agentix/timesfm-cli`  | ~15 KB    | `commander`, `csv-parse`, `csv-stringify` |
+| Package                   | Code Size | Dependencies                              |
+| ------------------------- | --------- | ----------------------------------------- |
+| `@agentix-e/timesfm-core` | ~100 KB   | `onnxruntime-node` (dynamic)              |
+| `@agentix-e/timesfm-xreg` | ~30 KB    | `ml-matrix`                               |
+| `@agentix-e/timesfm-cli`  | ~15 KB    | `commander`, `csv-parse`, `csv-stringify` |
 
 Model weights (885 MB) are downloaded separately from GitHub Releases.
