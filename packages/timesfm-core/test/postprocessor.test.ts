@@ -476,7 +476,7 @@ describe('postprocessor — postProcess (main entry point)', () => {
     for (let t = 0; t < 2; t++) {
       const base = t * NUM_Q;
       for (let q = 0; q < NUM_Q; q++) {
-        pf[base + q] = (t === 1) ? -10 - q : 10 + q; // second step is negative
+        pf[base + q] = t === 1 ? -10 - q : 10 + q; // second step is negative
       }
     }
     const dr: DecodeResult = {
@@ -499,7 +499,7 @@ describe('postprocessor — postProcess (main entry point)', () => {
     for (let t = 0; t < 2; t++) {
       const base = t * NUM_Q;
       for (let q = 0; q < NUM_Q; q++) {
-        pf[base + q] = (t === 1) ? -10 - q : 10 + q;
+        pf[base + q] = t === 1 ? -10 - q : 10 + q;
       }
     }
     const dr: DecodeResult = {
@@ -541,7 +541,7 @@ describe('postprocessor — postProcess (main entry point)', () => {
   });
 
   it('preserves median as point forecast', () => {
-    const dr = makeDecodeResult(horizon, (_b, t, q) => (t * 100) + q);
+    const dr = makeDecodeResult(horizon, (_b, t, q) => t * 100 + q);
     const output = postProcess(dr, horizon, fc, mc, null, null, null);
 
     // Point forecast should be median (index 5) at each step

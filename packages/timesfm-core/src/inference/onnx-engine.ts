@@ -113,7 +113,11 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
 
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
         const feeds: Record<string, import('onnxruntime-node').Tensor> = {
-          inputs: new ort.Tensor('float32', flatInputs, [1, this._config.exportedPatches, tokenizerLen]),
+          inputs: new ort.Tensor('float32', flatInputs, [
+            1,
+            this._config.exportedPatches,
+            tokenizerLen,
+          ]),
         };
 
         const sessionResults = await session.run(feeds);

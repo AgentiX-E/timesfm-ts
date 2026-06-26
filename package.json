@@ -2,7 +2,7 @@
   "name": "agentix-timesfm-ts",
   "version": "0.3.0",
   "private": true,
-  "description": "Node.js/TypeScript reimplementation of Google Research's TimesFM \u2014 a decoder-only foundation model for zero-shot time-series forecasting",
+  "description": "Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting",
   "workspaces": [
     "packages/timesfm-core",
     "packages/timesfm-xreg",

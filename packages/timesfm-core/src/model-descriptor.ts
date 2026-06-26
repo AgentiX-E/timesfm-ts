@@ -148,7 +148,7 @@ function validateDescriptor(desc: ModelDescriptor): boolean {
   if (desc.schema > ENGINE_SUPPORTED_SCHEMA) {
     console.warn(
       `Model descriptor schema ${desc.schema} is newer than engine supports ` +
-      `(${ENGINE_SUPPORTED_SCHEMA}). Please upgrade @agentix-e/timesfm-core.`
+        `(${ENGINE_SUPPORTED_SCHEMA}). Please upgrade @agentix-e/timesfm-core.`,
     );
     return false;
   }

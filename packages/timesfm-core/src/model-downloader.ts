@@ -104,7 +104,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   try {
     const metaResp = await fetch(META_URL, { redirect: 'follow' });
     if (metaResp.ok) {
-      const meta = await metaResp.json() as { onnx?: { sha256?: string } };
+      const meta = (await metaResp.json()) as { onnx?: { sha256?: string } };
       expectedSha256 = meta?.onnx?.sha256 ?? null;
     }
   } catch {
@@ -207,9 +207,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       } catch {
         /* best-effort */
       }
-      throw new Error(
-        `Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${checksum}`,
-      );
+      throw new Error(`Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${checksum}`);
     }
 
     // Atomic rename: only move to final path after successful verification

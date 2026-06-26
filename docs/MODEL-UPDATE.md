@@ -9,15 +9,18 @@
 The project uses a **dual-channel release architecture**:
 
 ### Code Channel
+
 ```
 git tag v* → release.yml
               ├─ quality (lint + test)
               ├─ publish-npm (OIDC + provenance)
               └─ github-release (TypeDoc + release notes)
 ```
+
 Code releases publish npm packages only. They do **not** include ONNX model files.
 
 ### Model Channel
+
 ```
 nightly.yml (cron: 2 AM UTC daily)
     │
@@ -35,6 +38,7 @@ nightly.yml (cron: 2 AM UTC daily)
 ```
 
 ### Download Channel
+
 ```
 npm install @agentix-e/timesfm-cli
 npx timesfm setup
@@ -87,14 +91,14 @@ git commit -m "chore(model): update descriptor to HF rev <sha>"
 
 The `model-descriptor.json` file (committed to the repo and distributed with each ONNX release) defines the architecture contract between the model and the TypeScript engine:
 
-| Field | Source | Purpose |
-|-------|--------|---------|
-| `schema` | Constant (1) | Forward compatibility version |
-| `model.hf_revision` | HuggingFace API | Traceability to exact PyTorch checkpoint |
-| `onnx.input_shape` | ONNX graph | Runtime shape validation |
-| `onnx.sha256` | Computed from ONNX file | Download integrity verification |
-| `architecture.*` | PyTorch model params | Configures the TypeScript engine |
-| `processing.*` | Hardcoded per model | Pre/post-processing strategy flags |
+| Field               | Source                  | Purpose                                  |
+| ------------------- | ----------------------- | ---------------------------------------- |
+| `schema`            | Constant (1)            | Forward compatibility version            |
+| `model.hf_revision` | HuggingFace API         | Traceability to exact PyTorch checkpoint |
+| `onnx.input_shape`  | ONNX graph              | Runtime shape validation                 |
+| `onnx.sha256`       | Computed from ONNX file | Download integrity verification          |
+| `architecture.*`    | PyTorch model params    | Configures the TypeScript engine         |
+| `processing.*`      | Hardcoded per model     | Pre/post-processing strategy flags       |
 
 The engine reads this descriptor at runtime via `loadModelDescriptor()` and converts it to a `ModelConfig` via `descriptorToModelConfig()`. All hardcoded architecture constants in the TypeScript code have been eliminated — the descriptor is the single source of truth.
 
@@ -102,10 +106,10 @@ The engine reads this descriptor at runtime via `loadModelDescriptor()` and conv
 
 ## Version Compatibility
 
-| Schema | Engine Requirement | Notes |
-|--------|-------------------|-------|
-| 1 | `@agentix-e/timesfm-core` ≥ 0.2.1 | Current |
-| > 1 | Upgrade required | Engine logs warning and falls back to `TIMESFM_25_CONFIG` |
+| Schema | Engine Requirement                | Notes                                                     |
+| ------ | --------------------------------- | --------------------------------------------------------- |
+| 1      | `@agentix-e/timesfm-core` ≥ 0.2.1 | Current                                                   |
+| > 1    | Upgrade required                  | Engine logs warning and falls back to `TIMESFM_25_CONFIG` |
 
 If a future TimesFM model version has a different architecture, updating `export-onnx.py` to generate the new descriptor is sufficient — no TypeScript code changes are needed as long as the schema version is compatible.
 
@@ -113,10 +117,10 @@ If a future TimesFM model version has a different architecture, updating `export
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Nightly check not detecting changes | Verify `models/model-descriptor.json` is committed with the current HF revision |
-| Model release fails | Check the workflow run logs; force re-run with `force: true` |
-| `downloadModel()` fails | Verify `model-latest` release exists and contains both `.onnx` and `model-descriptor.json` |
-| Engine rejects model | Descriptor schema > `ENGINE_SUPPORTED_SCHEMA` — upgrade `@agentix-e/timesfm-core` |
-| Local tests need model | Export locally: `python3 scripts/export-onnx.py` or `pnpm run pipeline:export` |
+| Issue                               | Solution                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| Nightly check not detecting changes | Verify `models/model-descriptor.json` is committed with the current HF revision            |
+| Model release fails                 | Check the workflow run logs; force re-run with `force: true`                               |
+| `downloadModel()` fails             | Verify `model-latest` release exists and contains both `.onnx` and `model-descriptor.json` |
+| Engine rejects model                | Descriptor schema > `ENGINE_SUPPORTED_SCHEMA` — upgrade `@agentix-e/timesfm-core`          |
+| Local tests need model              | Export locally: `python3 scripts/export-onnx.py` or `pnpm run pipeline:export`             |

@@ -37,7 +37,7 @@ export function setup(): void {
   process.env.VITEST_SKIP_ONNX_TESTS = 'true';
   console.warn(
     '\n⚠️  TimesFM ONNX model not found. ONNX-dependent tests will be skipped.\n' +
-    '    Export the model with: pnpm export:model\n' +
-    '    Or set TIMESFM_TEST_MODEL=/path/to/timesfm-2.5.onnx\n',
+      '    Export the model with: pnpm export:model\n' +
+      '    Or set TIMESFM_TEST_MODEL=/path/to/timesfm-2.5.onnx\n',
   );
 }

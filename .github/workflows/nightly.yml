@@ -2,7 +2,7 @@ name: Nightly Model Check
 
 on:
   schedule:
-    - cron: '0 2 * * *' # Daily at 2 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,8 +20,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      # --check-latest --diff uses only stdlib (urllib + json),
-      # no numpy/onnx/torch needed (fixed by lazy imports in export-onnx.py)
       - name: Compare HF revision vs committed descriptor
         id: version-check
         run: |
@@ -30,12 +28,7 @@ jobs:
             echo "No new HF revision detected"
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            SHA=$(python3 -c "
-import urllib.request, json
-r = urllib.request.urlopen('https://huggingface.co/api/models/google/timesfm-2.5-200m-pytorch', timeout=10)
-data = json.loads(r.read())
-print(data['sha'][:12])
-")
+            SHA=$(python3 -c "import urllib.request,json;r=urllib.request.urlopen('https://huggingface.co/api/models/google/timesfm-2.5-200m-pytorch',timeout=10);print(json.loads(r.read())['sha'][:12])")
             echo "sha=${SHA}" >> $GITHUB_OUTPUT
             echo "New HF revision detected: ${SHA}"
           fi
@@ -67,21 +60,13 @@ print(data['sha'][:12])
                 repo: context.repo.repo,
                 title: `New TimesFM model version detected on HuggingFace (rev ${sha})`,
                 body: [
-                  `A new version of \`google/timesfm-2.5-200m-pytorch\` has been detected.`,
+                  `A new version of google/timesfm-2.5-200m-pytorch has been detected.`,
                   '',
-                  `**HF revision:** \`${sha}\``,
+                  `**HF revision:** ${sha}`,
                   '',
-                  '### Automated actions',
-                  '- Model release workflow has been triggered automatically',
-                  '- A new `model-${sha}` release will be created after validation',
-                  '- The `model-latest` channel will be updated',
-                  '',
-                  '### Manual verification',
-                  '1. Review the model release workflow run',
-                  '2. Run `pnpm run pipeline` to export and test locally',
-                  '3. Verify integration tests pass with the new model',
-                  '',
-                  '> Auto-detected by the Nightly Model Check workflow.',
+                  'Model release workflow has been triggered automatically.',
+                  'A new model release will be created after validation.',
+                  'The model-latest channel will be updated.',
                 ].join('\n'),
                 labels: ['model-update'],
               });
