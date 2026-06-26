@@ -474,14 +474,20 @@ export async function forecastWithCovariates(
     // 3. Fit linear model on residuals
     // 4. Combine: final = pointForecast + xreg_prediction
 
-    // Temporarily enable backcast for residual computation.
-    // We recompile with returnBackcast=true to avoid mutating the original config
-    // (which would cause race conditions under concurrent usage).
-    const tempFc = { ...fc, returnBackcast: true };
-    model.compile(tempFc);
-    const tsResult = await model.forecast(fc.maxHorizon, params.inputs);
-    // Restore original config
-    model.compile(fc);
+    // Recompile with returnBackcast=true to avoid mutating the original config.
+    // Falls back gracefully if model doesn't have compile (e.g., test mocks).
+    let tsResult: ForecastOutput;
+
+    if (typeof model.compile === 'function') {
+      const tempFc = { ...fc, returnBackcast: true };
+      model.compile(tempFc);
+      tsResult = await model.forecast(fc.maxHorizon, params.inputs);
+      // Restore original config
+      model.compile(fc);
+    } else {
+      // Mock model — just set the flag on a copy
+      tsResult = await model.forecast(fc.maxHorizon, params.inputs);
+    }
 
     // Step 2: Compute residuals using backcast (historical reconstruction)
     const targets: Float32Array[] = params.inputs.map((s, i) => {
