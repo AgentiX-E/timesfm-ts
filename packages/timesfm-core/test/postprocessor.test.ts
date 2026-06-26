@@ -562,4 +562,45 @@ describe('postprocessor — postProcess (main entry point)', () => {
       expect(output.pointForecast[b]).toHaveLength(horizon);
     }
   });
+
+  it('returns empty backcast when numPatches < 2', () => {
+    // Need returnBackcast=true and a pfOutput that has fewer than 2 patches
+    const fcWithBackcast: ForecastConfig = { ...DEFAULT_FORECAST_CONFIG, returnBackcast: true };
+    // outputPatchLen=128, numQuantiles=10, so perPatch=1280
+    // Need pfOutput length < 2*perPatch to trigger numPatches < 2 branch
+    const smallLen = mc.outputPatchLen * mc.numQuantiles; // 1280 — exactly 1 patch
+    const pf = new Float32Array(smallLen);
+    pf.fill(1);
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(smallLen)],
+      arOutputs: null,
+    };
+
+    const output = postProcess(dr, 1, fcWithBackcast, mc, null, null, null);
+    // numPatches < 2 so backcast should be an empty array
+    expect(output.backcast).toBeDefined();
+    expect(output.backcast![0].length).toBe(0);
+  });
+
+  it('reverses normalization on backcast when normalizeInputs is true', () => {
+    const fcWithAll: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      returnBackcast: true,
+      normalizeInputs: true,
+    };
+    // Need at least 2 output patches: 2 * outputPatchLen = 2 * 128 = 256 steps
+    // outputPatchLen=128, timesteps in pfOutput = 256 (to get 2 patches)
+    const timesteps = mc.outputPatchLen * 2; // 256 → 2 output patches
+    const dr = makeDecodeResult(timesteps, (_b, t, q) => t * 100 + q);
+    const stats = [{ mu: 50, sigma: 2 }];
+
+    const output = postProcess(dr, 2, fcWithAll, mc, stats, null, null);
+    expect(output.backcast).toBeDefined();
+    expect(output.backcast![0].length).toBeGreaterThan(0);
+    // With mu=50, sigma=2, the backcast values should be denormalized
+    for (const v of output.backcast![0]) {
+      expect(Number.isFinite(v)).toBe(true);
+    }
+  });
 });

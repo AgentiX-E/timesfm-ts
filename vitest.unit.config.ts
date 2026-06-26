@@ -30,6 +30,7 @@ export default defineConfig({
       'packages/*/test/**/metrics.test.ts',
       'packages/*/test/**/quantile.test.ts',
       'packages/*/test/**/descriptor.test.ts',
+      'packages/*/test/**/errors.test.ts',
       'packages/*/test/**/preprocessor.test.ts',
       'packages/*/test/**/postprocessor.test.ts',
       'packages/*/test/**/model-downloader.test.ts',

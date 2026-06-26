@@ -603,4 +603,68 @@ describe('decode (with MockInferenceEngine)', () => {
       expect(MC.outputPatchesPerInput).toBe(4);
     });
   });
+
+  // ── AbortSignal tests ─────────────────────────────────────────────────
+
+  describe('AbortSignal handling', () => {
+    it('aborts before decode when signal is already aborted', async () => {
+      const engine = new MockInferenceEngine({ scale: 1.0 });
+      engine.load('test');
+      const fc = makeForecastConfig(512, 256);
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
+      const controller = new AbortController();
+      controller.abort(); // already aborted
+
+      await expect(
+        decode(
+          engine,
+          [makePatchedInput(numPatches)],
+          [makeMask(numPatches)],
+          makeContextMu(1, numPatches),
+          makeContextSigma(1, numPatches),
+          makeLastStats(1),
+          100,
+          fc,
+          MC,
+          controller.signal,
+        ),
+      ).rejects.toThrow();
+    });
+
+    it('aborts during AR decode at step boundary', async () => {
+      const engine = new MockInferenceEngine({ scale: 1.0 });
+      engine.load('test');
+      const fc = makeForecastConfig(512, 256);
+      const numPatches = Math.floor(512 / MC.inputPatchLen);
+      const controller = new AbortController();
+      const horizon = 513; // floor((513-1)/128) = 4 steps
+
+      // Abort after the first AR step (after prefill completes)
+      const origForward = engine.forward.bind(engine);
+      let callCount = 0;
+      engine.forward = async (inputs, masks) => {
+        callCount++;
+        if (callCount === 2) {
+          controller.abort(); // abort after prefill (call 1) completed
+        }
+
+        return origForward(inputs, masks) as any;
+      };
+
+      await expect(
+        decode(
+          engine,
+          [makePatchedInput(numPatches)],
+          [makeMask(numPatches)],
+          makeContextMu(1, numPatches),
+          makeContextSigma(1, numPatches),
+          makeLastStats(1),
+          horizon,
+          fc,
+          MC,
+          controller.signal,
+        ),
+      ).rejects.toThrow();
+    });
+  });
 });

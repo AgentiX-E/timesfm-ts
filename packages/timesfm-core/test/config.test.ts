@@ -86,9 +86,51 @@ describe('configsEqual', () => {
     expect(configsEqual(a, b)).toBe(true);
   });
 
-  it('returns false for different configs', () => {
+  it('returns false for different normalizeInputs', () => {
     const a = createForecastConfig({ normalizeInputs: true });
     const b = createForecastConfig({ normalizeInputs: false });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different maxContext', () => {
+    const a = createForecastConfig({ maxContext: 256 });
+    const b = createForecastConfig({ maxContext: 512 });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different maxHorizon', () => {
+    const a = createForecastConfig({ maxHorizon: 128 });
+    const b = createForecastConfig({ maxHorizon: 256 });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different useContinuousQuantileHead', () => {
+    const a = createForecastConfig({ useContinuousQuantileHead: true });
+    const b = createForecastConfig({ useContinuousQuantileHead: false });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different forceFlipInvariance', () => {
+    const a = createForecastConfig({ forceFlipInvariance: true });
+    const b = createForecastConfig({ forceFlipInvariance: false });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different inferIsPositive', () => {
+    const a = createForecastConfig({ inferIsPositive: true });
+    const b = createForecastConfig({ inferIsPositive: false });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different fixQuantileCrossing', () => {
+    const a = createForecastConfig({ fixQuantileCrossing: true });
+    const b = createForecastConfig({ fixQuantileCrossing: false });
+    expect(configsEqual(a, b)).toBe(false);
+  });
+
+  it('returns false for different returnBackcast', () => {
+    const a = createForecastConfig({ returnBackcast: true });
+    const b = createForecastConfig({ returnBackcast: false });
     expect(configsEqual(a, b)).toBe(false);
   });
 });
