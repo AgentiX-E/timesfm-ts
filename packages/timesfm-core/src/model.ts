@@ -43,6 +43,7 @@ import { TimesFMInferenceEngine } from './inference/onnx-engine';
 import { preprocess } from './preprocessor';
 import { decode } from './inference/decode-loop';
 import { postProcess } from './postprocessor';
+import { resolveModelConfig } from './model-descriptor';
 import { computeStats } from './utils/stats';
 import { allNonNegative } from './utils/tensor-utils';
 
@@ -69,6 +70,10 @@ export class TimesFMModel implements ITimesFMModel {
   /**
    * Create a TimesFM model from a pretrained ONNX checkpoint.
    *
+   * The model architecture is resolved from the `model-descriptor.json`
+   * co-located with the ONNX file.  When no descriptor is found, the
+   * engine falls back to the canonical TimesFM 2.5 200M config.
+   *
    * @param options.modelPath  Path to the TimesFM ONNX model file. Required.
    * @param options.executionProvider  'cpu' (default), 'cuda', or 'dml'.
    *
@@ -85,7 +90,24 @@ export class TimesFMModel implements ITimesFMModel {
       );
     }
 
-    const mc = TIMESFM_25_CONFIG;
+    // Resolve architecture from model-descriptor.json (single source of truth).
+    // Falls back to TIMESFM_25_CONFIG when no descriptor is present, maintaining
+    // backward compatibility with bare .onnx files.
+    const { config: mc, descriptor } = await resolveModelConfig(
+      options.modelPath,
+      TIMESFM_25_CONFIG,
+    );
+
+    if (descriptor) {
+      // Log model identity for traceability
+      // eslint-disable-next-line no-console
+      console.log(
+        `[TimesFM] Loaded descriptor: v${descriptor.model.version}-${descriptor.model.variant}` +
+          ` (schema ${descriptor.schema}, hf_rev ${descriptor.model.hf_revision}), ` +
+          `${descriptor.onnx.size_bytes > 0 ? (descriptor.onnx.size_bytes / 1024 ** 2).toFixed(0) + ' MB' : ''}`,
+      );
+    }
+
     const engine = new TimesFMInferenceEngine(mc, {
       executionProvider: options.executionProvider,
     });

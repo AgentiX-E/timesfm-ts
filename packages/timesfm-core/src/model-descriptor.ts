@@ -10,7 +10,8 @@
  * @module model-descriptor
  */
 
-import type { ModelConfig } from './types';
+import * as path from 'node:path';
+import { TIMESFM_25_CONFIG, type ModelConfig } from './types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -155,6 +156,39 @@ function validateDescriptor(desc: ModelDescriptor): boolean {
   if (!desc.architecture || !desc.onnx) return false;
   if (!desc.onnx.input_shape || desc.onnx.input_shape.length < 3) return false;
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Resolution: load descriptor + build ModelConfig
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the ModelConfig from a model-descriptor.json file co-located
+ * with the ONNX model, falling back to a canonical default if no
+ * descriptor is found.
+ *
+ * This is the single entry-point called by {@link TimesFMModel.fromPretrained}.
+ * It ensures the descriptor is the **single source of truth** for all
+ * architecture constants — no more hardcoded `TIMESFM_25_CONFIG` in
+ * business logic.
+ *
+ * @param modelPath - Path to an ONNX model file.
+ * @param fallback  - Config to use when no descriptor is found (default: TIMESFM_25_CONFIG).
+ * @returns The resolved ModelConfig and the parsed descriptor (if any).
+ */
+export async function resolveModelConfig(
+  modelPath: string,
+  fallback: ModelConfig = TIMESFM_25_CONFIG,
+): Promise<{ config: ModelConfig; descriptor: ModelDescriptor | null }> {
+  const dir = path.dirname(modelPath);
+  const descriptor = await loadModelDescriptor(dir);
+
+  if (descriptor) {
+    const config = descriptorToModelConfig(descriptor);
+    return { config, descriptor };
+  }
+
+  return { config: fallback, descriptor: null };
 }
 
 // ---------------------------------------------------------------------------

@@ -30,6 +30,7 @@ export {
   ENGINE_SUPPORTED_SCHEMA,
   descriptorToModelConfig,
   loadModelDescriptor,
+  resolveModelConfig,
 } from './model-descriptor';
 
 // ---- Types ----
