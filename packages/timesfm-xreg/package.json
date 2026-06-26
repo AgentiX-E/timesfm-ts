@@ -1,6 +1,6 @@
 {
   "name": "@agentix/timesfm-xreg",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Exogenous covariates regression extension for TimesFM",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
