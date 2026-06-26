@@ -23,7 +23,7 @@
 ### Installation
 
 ```bash
-git clone https://github.com/agentix/agentix-timesfm-ts.git
+git clone https://github.com/AgentiX-E/agentix-timesfm-ts.git
 cd agentix-timesfm-ts
 pnpm install
 pnpm build
@@ -474,7 +474,6 @@ interface ForecastConfig {
   maxContext: number; // Max context length (auto-padded to multiple of 32)
   maxHorizon: number; // Max forecast length (auto-padded to multiple of 128)
   normalizeInputs: boolean; // Input z-score normalization (recommended)
-  windowSize: number; // Decomposition window (reserved, not implemented)
   perCoreBatchSize: number; // Per-core batch size (default 1)
   useContinuousQuantileHead: boolean; // Continuous quantile head (recommended)
   forceFlipInvariance: boolean; // Flip invariance (recommended)
@@ -737,7 +736,7 @@ for (let i = 0; i < allInputs.length; i += CHUNK) {
 
 ## References
 
-- **Project Repository**: https://github.com/agentix/agentix-timesfm-ts
+- **Project Repository**: https://github.com/AgentiX-E/agentix-timesfm-ts
 - **TimesFM Paper**: https://arxiv.org/abs/2310.10688
 - **HuggingFace Models**: https://huggingface.co/collections/google/timesfm-release-66e4be5fdb56e960c1e482a6
 - **ONNX Runtime**: https://onnxruntime.ai/

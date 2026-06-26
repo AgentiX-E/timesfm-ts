@@ -15,7 +15,7 @@ export {
   isModelCached,
   getCachedModelPath,
 } from './model-downloader';
-export type { DownloadOptions } from './model-downloader';
+export type { DownloadOptions, ProxyConfig } from './model-downloader';
 
 // ---- Configuration ----
 export { createForecastConfig, validateAndNormalizeConfig, configsEqual } from './config';

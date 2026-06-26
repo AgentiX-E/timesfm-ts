@@ -3,7 +3,6 @@
 > Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting.
 
 [![CI](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green)](https://nodejs.org/)
@@ -209,6 +208,20 @@ pnpm run check:latest
 timesfm setup                              # Default: ~/.cache/agentix-timesfm-ts/
 timesfm setup -o ./models/my-model.onnx    # Custom path
 timesfm setup -f                           # Force re-download
+
+# Download with proxy (corporate / restricted networks)
+# Option A: Standard environment variables (auto-detected)
+export HTTPS_PROXY=http://proxy.company.com:8080
+timesfm setup
+
+# Option B: Explicit proxy with authentication
+timesfm setup --proxy-url http://proxy.company.com:8080
+timesfm setup --proxy-url http://proxy.company.com:8080 --proxy-username user
+# Password is always read from environment variable (never in CLI args):
+TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
+
+# Option C: TIMESFM-specific environment variables
+TIMESFM_PROXY_URL=http://proxy:8080 TIMESFM_PROXY_USERNAME=user TIMESFM_PROXY_PASSWORD=pass timesfm setup
 
 # Forecast (model path priority)
 timesfm forecast --horizon 24 data.csv                     # Auto: cache → download

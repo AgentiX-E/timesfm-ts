@@ -15,6 +15,8 @@
  *   - SHA-256 integrity verification (from model-descriptor.json in zip)
  *   - Progress callback
  *   - Automatic cache management
+ *   - Proxy support via environment variables or options parameter
+ *   - Cross-platform zip extraction (unzip / 7z / PowerShell Expand-Archive)
  *
  * Usage:
  *   // Auto-download to default path
@@ -26,7 +28,20 @@
  *     onProgress: (received, total) => console.log(`${received}/${total} MB`),
  *   });
  *
+ *   // With proxy (corporate network)
+ *   const modelPath = await downloadModel({
+ *     proxy: { url: 'http://proxy.company.com:8080', username: 'user', password: 'pass' },
+ *   });
+ *
+ *   // Proxy via environment variables:
+ *   //   TIMESFM_PROXY_URL=http://proxy:8080
+ *   //   TIMESFM_PROXY_USERNAME=user
+ *   //   TIMESFM_PROXY_PASSWORD=pass
+ *   //   (or standard HTTP_PROXY / HTTPS_PROXY / http_proxy / https_proxy)
+ *
  *   // From CLI: npx timesfm setup
+ *   //   timesfm setup --proxy-url http://proxy:8080
+ *   //   TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
  */
 
 import * as fs from 'node:fs';
@@ -60,7 +75,26 @@ export function defaultModelPath(): string {
   return path.join(defaultCacheDir(), ONNX_FILENAME);
 }
 
-// ─── Progress callback type ────────────────────────────────────────────────
+// ─── Proxy Configuration ────────────────────────────────────────────────────
+
+/**
+ * Proxy configuration for downloading models through corporate firewalls.
+ *
+ * Resolution priority:
+ *   1. Explicit `DownloadOptions.proxy` parameter
+ *   2. `TIMESFM_PROXY_URL` environment variable (+ optional `TIMESFM_PROXY_USERNAME` / `TIMESFM_PROXY_PASSWORD`)
+ *   3. Standard `HTTPS_PROXY` / `https_proxy` / `HTTP_PROXY` / `http_proxy` environment variables
+ */
+export interface ProxyConfig {
+  /** Proxy URL (e.g., http://proxy.company.com:8080 or socks5://proxy:1080) */
+  url: string;
+  /** Username for proxy authentication */
+  username?: string;
+  /** Password for proxy authentication */
+  password?: string;
+}
+
+// ─── Download Options ───────────────────────────────────────────────────────
 
 export interface DownloadOptions {
   /** Target file path (default: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx) */
@@ -73,6 +107,94 @@ export interface DownloadOptions {
   url?: string;
   /** Custom logger (defaults to console.error) */
   logger?: (msg: string) => void;
+  /** Proxy configuration for restricted network environments */
+  proxy?: ProxyConfig;
+}
+
+// ─── Proxy Resolution ───────────────────────────────────────────────────────
+
+/**
+ * Resolve proxy configuration with cascading priority.
+ *
+ * Priority: options.proxy → TIMESFM_PROXY_* env vars → standard *_proxy env vars
+ */
+function resolveProxyConfig(options?: DownloadOptions): ProxyConfig | null {
+  // 1. Explicit proxy parameter
+  if (options?.proxy?.url) {
+    return options.proxy;
+  }
+
+  // 2. TIMESFM-specific environment variables
+  const timesfmProxyUrl = process.env.TIMESFM_PROXY_URL;
+  if (timesfmProxyUrl) {
+    return {
+      url: timesfmProxyUrl,
+      username: process.env.TIMESFM_PROXY_USERNAME || undefined,
+      password: process.env.TIMESFM_PROXY_PASSWORD || undefined,
+    };
+  }
+
+  // 3. Standard environment variables (HTTPS_PROXY first since we use HTTPS)
+  const standardUrl =
+    process.env.HTTPS_PROXY ||
+    process.env.https_proxy ||
+    process.env.HTTP_PROXY ||
+    process.env.http_proxy;
+  if (standardUrl) {
+    return { url: standardUrl };
+  }
+
+  return null;
+}
+
+/**
+ * Apply proxy configuration to the current process.
+ *
+ * Node.js ≥ 20's built-in fetch() uses undici, which automatically
+ * respects HTTP_PROXY / HTTPS_PROXY environment variables.
+ *
+ * For explicit proxy configuration (DownloadOptions.proxy or
+ * TIMESFM_PROXY_* env vars), we temporarily set the standard
+ * env vars before fetch() and restore them afterwards.
+ */
+function applyProxyEnv(proxy: ProxyConfig | null): (() => void) | null {
+  if (!proxy) return null;
+
+  const saved: Record<string, string | undefined> = {};
+  const varsToSet: Record<string, string> = {};
+
+  // Build proxy URL with optional authentication
+  let proxyUrl = proxy.url;
+  if (proxy.username || proxy.password) {
+    try {
+      const parsed = new URL(proxy.url);
+      parsed.username = proxy.username || '';
+      parsed.password = proxy.password || '';
+      proxyUrl = parsed.toString();
+    } catch {
+      // If URL parsing fails, just use the raw URL
+    }
+  }
+
+  // Set HTTPS_PROXY (and HTTP_PROXY as fallback for non-HTTPS URLs)
+  varsToSet['HTTPS_PROXY'] = proxyUrl;
+  varsToSet['https_proxy'] = proxyUrl;
+
+  // Save old values
+  for (const key of Object.keys(varsToSet)) {
+    saved[key] = process.env[key];
+    process.env[key] = varsToSet[key];
+  }
+
+  return () => {
+    for (const key of Object.keys(saved)) {
+      if (saved[key] === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = saved[key];
+      }
+    }
+  };
 }
 
 // ─── Core download function ─────────────────────────────────────────────────
@@ -111,18 +233,44 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   log(`  From: ${url}`);
   log(`  To:   ${dest}`);
 
+  // Resolve proxy configuration
+  const proxyConfig = resolveProxyConfig(options);
+
+  // Set proxy env vars if explicit proxy config was provided.
+  // Standard HTTP_PROXY/HTTPS_PROXY are already respected automatically
+  // by Node's built-in fetch().
+  const restoreEnv = applyProxyEnv(
+    proxyConfig &&
+      // Only apply if it came from an explicit source (not standard env vars,
+      // which are already handled automatically)
+      (options?.proxy || process.env.TIMESFM_PROXY_URL)
+      ? proxyConfig
+      : null,
+  );
+
   // Stream download zip
-  const response = await fetch(url, {
+  const fetchOptions: RequestInit = {
     redirect: 'follow',
     headers: { Accept: 'application/octet-stream' },
-  });
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(url, fetchOptions);
+  } finally {
+    restoreEnv?.();
+  }
 
   if (!response.ok) {
+    const proxyHint = proxyConfig
+      ? `\nProxy was configured (${proxyConfig.url}). Verify proxy credentials and connectivity.`
+      : '';
     throw new Error(
       `Failed to download model (HTTP ${response.status}): ${url}\n` +
         `If the model is not available as a GitHub Release, export it locally:\n` +
         `  pip install "timesfm[torch]" onnx onnxruntime torch\n` +
-        `  python scripts/export-onnx.py --output ${dest}`,
+        `  python scripts/export-onnx.py --output ${dest}` +
+        proxyHint,
     );
   }
 
@@ -212,7 +360,9 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     try { fs.unlinkSync(tmpZip); } catch { /* best-effort */ }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    log(`  Downloaded & extracted ${(zipSize / 1024 / 1024).toFixed(0)} MB in ${elapsed}s → ${dest}`);
+    log(
+      `  Downloaded & extracted ${(zipSize / 1024 / 1024).toFixed(0)} MB in ${elapsed}s → ${dest}`,
+    );
     return dest;
   } catch (err) {
     try { fs.unlinkSync(tmpZip); } catch { /* best-effort */ }
@@ -220,25 +370,86 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   }
 }
 
+// ─── Cross-platform Zip Extraction ──────────────────────────────────────────
+
 /**
- * Extract a zip file to a target directory using Node.js built-in zlib.
+ * Extract a zip file to a target directory.
+ *
+ * Tries multiple extraction backends for maximum cross-platform compatibility:
+ *   1. `unzip` (Linux/macOS, BSD)
+ *   2. `7z` (cross-platform, common on Windows CI)
+ *   3. `powershell -Command Expand-Archive` (Windows built-in)
+ *
+ * If all backends fail, a descriptive error with platform-specific
+ * installation instructions is thrown.
  */
 async function extractZip(zipPath: string, outDir: string): Promise<void> {
-  // Use native Node.js unzip — no external dependencies
-  const { spawn } = await import('node:child_process');
+  const backends: Array<() => Promise<void>> = [
+    () => spawnExtractor('unzip', ['-o', zipPath, '-d', outDir]),
+    () => spawnExtractor('7z', ['x', `-o${outDir}`, '-y', zipPath]),
+    () => {
+      // PowerShell Expand-Archive (Windows)
+      const psCmd = `Expand-Archive -Path '${zipPath}' -DestinationPath '${outDir}' -Force`;
+      return spawnExtractor('powershell', ['-NoProfile', '-Command', psCmd]);
+    },
+  ];
+
+  const errors: string[] = [];
+
+  for (const backend of backends) {
+    try {
+      await backend();
+      return; // success — done
+    } catch (err) {
+      errors.push((err as Error).message);
+    }
+  }
+
+  // All backends failed — provide helpful error
+  const platform = process.platform;
+  const installHint =
+    platform === 'win32'
+      ? 'Install 7-Zip: winget install 7zip.7zip'
+      : platform === 'darwin'
+        ? 'Install unzip: brew install unzip'
+        : 'Install unzip: apt-get install unzip  or  yum install unzip';
+
+  throw new Error(
+    `Failed to extract model zip. Tried 3 backends — all failed:\n` +
+      errors.map((e, i) => `  ${i + 1}. ${e}`).join('\n') +
+      `\n\nPlatform-specific fix: ${installHint}` +
+      `\n\nAlternatively, extract manually:\n` +
+      `  unzip ${zipPath} -d ${outDir}`,
+  );
+}
+
+/** Spawn a subprocess for extraction, reject on non-zero exit. */
+function spawnExtractor(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn('unzip', ['-o', zipPath, '-d', outDir], {
+    const { spawn } = require('node:child_process');
+    const proc = spawn(command, args, {
       stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: 120_000, // 2 min timeout for large zip extraction
     });
     let stderr = '';
-    proc.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+    proc.stderr?.on('data', (d: Buffer) => {
+      stderr += d.toString();
+    });
+    proc.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'ENOENT') {
+        reject(new Error(`"${command}" not found on PATH`));
+      } else {
+        reject(new Error(`${command}: ${err.message}`));
+      }
+    });
     proc.on('close', (code: number) => {
       if (code === 0) resolve();
-      else reject(new Error(`unzip failed (exit ${code}): ${stderr}`));
+      else reject(new Error(`${command} exited with code ${code}: ${stderr.slice(0, 200)}`));
     });
-    proc.on('error', reject);
   });
 }
+
+// ─── SHA-256 ────────────────────────────────────────────────────────────────
 
 /** Compute SHA-256 of a file. */
 function sha256File(filePath: string): string {
@@ -259,7 +470,11 @@ function sha256File(filePath: string): string {
 /** Clean up partial extraction artifacts. */
 function cleanupPartial(cacheDir: string): void {
   for (const f of [ONNX_FILENAME, DESCRIPTOR_FILENAME]) {
-    try { fs.unlinkSync(path.join(cacheDir, f)); } catch { /* ignore */ }
+    try {
+      fs.unlinkSync(path.join(cacheDir, f));
+    } catch {
+      /* ignore */
+    }
   }
 }
 

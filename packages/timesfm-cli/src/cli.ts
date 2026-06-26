@@ -7,6 +7,12 @@
  *   # First time: download model
  *   timesfm setup
  *
+ *   # With proxy (corporate network)
+ *   timesfm setup --proxy-url http://proxy.company.com:8080
+ *   timesfm setup --proxy-url http://proxy.company.com:8080 --proxy-username user
+ *   # Password via environment variable (never in CLI args)
+ *   TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
+ *
  *   # Forecast
  *   timesfm forecast --horizon 24 input.csv
  *   timesfm forecast --model ./custom.onnx --horizon 52 input.csv
@@ -35,12 +41,28 @@ program
     '-o, --output <path>',
     'Custom output path (default: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)',
   )
+  .option('--proxy-url <url>', 'Proxy URL for downloading through corporate firewall')
+  .option('--proxy-username <user>', 'Proxy authentication username')
   .action(async (options: Record<string, unknown>) => {
     try {
       const core = await import('@agentix-e/timesfm-core');
+
+      // Build proxy config from CLI args + environment variables
+      const proxyUrl =
+        (options.proxyUrl as string) || process.env.TIMESFM_PROXY_URL || undefined;
+      const proxyUsername =
+        (options.proxyUsername as string) || process.env.TIMESFM_PROXY_USERNAME || undefined;
+      const proxyPassword = process.env.TIMESFM_PROXY_PASSWORD || undefined;
+
+      const proxyConfig =
+        proxyUrl
+          ? { url: proxyUrl, username: proxyUsername, password: proxyPassword }
+          : undefined;
+
       const dest = await core.downloadModel({
         force: options.force === true,
         dest: options.output as string | undefined,
+        proxy: proxyConfig,
       });
       _lastSetupPath = dest;
       console.log(`\nModel ready: ${dest}`);
@@ -78,7 +100,7 @@ async function resolveModelPath(explicitPath: string | undefined): Promise<strin
   const cached = core.getCachedModelPath();
   if (cached) return cached;
 
-  // 5. Auto-download
+  // 5. Auto-download (proxy is resolved automatically from env vars inside downloadModel)
   console.error('No model found. Downloading TimesFM 2.5 200M…');
   return core.downloadModel();
 }

@@ -54,9 +54,16 @@ export function leftPad(
   targetLen: number,
 ): { padded: Float32Array; mask: Uint8Array } {
   const arrLen = arr.length;
-  if (arrLen >= targetLen) {
+  if (arrLen > targetLen) {
     return {
       padded: arr.slice(arrLen - targetLen),
+      mask: new Uint8Array(targetLen), // all zeros (no padding)
+    };
+  }
+  if (arrLen === targetLen) {
+    // Return the array as-is to avoid unnecessary O(n) copy
+    return {
+      padded: arr,
       mask: new Uint8Array(targetLen), // all zeros (no padding)
     };
   }

@@ -43,6 +43,8 @@ import { TimesFMInferenceEngine } from './inference/onnx-engine';
 import { preprocess } from './preprocessor';
 import { decode } from './inference/decode-loop';
 import { postProcess } from './postprocessor';
+import { computeStats } from './utils/stats';
+import { allNonNegative } from './utils/tensor-utils';
 
 // ---------------------------------------------------------------------------
 // TimesFMModel
@@ -178,23 +180,13 @@ export class TimesFMModel implements ITimesFMModel {
 
     if (fc.normalizeInputs) {
       normalizedInputs = paddedInputs.map((arr) => {
-        let sum = 0,
-          sumSq = 0,
-          n = 0;
-        let allNonNeg = true;
-        for (let i = 0; i < arr.length; i++) {
-          if (Number.isFinite(arr[i])) {
-            sum += arr[i];
-            sumSq += arr[i] * arr[i];
-            n++;
-          }
-          if (arr[i] < 0) allNonNeg = false;
-        }
-        const mu = n > 0 ? sum / n : 0;
-        const sigma = n > 1 ? Math.sqrt(Math.max(0, sumSq / n - mu * mu)) : 1;
+        const { mean: mu, std: sigma } = computeStats(arr);
         const safeSigma = sigma < 1e-6 ? 1 : sigma;
-        inputStats.push({ mu, sigma });
-        isPositiveFlags.push(allNonNeg);
+
+        const isNonNeg = allNonNegative(arr);
+        inputStats.push({ mu, sigma: safeSigma });
+        isPositiveFlags.push(isNonNeg);
+
         const result = new Float32Array(arr.length);
         for (let i = 0; i < arr.length; i++) {
           result[i] = Number.isFinite(arr[i]) ? (arr[i] - mu) / safeSigma : 0;
@@ -204,12 +196,8 @@ export class TimesFMModel implements ITimesFMModel {
     } else {
       // When not normalizing, still compute positivity flags
       for (const arr of paddedInputs) {
-        let allNonNeg = true;
-        for (let i = 0; i < arr.length; i++) {
-          if (arr[i] < 0) allNonNeg = false;
-        }
         inputStats.push({ mu: 0, sigma: 1 });
-        isPositiveFlags.push(allNonNeg);
+        isPositiveFlags.push(allNonNegative(arr));
       }
     }
 

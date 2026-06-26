@@ -90,6 +90,9 @@ export async function decode(
 
   // ---- Phase 1: Prefill ----
 
+  // Abort check before long-running prefill
+  signal?.throwIfAborted();
+
   // Run the model's forward pass
   const rawOutput = await engine.forward(normedInputs, patchedMasks);
   const { outputTimeSeries, outputQuantileSpread } = rawOutput;
@@ -148,12 +151,12 @@ export async function decode(
   for (let b = 0; b < batchSize; b++) {
     const perPatch = mc.outputPatchLen * mc.numQuantiles;
     const lastPatchStart = pfTrimmed[b].length - perPatch;
-    const seed: number[] = [];
+    const seed = new Float32Array(mc.outputPatchLen);
     for (let o = 0; o < mc.outputPatchLen; o++) {
       const idx = lastPatchStart + o * mc.numQuantiles + mc.decodeIndex;
-      seed.push(pfTrimmed[b][idx]);
+      seed[o] = pfTrimmed[b][idx];
     }
-    arSeeds.push(new Float32Array(seed));
+    arSeeds.push(seed);
   }
 
   const arStats = lastStats.map((s) => ({ ...s }));
@@ -222,12 +225,12 @@ export async function decode(
     for (let b = 0; b < batchSize; b++) {
       const perSubPatch = mc.outputPatchLen * mc.numQuantiles;
       const lastSubPatchStart = arDenormed[b].length - perSubPatch;
-      const seed: number[] = [];
+      const seed = new Float32Array(mc.outputPatchLen);
       for (let o = 0; o < mc.outputPatchLen; o++) {
         const idx = lastSubPatchStart + o * mc.numQuantiles + mc.decodeIndex;
-        seed.push(arDenormed[b][idx]);
+        seed[o] = arDenormed[b][idx];
       }
-      nextSeeds.push(new Float32Array(seed));
+      nextSeeds.push(seed);
     }
 
     arOutputs.push(concat(nextSeeds));
