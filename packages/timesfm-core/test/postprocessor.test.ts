@@ -22,9 +22,7 @@ import {
   // Configuration & types
   TIMESFM_25_CONFIG,
   DEFAULT_FORECAST_CONFIG,
-  type ModelConfig,
   type ForecastConfig,
-  type DecodeResult,
 } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
