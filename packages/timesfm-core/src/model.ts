@@ -260,22 +260,23 @@ export class TimesFMModel implements ITimesFMModel {
         totalBatches: numBatches,
       });
 
-      const decodeResult = await decode(
-        this._engine,
-        preprocessed.patchedInputs,
-        preprocessed.patchedMasks,
-        preprocessed.contextMu,
-        preprocessed.contextSigma,
-        preprocessed.lastStats,
-        fc.maxHorizon,
-        fc,
-        this._config,
-        signal,
-      );
+      // ── Decode (main path, and optionally flip path in parallel) ──────
 
-      let flipResult = null;
+      let decodeResult: Awaited<ReturnType<typeof decode>>;
+      let flipResult: Awaited<ReturnType<typeof decode>> | null = null;
+
       if (fc.forceFlipInvariance) {
-        // Abort check before flip path
+        // Pre-build the negated flip inputs while the main decode runs.
+        // Then launch both decode() calls concurrently via Promise.all
+        // so the flip path doesn't add serial latency.  ONNX Runtime
+        // sessions are safe for concurrent calls in the Node.js event loop.
+        const negInputs = batchInputs.map((arr) => {
+          const neg = new Float32Array(arr.length);
+          for (let i = 0; i < arr.length; i++) neg[i] = -arr[i];
+          return neg;
+        });
+        const flipPre = preprocess(negInputs, fc, this._config);
+
         signal?.throwIfAborted();
 
         onProgress?.({
@@ -285,19 +286,42 @@ export class TimesFMModel implements ITimesFMModel {
           batchIndex: bi,
           totalBatches: numBatches,
         });
-        const negInputs = batchInputs.map((arr) => {
-          const neg = new Float32Array(arr.length);
-          for (let i = 0; i < arr.length; i++) neg[i] = -arr[i];
-          return neg;
-        });
-        const flipPre = preprocess(negInputs, fc, this._config);
-        flipResult = await decode(
+
+        // Parallel: main + flip decode run concurrently
+        [decodeResult, flipResult] = await Promise.all([
+          decode(
+            this._engine,
+            preprocessed.patchedInputs,
+            preprocessed.patchedMasks,
+            preprocessed.contextMu,
+            preprocessed.contextSigma,
+            preprocessed.lastStats,
+            fc.maxHorizon,
+            fc,
+            this._config,
+            signal,
+          ),
+          decode(
+            this._engine,
+            flipPre.patchedInputs,
+            flipPre.patchedMasks,
+            flipPre.contextMu,
+            flipPre.contextSigma,
+            flipPre.lastStats,
+            fc.maxHorizon,
+            fc,
+            this._config,
+            signal,
+          ),
+        ]);
+      } else {
+        decodeResult = await decode(
           this._engine,
-          flipPre.patchedInputs,
-          flipPre.patchedMasks,
-          flipPre.contextMu,
-          flipPre.contextSigma,
-          flipPre.lastStats,
+          preprocessed.patchedInputs,
+          preprocessed.patchedMasks,
+          preprocessed.contextMu,
+          preprocessed.contextSigma,
+          preprocessed.lastStats,
           fc.maxHorizon,
           fc,
           this._config,
