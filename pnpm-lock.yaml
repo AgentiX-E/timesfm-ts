@@ -53,10 +53,10 @@ importers:
 
   packages/timesfm-cli:
     dependencies:
-      '@agentix/timesfm-core':
+      '@agentix-e/timesfm-core':
         specifier: workspace:*
         version: link:../timesfm-core
-      '@agentix/timesfm-xreg':
+      '@agentix-e/timesfm-xreg':
         specifier: workspace:*
         version: link:../timesfm-xreg
       commander:
@@ -94,7 +94,7 @@ importers:
 
   packages/timesfm-xreg:
     dependencies:
-      '@agentix/timesfm-core':
+      '@agentix-e/timesfm-core':
         specifier: workspace:*
         version: link:../timesfm-core
       ml-matrix:
