@@ -68,6 +68,7 @@ jobs:
       - name: Run benchmark
         id: bench
         run: |
+          NODE_PATH=$(find node_modules/.pnpm -maxdepth 2 -path "*/onnxruntime-node@*/node_modules" -type d 2>/dev/null | head -1):$NODE_PATH \
           node scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md
         env:
           TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
@@ -126,17 +127,12 @@ jobs:
           <p><a href="benchmark-report.json">View raw JSON data</a> · <a href="benchmark-report.md">View Markdown version</a></p>
           </body></html>' > gh-pages/benchmark/benchmark-report.html
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload benchmark report artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: gh-pages
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: benchmark-report
+          path: gh-pages/
+          retention-days: 30
 
       - name: Benchmark summary
         run: |

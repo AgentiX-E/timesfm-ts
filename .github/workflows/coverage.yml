@@ -98,20 +98,15 @@ jobs:
             </body></html>' > gh-pages/coverage/index.html
           fi
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: gh-pages
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: coverage-report-html
+          path: gh-pages/
+          retention-days: 30
 
       - name: Coverage summary
         if: always()
         run: |
           echo "### 📈 Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View coverage report](${{ steps.deployment.outputs.page_url }}/coverage/)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View coverage artifact](https://github.com/AgentiX-E/agentix-timesfm-ts/actions)" >> $GITHUB_STEP_SUMMARY
