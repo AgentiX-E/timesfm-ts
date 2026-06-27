@@ -82,17 +82,17 @@ await model.dispose();
 
 ### ForecastConfig
 
-| Parameter                   | Type    | Default | Description                                                |
-| --------------------------- | ------- | ------- | ---------------------------------------------------------- |
-| `maxContext`                | number  | 1024    | Maximum context length (rounded to 32×)                    |
-| `maxHorizon`                | number  | 256     | Maximum forecast horizon (rounded to 128×)                 |
-| `normalizeInputs`           | boolean | true    | Z-score normalise each series before inference             |
-| `forceFlipInvariance`       | boolean | true    | Ensure `f(−x) = −f(x)` — trades 2× latency for calibration |
-| `useContinuousQuantileHead` | boolean | true    | Finer prediction intervals at longer horizons              |
-| `fixQuantileCrossing`       | boolean | true    | Enforce monotonic quantiles: q10 ≤ q20 ≤ … ≤ q90           |
-| `inferIsPositive`           | boolean | true    | Clamp forecasts ≥ 0 when input is all-non-negative         |
-| `returnBackcast`            | boolean | false   | Return model's reconstruction of historical data           |
-| `perCoreBatchSize`          | number  | 1       | Sequences processed per batch                              |
+| Parameter                   | Type    | Default | Description                                                 |
+| --------------------------- | ------- | ------- | ----------------------------------------------------------- |
+| `maxContext`                | number  | 1024    | Maximum context length (rounded to 32×)                     |
+| `maxHorizon`                | number  | 256     | Maximum forecast horizon (rounded to 128×)                  |
+| `normalizeInputs`           | boolean | true    | Z-score normalise each series before inference              |
+| `forceFlipInvariance`       | boolean | true    | Ensure `f(−x) = −f(x)` — trades 2× latency for calibration  |
+| `useContinuousQuantileHead` | boolean | true    | Finer prediction intervals at longer horizons               |
+| `fixQuantileCrossing`       | boolean | true    | Enforce monotonic quantiles: q10 ≤ q20 ≤ … ≤ q90            |
+| `inferIsPositive`           | boolean | true    | Clamp forecasts ≥ 0 when input is all-non-negative          |
+| `returnBackcast`            | boolean | false   | Return model's reconstruction of historical data            |
+| `perCoreBatchSize`          | number  | 1       | Series per batch — increase for throughput (at cost of RAM) |
 
 ### ForecastOutput
 

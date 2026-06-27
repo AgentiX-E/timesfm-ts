@@ -374,10 +374,10 @@ export class TimesFMModel implements ITimesFMModel {
   }
 
   async forecastWithCovariates(params: CovariateForecastParams): Promise<CovariateForecastOutput> {
-    // Dynamic import: timesfm-xreg is an optional dependency
+    // Dynamic import: @agentix-e/timesfm-xreg is an optional peer dependency.
+    // A type declaration at src/types/timesfm-xreg.d.ts provides compile-time
+    // safety so that no @ts-ignore escape hatch is needed.
     try {
-      // Dynamic import: @agentix-e/timesfm-xreg is an optional dependency.
-      // @ts-ignore — optional peer dependency, type-checked at install time
       const mod = await import('@agentix-e/timesfm-xreg');
       return await mod.forecastWithCovariates(this, params);
     } catch (err) {

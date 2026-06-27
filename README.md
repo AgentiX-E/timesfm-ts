@@ -87,16 +87,17 @@ pnpm run pipeline
 
 ## ForecastConfig Reference
 
-| Parameter                   | Type    | Default | Description                                |
-| --------------------------- | ------- | ------- | ------------------------------------------ |
-| `maxContext`                | number  | 1024    | Maximum context window (rounded to 32x)    |
-| `maxHorizon`                | number  | 256     | Maximum forecast horizon (rounded to 128x) |
-| `normalizeInputs`           | boolean | true    | Z-score normalize inputs                   |
-| `useContinuousQuantileHead` | boolean | true    | Better prediction intervals                |
-| `forceFlipInvariance`       | boolean | true    | Ensure f(-x) = -f(x)                       |
-| `inferIsPositive`           | boolean | true    | Clamp forecasts ≥ 0 for positive inputs    |
-| `fixQuantileCrossing`       | boolean | true    | Ensure monotonic quantiles                 |
-| `returnBackcast`            | boolean | false   | Return input reconstruction                |
+| Parameter                   | Type    | Default | Description                                                                  |
+| --------------------------- | ------- | ------- | ---------------------------------------------------------------------------- |
+| `maxContext`                | number  | 1024    | Maximum context window (rounded to 32x)                                      |
+| `maxHorizon`                | number  | 256     | Maximum forecast horizon (rounded to 128x)                                   |
+| `normalizeInputs`           | boolean | true    | Z-score normalize inputs                                                     |
+| `useContinuousQuantileHead` | boolean | true    | Better prediction intervals                                                  |
+| `forceFlipInvariance`       | boolean | true    | Ensure f(-x) = -f(x)                                                         |
+| `inferIsPositive`           | boolean | true    | Clamp forecasts ≥ 0 for positive inputs                                      |
+| `fixQuantileCrossing`       | boolean | true    | Ensure monotonic quantiles                                                   |
+| `returnBackcast`            | boolean | false   | Return input reconstruction                                                  |
+| `perCoreBatchSize`          | number  | 1       | Number of series processed per batch (higher = more throughput, more memory) |
 
 ## Output Shape Reference
 
@@ -187,6 +188,13 @@ pnpm run check:latest
 - **Original Project**: [google-research/timesfm](https://github.com/google-research/timesfm)
 - **ONNX Runtime**: [onnxruntime.ai](https://onnxruntime.ai/)
 - **HuggingFace Models**: [google/timesfm-2.5-200m-pytorch](https://huggingface.co/google/timesfm-2.5-200m-pytorch)
+
+## Known Limitations
+
+- **Univariate only**: Each series is forecast independently. Multi-variate (cross-series) forecasting is not yet supported.
+- **Model version**: Currently supports TimesFM 2.5 200M. Support for TimesFM 1.0 / 2.0 and other checkpoint variants is not yet available.
+- **No fine-tuning API**: The model runs in zero-shot mode. On-device fine-tuning or adapter-based adaptation is planned but not yet implemented.
+- **Browser memory**: The 885 MB model must fit in browser WASM memory (~4 GB limit). WebGPU improves throughput but requires Chrome 113+ / Edge 113+.
 
 ## Documentation & Reports
 
