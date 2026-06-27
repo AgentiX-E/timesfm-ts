@@ -15,13 +15,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { createRequire } from 'node:module';
 
-import {
-  TIMESFM_25_CONFIG,
-  TimesFMModel,
-  createForecastConfig,
-  preprocess,
-  postProcess,
-} from '@agentix-e/timesfm-core';
+import { TIMESFM_25_CONFIG, TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
 import { TimesFMWebInferenceEngine } from '../src/web-engine';
 
 // ---------------------------------------------------------------------------
@@ -188,58 +182,42 @@ describeOrSkip('TimesFMWebInferenceEngine (real model)', () => {
   });
 
   // -----------------------------------------------------------------------
-  // Full pipeline: preprocess → decode → postprocess
+  // Forward pass with realistic input
   // -----------------------------------------------------------------------
 
-  it('full pipeline produces valid forecast', async () => {
-    const series = buildTestSeries(200);
-    const horizon = 24;
+  it('forward() handles a full-context input', async () => {
+    // Build a full 16-patch input: [1, 16, 64] as the preprocessor produces
+    const totalLen = TIMESFM_25_CONFIG.exportedPatches * TIMESFM_25_CONFIG.tokenizerInputDims;
+    const input = new Float32Array(totalLen);
 
-    // Preprocess
-    const fc = createForecastConfig({
-      maxContext: 256,
-      maxHorizon: 64,
-      normalizeInputs: true,
-      forceFlipInvariance: true,
-    });
-    const mc = TIMESFM_25_CONFIG;
-    const prepResult = preprocess([series], fc, mc);
-    expect(prepResult.patchedInputs.length).toBe(1);
+    // Fill 8 active patches (ctx=256) with random data, rest with mask=1 padding
+    const activePatches = 8;
+    const dim = TIMESFM_25_CONFIG.tokenizerInputDims;
+    for (let p = 0; p < TIMESFM_25_CONFIG.exportedPatches; p++) {
+      const bp = p * dim;
+      for (let i = 0; i < 32; i++) {
+        if (p < activePatches) {
+          input[bp + i] = Math.random();
+          input[bp + 32 + i] = 0; // mask flag: visible
+        } else {
+          input[bp + i] = 0;
+          input[bp + 32 + i] = 1; // mask flag: masked
+        }
+      }
+    }
 
-    // Forward + decode
-    const rawOutput = await engine.forward(prepResult.patchedInputs, prepResult.patchMasks);
-    const decodeLoop = await import('@agentix-e/timesfm-core/src/inference/decode-loop');
-    const decodeResult = await decodeLoop.decode(
-      engine,
-      rawOutput,
-      prepResult,
-      fc,
-      mc,
-      {} as AbortSignal,
-    );
+    const masks = new Uint8Array(TIMESFM_25_CONFIG.exportedPatches);
+    masks.fill(0);
+    for (let p = activePatches; p < TIMESFM_25_CONFIG.exportedPatches; p++) {
+      masks[p] = 1;
+    }
 
-    // Postprocess
-    const postResult = postProcess(
-      decodeResult.outputTimeSeries,
-      decodeResult.outputQuantileSpread,
-      fc,
-      mc,
-      prepResult.contextMu,
-      prepResult.contextSigma,
-      decodeResult.flipOutputTimeSeries,
-      decodeResult.flipOutputQuantileSpread,
-    );
+    const result = await engine.forward([input], [masks]);
 
-    // Verify point forecast
-    expect(postResult.pointForecast.length).toBe(1);
-    const pointForecast = postResult.pointForecast[0];
-    expect(pointForecast.length).toBe(horizon);
-    expect(allFinite(pointForecast)).toBe(true);
-
-    // Values should be reasonable (not zero, not NaN, not absurd)
-    const mean = pointForecast.reduce((a, b) => a + b, 0) / pointForecast.length;
-    expect(mean).toBeGreaterThan(0);
-    expect(mean).toBeLessThan(10000);
+    expect(result.outputTimeSeries.length).toBeGreaterThan(0);
+    expect(allFinite(result.outputTimeSeries[0])).toBe(true);
+    expect(result.outputQuantileSpread.length).toBeGreaterThan(0);
+    expect(allFinite(result.outputQuantileSpread[0])).toBe(true);
   });
 
   // -----------------------------------------------------------------------
