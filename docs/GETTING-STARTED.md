@@ -114,10 +114,10 @@ HuggingFace Hub              Local Disk
 ┌──────────────────┐        ┌──────────────────┐
 │ google/           │ pip    │ models/           │
 │ timesfm-2.5-      │──────→│ timesfm-2.5.onnx  │
-│ 200m-pytorch      │ export │ (~800 MB)         │
+│ 200m-pytorch      │ export │ (~928 MB)          │
 │ (safetensors)     │        │                   │
 └──────────────────┘        └──────────────────┘
-      ~800 MB                   ~800 MB
+      ~800 MB                   ~928 MB
 ```
 
 **Step 3: Validate the model**
@@ -136,8 +136,8 @@ Expected output:
   agentix-timesfm-ts — ONNX Model Checker
 ============================================================
 Model file:
-  Size:   ~800 MB
-  Status: ✅ Size matches TimesFM 2.5 200M (~800 MB)
+  Size:   ~928 MB
+  Status: ✅ Size matches TimesFM 2.5 200M (~928 MB)
 
 ONNX Runtime:
   Load time: ~5000 ms
@@ -152,7 +152,7 @@ ONNX Runtime:
 | Property | Value                                                          |
 | -------- | -------------------------------------------------------------- |
 | Filename | `timesfm-2.5.onnx`                                             |
-| Size     | ~800 MB                                                        |
+| Size     | ~928 MB                                                        |
 | Format   | ONNX (opset 18)                                                |
 | Input    | `inputs: [batch, patches, 64]` (float32)                       |
 | Output 1 | `input_emb: [batch, patches, 1280]`                            |
@@ -593,7 +593,7 @@ Error: ONNX engine not loaded. Call load() first.
 
 **Solution**:
 
-1. Verify model file exists and is ≥ 500MB
+1. Verify model file exists and is ≥ 800MB
 2. Run `python scripts/export-onnx.py --validate-only --output <path>`
 3. Check that `onnxruntime-node` is installed
 

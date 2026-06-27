@@ -49,6 +49,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { createWriteStream, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { DownloadError, ChecksumMismatchError } from './errors';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
@@ -438,7 +439,6 @@ async function extractZip(zipPath: string, outDir: string): Promise<void> {
 /** Spawn a subprocess for extraction, reject on non-zero exit. */
 function spawnExtractor(command: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const { spawn } = require('node:child_process');
     const proc = spawn(command, args, {
       stdio: ['ignore', 'ignore', 'pipe'],
       timeout: 120_000, // 2 min timeout for large zip extraction

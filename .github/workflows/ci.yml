@@ -144,8 +144,25 @@ jobs:
           key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v1
           fail-on-cache-miss: true
 
-      - name: Run benchmark
-        run: pnpm benchmark
-        timeout-minutes: 5
+      - name: Run benchmark (structured report)
+        run: pnpm exec tsx scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md
+        timeout-minutes: 10
         env:
           TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
+          BENCH_ITERATIONS: 10
+
+      - name: Benchmark summary
+        run: |
+          echo "### 📊 Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Context | Avg Latency (ms) | Throughput (seq/s) |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------------------|---------------------|" >> $GITHUB_STEP_SUMMARY
+          node -e "const r=require('./benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: |
+            benchmark-report.json
+            benchmark-report.md
+          retention-days: 7

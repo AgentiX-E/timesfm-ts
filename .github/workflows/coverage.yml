@@ -117,15 +117,7 @@ jobs:
             </div>
             <h2>Detailed Reports</h2>
             <p><a href="lcov-report/index.html">📋 LCOV Report</a> — line-by-line annotated source</p>
-            <p>Files with >90% coverage:</p>
-            <ul>
-              <li><a href="lcov-report/timesfm-core/src/config.ts.html">config.ts</a> — 100%</li>
-              <li><a href="lcov-report/timesfm-core/src/errors.ts.html">errors.ts</a> — 100%</li>
-              <li><a href="lcov-report/timesfm-core/src/utils/nan-handler.ts.html">nan-handler.ts</a> — 100%</li>
-              <li><a href="lcov-report/timesfm-core/src/inference/decode-loop.ts.html">decode-loop.ts</a> — 100%</li>
-              <li><a href="lcov-report/timesfm-core/src/preprocessor.ts.html">preprocessor.ts</a> — 100%</li>
-            </ul>
-            <p><small>Thresholds: lines≥96%, functions≥94%, branches≥88%, statements≥96%</small></p>
+            <p><small>Thresholds: lines≥95%, functions≥95%, branches≥95%, statements≥95%</small></p>
             </body></html>' > gh-pages/coverage/index.html
           fi
 

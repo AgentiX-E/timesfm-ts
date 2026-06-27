@@ -122,7 +122,7 @@ function runTests() {
 
 function benchmark() {
   title('Phase 5/5  Inference Benchmark');
-  runNode('real-benchmark.js');
+  runNpx('tsx scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md');
 }
 
 // ─── CLI ─────────────────────────────────────────────────────────────────────

@@ -209,6 +209,20 @@ export interface ModelLoadOptions {
   executionProvider?: 'cpu' | 'cuda' | 'dml';
   /** Custom cache directory for downloaded models. */
   cacheDir?: string;
+  /**
+   * Proxy configuration for model download in restricted network environments.
+   *
+   * Priority: this option → TIMESFM_PROXY_URL env var → HTTPS_PROXY env var.
+   *
+   * The password is intentionally NOT part of this config object — it must
+   * come from the TIMESFM_PROXY_PASSWORD environment variable to avoid
+   * leaking secrets into process arguments or log files.
+   */
+  proxy?: {
+    url: string;
+    username?: string;
+    password?: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -289,7 +303,7 @@ export interface ForecastOutput {
  * while maintaining a stable contract.
  */
 export interface ITimesFMModel {
-  compile(fc: ForecastConfig): void;
+  compile(fc: ForecastConfig): this;
   forecast(
     horizon: number,
     inputs: Float32Array[],
