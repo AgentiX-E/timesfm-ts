@@ -395,3 +395,104 @@ describe('revin — flattenParam / broadcast1D edge cases', () => {
     expect(normed[2]).toBeCloseTo(1, 5);
   });
 });
+
+// ---------------------------------------------------------------------------
+// revinBatch — per-batch mode and safe sigma edge cases
+// ---------------------------------------------------------------------------
+
+describe('revinBatch — per-batch mu/sigma and safe sigma', () => {
+  it('uses per-batch broadcasting when mu.length === batchSize (not per-patch)', () => {
+    // Line 141 in revin.ts: `const perPatch = mu.length === batchSize * numPatches;`
+    // When mu.length === batchSize, perPatch=false → same mu/sigma for all patches
+    const batch = 2;
+    const patches = 3;
+    const patchLen = 4;
+
+    const values: Float32Array[] = [];
+    const mu: Float32Array[] = [];
+    const sigma: Float32Array[] = [];
+
+    for (let b = 0; b < batch; b++) {
+      const arr = new Float32Array(patches * patchLen);
+      for (let i = 0; i < arr.length; i++) arr[i] = b * 100 + i;
+      values.push(arr);
+      mu.push(new Float32Array([50 + b * 100]));
+      sigma.push(new Float32Array([2]));
+    }
+
+    const normed = revinBatch(values, mu, sigma, false, patches, patchLen);
+    const recovered = revinBatch(normed, mu, sigma, true, patches, patchLen);
+
+    for (let b = 0; b < batch; b++) {
+      for (let i = 0; i < values[b].length; i++) {
+        expect(recovered[b][i]).toBeCloseTo(values[b][i], 3);
+      }
+    }
+  });
+
+  it('handles near-zero sigma via safe sigma fallback (forward pass)', () => {
+    // Line 106 in revin.ts: `const safeS = s < TOLERANCE ? 1.0 : s;`
+    const values: Float32Array[] = [new Float32Array([10, 20, 30, 40])];
+    const mu: Float32Array[] = [new Float32Array([25])];
+    const sigma: Float32Array[] = [new Float32Array([0])]; // zero sigma triggers safeS
+
+    const normed = revinBatch(values, mu, sigma, false, 1, 4);
+    // safeS=1, so normed[i] = (value[i] - 25) / 1
+    expect(normed[0][0]).toBeCloseTo(-15, 5);
+    expect(normed[0][1]).toBeCloseTo(-5, 5);
+    expect(normed[0][2]).toBeCloseTo(5, 5);
+    expect(normed[0][3]).toBeCloseTo(15, 5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// revinBatch4D — per-batch mode and safe sigma edge cases
+// ---------------------------------------------------------------------------
+
+describe('revinBatch4D — per-batch mu/sigma and safe sigma', () => {
+  it('uses per-batch broadcasting when mu.length === batchSize', () => {
+    // Line 141, 152 in revin.ts: perPatch=false path in 4D mode
+    const batchSize = 2;
+    const numPatches = 1;
+    const patchLen = 2;
+    const numQuantiles = 3;
+    const perBatch = numPatches * patchLen * numQuantiles; // 1*2*3 = 6
+
+    const values: Float32Array[] = [];
+    const mu: Float32Array[] = [];
+    const sigma: Float32Array[] = [];
+
+    for (let b = 0; b < batchSize; b++) {
+      const arr = new Float32Array(perBatch);
+      for (let i = 0; i < perBatch; i++) arr[i] = b * 10 + i + 1;
+      values.push(arr);
+      mu.push(new Float32Array([b * 10 + 3]));
+      sigma.push(new Float32Array([2]));
+    }
+
+    const normed = revinBatch4D(values, mu, sigma, false, numPatches, patchLen, numQuantiles);
+    const recovered = revinBatch4D(normed, mu, sigma, true, numPatches, patchLen, numQuantiles);
+
+    for (let b = 0; b < batchSize; b++) {
+      for (let i = 0; i < perBatch; i++) {
+        expect(recovered[b][i]).toBeCloseTo(values[b][i], 5);
+      }
+    }
+  });
+
+  it('handles near-zero sigma via safe sigma fallback in 4D (forward pass)', () => {
+    // Line 159 in revin.ts: `const safeS = s < TOLERANCE ? 1.0 : s;` in 4D mode
+    const values: Float32Array[] = [new Float32Array([1, 2, 3, 4, 5, 6])]; // 1 batch, 1 patch × 2 len × 3 q
+    const mu: Float32Array[] = [new Float32Array([3])];
+    const sigma: Float32Array[] = [new Float32Array([0])]; // zero sigma triggers safeS
+
+    const normed = revinBatch4D(values, mu, sigma, false, 1, 2, 3);
+    // safeS=1, so each value = (val - 3) / 1
+    expect(normed[0][0]).toBeCloseTo(-2, 5);
+    expect(normed[0][1]).toBeCloseTo(-1, 5);
+    expect(normed[0][2]).toBeCloseTo(0, 5);
+    expect(normed[0][3]).toBeCloseTo(1, 5);
+    expect(normed[0][4]).toBeCloseTo(2, 5);
+    expect(normed[0][5]).toBeCloseTo(3, 5);
+  });
+});

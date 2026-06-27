@@ -137,6 +137,23 @@ describe('postprocessor — flipQuantileArray', () => {
     // q90 (index 9) was 9, flipped gets 1, negated → -1
     expect(negated[9]).toBe(-1);
   });
+
+  it('in-place mode mutates the input array (no copy)', () => {
+    // Lines 229-231 in postprocessor.ts: the inPlace swap path.
+    // When inPlace=true, the array is mutated directly instead of creating a copy.
+    const arr = makeOneStep([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const result = flipQuantileArray(arr, NUM_Q, true);
+
+    // Same reference returned — mutation in place
+    expect(result).toBe(arr);
+    // Mean unchanged
+    expect(arr[0]).toBe(0);
+    // Quantiles reversed in-place
+    expect(arr[1]).toBe(9);
+    expect(arr[2]).toBe(8);
+    expect(arr[8]).toBe(2);
+    expect(arr[9]).toBe(1);
+  });
 });
 
 // ===================================================================
@@ -979,5 +996,47 @@ describe('postprocessor — postProcess (main entry point)', () => {
     // Loop over batchSize=0 never executes, so no arOutputs[b] access
     expect(output.pointForecast).toHaveLength(0);
     expect(output.quantileForecast).toHaveLength(0);
+  });
+
+  it('replaces NaN/Infinity with 0 in quantile splitting (line 182)', () => {
+    // Line 182 in postprocessor.ts: quantArr[q][h] = Number.isFinite(val) ? val : 0
+    // When a value in the forecast is NaN or Infinity, it should be replaced with 0.
+    const horizon = 2;
+    const timesteps = mc.outputPatchLen;
+    const fcSimple: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      forceFlipInvariance: false,
+      useContinuousQuantileHead: false,
+      fixQuantileCrossing: false,
+      normalizeInputs: false,
+      inferIsPositive: false,
+    };
+
+    // Build pfOutputs with NaN at known positions
+    const pf = new Float32Array(timesteps * NUM_Q);
+    for (let t = 0; t < timesteps; t++) {
+      for (let q = 0; q < NUM_Q; q++) {
+        pf[t * NUM_Q + q] = t * 100 + q;
+      }
+    }
+    // Inject NaN into quantile index 3 at horizon position 1
+    pf[1 * NUM_Q + 3] = NaN;
+
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: null,
+    };
+
+    const output = postProcess(dr, horizon, fcSimple, mc, null, null, null);
+
+    // Quantile index 3 at horizon 1 should be 0 (replaced from NaN)
+    expect(output.quantileForecast[0][3][1]).toBe(0);
+    // Other values should be finite (NaN protection worked)
+    for (let q = 0; q < NUM_Q; q++) {
+      if (q === 3) continue; // this one was NaN, already checked
+      expect(Number.isFinite(output.quantileForecast[0][q][0])).toBe(true);
+      expect(Number.isFinite(output.quantileForecast[0][q][1])).toBe(true);
+    }
   });
 });
