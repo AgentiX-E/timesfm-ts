@@ -11,9 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: benchmark-${{ github.ref_name }}
@@ -130,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-report
-          path: gh-pages/
+          path: gh-pages/benchmark/
           retention-days: 30
 
       - name: Benchmark summary
