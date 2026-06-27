@@ -503,7 +503,7 @@ Benchmark accuracy 测试使用合成数据且不检查结果。添加:
 - ✅ `packages/timesfm-web/src/`: web-engine.ts, model-loader.ts, index.ts
 - ✅ `scripts/`: benchmark-ci.js, pipeline.js, export-onnx.py
 - ✅ `.github/workflows/`: ci.yml, release.yml, nightly.yml, model-release.yml
-- ✅ Config: vitest.config.ts, vitest.unit.config.ts, typedoc.json, tsconfig*.json
+- ✅ Config: vitest.config.ts, vitest.unit.config.ts, typedoc.json, tsconfig\*.json
 - ✅ Docs: README.md, all 4 package READMEs, IMPROVEMENTS_REPORT.md
 
 ## 附录 B: 与 google-research/timesfm 关键算法对照
