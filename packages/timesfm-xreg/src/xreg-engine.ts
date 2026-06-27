@@ -295,16 +295,29 @@ function normalizeXregTargets(batch: Float32Array[]): {
   stats: { mu: number; sigma: number }[];
 } {
   const stats = batch.map((x) => {
+    // Numerically-stable two-pass variance (matches stats.ts::computeStats).
+    // The one-pass E[X²] − E[X]² formula suffers catastrophic cancellation
+    // when values are large relative to their variance.
     let sum = 0,
-      sumSq = 0,
       n = 0;
     for (let i = 0; i < x.length; i++) {
-      sum += x[i];
-      sumSq += x[i] ** 2;
+      const v = x[i];
+      if (!Number.isFinite(v)) continue;
+      sum += v;
       n++;
     }
     const mu = n > 0 ? sum / n : 0;
-    const sigma = n > 0 ? Math.sqrt(Math.max(0, sumSq / n - mu * mu)) : 1;
+
+    // Second pass: squared deviations from the computed mean
+    let varSum = 0;
+    for (let i = 0; i < x.length; i++) {
+      const v = x[i];
+      if (!Number.isFinite(v)) continue;
+      const diff = v - mu;
+      varSum += diff * diff;
+    }
+    const variance = n > 0 ? Math.max(0, varSum / n) : 0;
+    const sigma = Math.sqrt(variance);
     return { mu, sigma: sigma < TOL ? 1 : sigma };
   });
   const normalized = batch.map((x, i) => {

@@ -33,6 +33,25 @@ timesfm setup -o ./my-model.onnx     # custom path
 timesfm setup -f                     # force re-download
 ```
 
+#### Proxy Support (corporate / restricted networks)
+
+```bash
+# Option A: Standard environment variables (auto-detected)
+export HTTPS_PROXY=http://proxy.company.com:8080
+timesfm setup
+
+# Option B: Explicit proxy with authentication
+timesfm setup --proxy-url http://proxy.company.com:8080
+timesfm setup --proxy-url http://proxy.company.com:8080 --proxy-username user
+# Password is always read from environment variable (never in CLI args):
+TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
+
+# Option C: TIMESFM-specific environment variables
+TIMESFM_PROXY_URL=http://proxy:8080 TIMESFM_PROXY_USERNAME=user TIMESFM_PROXY_PASSWORD=pass timesfm setup
+```
+
+Proxy resolution priority: `--proxy-url` → `TIMESFM_PROXY_URL` → `HTTPS_PROXY` → `https_proxy` → `HTTP_PROXY` → `http_proxy`. `NO_PROXY` / `no_proxy` are respected.
+
 ### `timesfm forecast`
 
 | Flag                            | Type            | Default      | Description                                          |
@@ -58,7 +77,7 @@ The `--model` flag is optional. The CLI resolves the model in this order:
 2. `TIMESFM_MODEL_PATH` environment variable
 3. Path from the last `timesfm setup -o <path>` in the current session
 4. Default cache: `~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx`
-5. Auto-download to default cache
+5. Auto-download to default cache (proxy settings auto-detected from environment variables)
 
 ## CSV Input
 
@@ -109,9 +128,13 @@ timesfm forecast -H 24 -o forecast.json --output-format json sales.csv
 
 ## Environment Variables
 
-| Variable             | Description                 |
-| -------------------- | --------------------------- |
-| `TIMESFM_MODEL_PATH` | Path to the ONNX model file |
+| Variable                 | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `TIMESFM_MODEL_PATH`     | Path to the ONNX model file                  |
+| `TIMESFM_PROXY_URL`      | Proxy URL for model download                 |
+| `TIMESFM_PROXY_USERNAME` | Proxy authentication username                |
+| `TIMESFM_PROXY_PASSWORD` | Proxy authentication password (never in CLI) |
+| `HTTPS_PROXY`            | Standard proxy (auto-detected as fallback)   |
 
 ## License
 

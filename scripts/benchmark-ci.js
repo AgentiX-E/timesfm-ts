@@ -758,7 +758,7 @@ async function main() {
   // ── Accuracy Benchmark (full TimesFM pipeline) ────────────────────────────
   if (!skipAccuracy) {
     console.log('\n  ── Accuracy (full pipeline) ──');
-    console.log('  (Using TimesFMModel with RevIN normalization + preprocessing)');
+    console.log('  (Using real-world test fixtures — business metric, stock price, seasonal temp, etc.)');
 
     // Close raw ONNX session before loading the full model to save memory
     try {
@@ -768,25 +768,35 @@ async function main() {
     }
     sessionReleased = true;
 
-    // Import from TypeScript source via tsx (handles ESM+CJS interop).
-    const core = (
-      await import(path.join(__dirname, '..', 'packages', 'timesfm-core', 'src', 'index.ts'))
-    ).default;
+    // Import from TypeScript source via tsx.
+    const coreMod = await import(
+      path.join(__dirname, '..', 'packages', 'timesfm-core', 'src', 'index.ts')
+    );
+    const core = coreMod.default || coreMod;
     const { TimesFMModel, createForecastConfig } = core;
 
-    const nSeries = 5;
+    // Import real-world test fixture generators (deterministic, seeded).
+    // These reflect actual time-series patterns found in production:
+    // business metrics, stock prices, seasonal temperatures, etc.
+    const fixtures = await import(
+      path.join(__dirname, '..', 'packages', 'timesfm-core', 'test', 'test-fixtures.ts')
+    );
+
+    // Use 5 diverse real-world fixture types (deterministic via seed=42).
     const horizon = 12;
     const seriesLen = 200;
+    const seriesFixtures = [
+      fixtures.businessMetric(seriesLen),
+      fixtures.stockPrice(seriesLen),
+      fixtures.hourlyTemp(seriesLen),
+      fixtures.eCommerce(seriesLen),
+      fixtures.regimeShift(seriesLen),
+    ];
+
     const naiveMAEs = [];
     const modelMAEs = [];
     const modelRMSEs = [];
     const constMAEs = [];
-
-    let seed = 42;
-    function rand() {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    }
 
     // Load full TimesFM model with proper preprocessing pipeline
     const accModel = await TimesFMModel.fromPretrained({ modelPath });
@@ -802,20 +812,7 @@ async function main() {
       }),
     );
 
-    for (let s = 0; s < nSeries; s++) {
-      const data = new Float32Array(seriesLen);
-      const trend = rand() * 0.3 - 0.1;
-      const seasonAmp = rand() * 20 + 5;
-      const noiseAmp = rand() * 5 + 1;
-      const base = rand() * 200;
-      for (let i = 0; i < seriesLen; i++) {
-        data[i] =
-          base +
-          trend * i +
-          seasonAmp * Math.sin((2 * Math.PI * i) / 12) +
-          (rand() - 0.5) * noiseAmp * 2;
-      }
-
+    for (const data of seriesFixtures) {
       const context = data.slice(0, seriesLen - horizon);
       const actual = data.slice(seriesLen - horizon);
 
@@ -871,6 +868,7 @@ async function main() {
       improvement_vs_const_pct: +improConst.toFixed(1),
     };
 
+    console.log(`  Fixtures: businessMetric, stockPrice, hourlyTemp, eCommerce, regimeShift`);
     console.log(`  Naive MAE (no-change):    ${avgNaiveMAE.toFixed(4)}`);
     console.log(`  Const Mean MAE:            ${avgConstMAE.toFixed(4)}`);
     console.log(`  TimesFM MAE (full pipe):   ${avgModelMAE.toFixed(4)}`);

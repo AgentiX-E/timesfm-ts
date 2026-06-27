@@ -145,14 +145,13 @@ jobs:
           MODEL_TAG="${{ needs.check.outputs.model_tag }}"
           SHA="${{ needs.check.outputs.hf_sha }}"
 
-          # Delete existing release for this model version (update-in-place)
-          gh release delete "${MODEL_TAG}" --yes 2>/dev/null || true
-          git tag -f "${MODEL_TAG}"
-          git push -f origin "${MODEL_TAG}"
-
-          gh release create "${MODEL_TAG}" \
+          # Create a unique release tag: timesfm-2.5-<hf_revision_short>
+          # This avoids force-push on protected branches and keeps every
+          # model release with a permanent, traceable tag.
+          RELEASE_TAG="${MODEL_TAG}-${SHA}"
+          gh release create "${RELEASE_TAG}" \
             release-assets/timesfm-onnx-2.5.zip \
-            --title "TimesFM 2.5 200M ONNX Model" \
+            --title "TimesFM 2.5 200M ONNX Model (rev ${SHA})" \
             --notes "Pre-exported TimesFM 2.5 200M ONNX model.
 
           **HF revision:** \`${SHA}\`
@@ -165,19 +164,38 @@ jobs:
           npx @agentix-e/timesfm-cli setup
           \`\`\`"
 
-          # Update rolling latest pointer
-          gh release delete timesfm-latest --yes 2>/dev/null || true
-          git tag -f timesfm-latest
-          git push -f origin timesfm-latest
-          gh release create timesfm-latest \
-            release-assets/timesfm-onnx-2.5.zip \
-            --title "TimesFM ONNX — Latest" \
-            --notes "Rolling pointer to the latest validated TimesFM ONNX model.
+          # Update rolling latest pointer — upload new asset to existing release
+          # without force-pushing git tags (safe on protected branches).
+          if gh release view timesfm-latest &>/dev/null; then
+            gh release upload timesfm-latest \
+              release-assets/timesfm-onnx-2.5.zip --clobber
+            # Update release notes via gh api to avoid re-creating the tag
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${GITHUB_REPOSITORY}/releases/tags/timesfm-latest" \
+              -f tag_name='timesfm-latest' \
+              -f name='TimesFM ONNX — Latest' \
+              -f body="Rolling pointer to the latest validated TimesFM ONNX model.
 
           **Current HF revision:** \`${SHA}\`
-          **Model tag:** \`${MODEL_TAG}\`
+          **Model tag:** \`${RELEASE_TAG}\`
+
+          This release is automatically updated when a new model version is detected." \
+              -f prerelease=false
+          else
+            git tag timesfm-latest
+            git push origin timesfm-latest
+            gh release create timesfm-latest \
+              release-assets/timesfm-onnx-2.5.zip \
+              --title "TimesFM ONNX — Latest" \
+              --notes "Rolling pointer to the latest validated TimesFM ONNX model.
+
+          **Current HF revision:** \`${SHA}\`
+          **Model tag:** \`${RELEASE_TAG}\`
 
           This release is automatically updated when a new model version is detected."
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
