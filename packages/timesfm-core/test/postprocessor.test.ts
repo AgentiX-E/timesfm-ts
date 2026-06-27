@@ -744,4 +744,240 @@ describe('postprocessor — postProcess (main entry point)', () => {
       expect(Number.isFinite(v)).toBe(true);
     }
   });
+
+  // -------------------------------------------------------------------
+  // AR (autoregressive) decode path
+  // -------------------------------------------------------------------
+
+  // Minimal config: disable all optional processing so we can test AR
+  // concatenation without interference.
+  const fcBase: ForecastConfig = {
+    ...DEFAULT_FORECAST_CONFIG,
+    useContinuousQuantileHead: false,
+    fixQuantileCrossing: false,
+    forceFlipInvariance: false,
+    normalizeInputs: false,
+    inferIsPositive: false,
+  };
+
+  it('concatenates AR outputs when arOutputs is non-null (single AR step)', () => {
+    // pfOutputs: exactly 1 patch (outputPatchLen timesteps), all zeros
+    const timesteps = mc.outputPatchLen;
+    const pf = new Float32Array(timesteps * NUM_Q); // all zeros
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      // 1 AR step: 10 quantile values [0,1,2,3,4,5,6,7,8,9]
+      arOutputs: [new Float32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])],
+    };
+
+    // horizon covers last patch (128 steps) + 1 AR step
+    const horizon = timesteps + 1;
+    const output = postProcess(dr, horizon, fcBase, mc, null, null, null);
+
+    expect(output.pointForecast[0]).toHaveLength(horizon);
+    // First 128 steps from pf: median (index 5) = 0
+    for (let h = 0; h < timesteps; h++) {
+      expect(output.pointForecast[0][h]).toBe(0);
+    }
+    // AR step: median = 5
+    expect(output.pointForecast[0][timesteps]).toBe(5);
+
+    // Verify quantile values for the AR step
+    const qf = output.quantileForecast[0];
+    for (let q = 0; q < NUM_Q; q++) {
+      expect(qf[q][timesteps]).toBe(q);
+    }
+  });
+
+  it('accumulates forecast correctly across multiple AR decode steps', () => {
+    // pfOutputs: 128 timesteps (1 patch), all filled with 0
+    const timesteps = mc.outputPatchLen;
+    const pf = new Float32Array(timesteps * NUM_Q);
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      // 3 AR steps, each with 10 quantile values
+      // Step 1: [0,1,2,...,9], Step 2: [10,11,...,19], Step 3: [20,21,...,29]
+      arOutputs: [
+        new Float32Array([
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+          25, 26, 27, 28, 29,
+        ]),
+      ],
+    };
+
+    // horizon covers pf (128) + 3 AR steps
+    const horizon = timesteps + 3;
+    const output = postProcess(dr, horizon, fcBase, mc, null, null, null);
+
+    expect(output.pointForecast[0]).toHaveLength(horizon);
+
+    // Pf steps: median = 0
+    for (let h = 0; h < timesteps; h++) {
+      expect(output.pointForecast[0][h]).toBe(0);
+    }
+
+    // AR step 1: median = 5
+    expect(output.pointForecast[0][timesteps]).toBe(5);
+    // AR step 2: median = 15
+    expect(output.pointForecast[0][timesteps + 1]).toBe(15);
+    // AR step 3: median = 25
+    expect(output.pointForecast[0][timesteps + 2]).toBe(25);
+
+    // Verify quantile values for each AR step
+    const qf = output.quantileForecast[0];
+    for (let q = 0; q < NUM_Q; q++) {
+      expect(qf[q][timesteps]).toBe(q); // step 1
+      expect(qf[q][timesteps + 1]).toBe(10 + q); // step 2
+      expect(qf[q][timesteps + 2]).toBe(20 + q); // step 3
+    }
+  });
+
+  it('applies flip invariance to the AR portion of the forecast', () => {
+    const fcFlip: ForecastConfig = {
+      ...fcBase,
+      forceFlipInvariance: true,
+    };
+    const timesteps = mc.outputPatchLen;
+
+    // Main decode: pf filled with 10, arOutputs filled with 8
+    const mainPf = new Float32Array(timesteps * NUM_Q);
+    mainPf.fill(10);
+    const mainDr: DecodeResult = {
+      pfOutputs: [mainPf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: [new Float32Array(10)],
+    };
+    mainDr.arOutputs![0].fill(8);
+
+    // Flip decode: pf filled with 2, arOutputs filled with 0
+    const flipPf = new Float32Array(timesteps * NUM_Q);
+    flipPf.fill(2);
+    const flipDr: DecodeResult = {
+      pfOutputs: [flipPf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: [new Float32Array(10)],
+    };
+    flipDr.arOutputs![0].fill(0);
+
+    // Formula: (forecast(x) - forecast(-x)) / 2
+    // Pf:   elementwiseMean([10,...], negate(flipQuantileArray([2,...])))
+    //       = elementwiseMean([10,...], negate([2,...]))  (all same, so flip is no-op)
+    //       = elementwiseMean([10,...], [-2,...]) = (10 + (-2)) / 2 = 4
+    // AR:   elementwiseMean([8,...], negate(flipQuantileArray([0,...])))
+    //       = elementwiseMean([8,...], [0,...]) = (8 + 0) / 2 = 4
+
+    const horizon = timesteps + 1;
+    const output = postProcess(mainDr, horizon, fcFlip, mc, null, flipDr, null);
+
+    expect(output.pointForecast[0]).toHaveLength(horizon);
+    // Pf steps: all medians should be 4
+    for (let h = 0; h < timesteps; h++) {
+      expect(output.pointForecast[0][h]).toBe(4);
+    }
+    // AR step: median should be 4
+    expect(output.pointForecast[0][timesteps]).toBe(4);
+  });
+
+  it('applies quantile crossing fix to the AR portion of the forecast', () => {
+    const fcCrossing: ForecastConfig = {
+      ...fcBase,
+      fixQuantileCrossing: true,
+    };
+    const timesteps = mc.outputPatchLen;
+
+    // pfOutputs: monotonic, no crossing
+    const pf = new Float32Array(timesteps * NUM_Q);
+    for (let t = 0; t < timesteps; t++) {
+      for (let q = 0; q < NUM_Q; q++) {
+        pf[t * NUM_Q + q] = t * 100 + q;
+      }
+    }
+
+    // arOutputs: reversed quantiles (crossing!) for 1 AR step
+    const arVals = new Float32Array(NUM_Q);
+    for (let q = 0; q < NUM_Q; q++) {
+      arVals[q] = NUM_Q - 1 - q; // [9,8,7,6,5,4,3,2,1,0]
+    }
+
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: [arVals],
+    };
+
+    const horizon = timesteps + 1;
+    const output = postProcess(dr, horizon, fcCrossing, mc, null, null, null);
+
+    const qf = output.quantileForecast[0];
+
+    // Pf steps: already monotonic, should remain monotonic
+    for (let h = 0; h < timesteps; h++) {
+      for (let q = 1; q < NUM_Q - 1; q++) {
+        expect(qf[q][h]).toBeLessThanOrEqual(qf[q + 1][h]);
+      }
+    }
+
+    // AR step: was reversed, crossing fix should make it monotonic
+    for (let q = 1; q < NUM_Q - 1; q++) {
+      expect(qf[q][timesteps]).toBeLessThanOrEqual(qf[q + 1][timesteps]);
+    }
+
+    // Mean (index 0) and median (index 5) should be preserved
+    expect(qf[0][timesteps]).toBe(9); // mean stays 9
+    expect(qf[5][timesteps]).toBe(4); // median stays 4
+
+    // After fix, upper quantiles (6-9) should all be ≥ median
+    for (let q = 6; q < NUM_Q; q++) {
+      expect(qf[q][timesteps]).toBeGreaterThanOrEqual(qf[5][timesteps]);
+    }
+  });
+
+  it('returns backcast correctly when AR outputs are present', () => {
+    const fcWithBackcast: ForecastConfig = {
+      ...fcBase,
+      returnBackcast: true,
+    };
+    // Need at least 2 output patches for backcast: 2 * outputPatchLen = 256
+    const timesteps = mc.outputPatchLen * 2;
+    const pf = new Float32Array(timesteps * NUM_Q);
+    for (let t = 0; t < timesteps; t++) {
+      for (let q = 0; q < NUM_Q; q++) {
+        pf[t * NUM_Q + q] = t * 100 + q;
+      }
+    }
+
+    const dr: DecodeResult = {
+      pfOutputs: [pf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      // AR outputs present — should not affect backcast computation
+      arOutputs: [new Float32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])],
+    };
+
+    const horizon = 2;
+    const output = postProcess(dr, horizon, fcWithBackcast, mc, null, null, null);
+
+    // Backcast should be produced from pfOutputs (ignoring arOutputs)
+    expect(output.backcast).toBeDefined();
+    expect(output.backcast![0].length).toBeGreaterThan(0);
+
+    // Forecast should still include concatenated AR outputs
+    expect(output.pointForecast[0]).toHaveLength(horizon);
+  });
+
+  it('handles empty arOutputs array gracefully (batch size 0)', () => {
+    // arOutputs is non-null but empty, and pfOutputs is also empty (batch size 0)
+    const dr: DecodeResult = {
+      pfOutputs: [],
+      quantileSpreads: [],
+      arOutputs: [], // truthy but empty
+    };
+
+    const output = postProcess(dr, 0, fcBase, mc, null, null, null);
+
+    // Loop over batchSize=0 never executes, so no arOutputs[b] access
+    expect(output.pointForecast).toHaveLength(0);
+    expect(output.quantileForecast).toHaveLength(0);
+  });
 });

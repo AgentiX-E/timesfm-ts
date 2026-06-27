@@ -23,21 +23,15 @@ const mc = TIMESFM_25_CONFIG;
 const MODEL_BATCH = 1;
 const MODEL_PATCHES = mc.exportedPatches;
 
+import { mulberry32 } from '../test-fixtures';
+
 // ---------------------------------------------------------------------------
 // Helpers: generate realistic input patterns
 // ---------------------------------------------------------------------------
 
-/** Deterministic PRNG for reproducible test patterns. */
-function seededRand(seed: number): () => number {
-  return () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-}
-
 /** Generate a single patched input with sinusoidal signal + light noise. */
 function generateSineInput(numPatches: number): { input: Float32Array; mask: Uint8Array } {
-  const rng = seededRand(42);
+  const rng = mulberry32(42);
   const patchLen = mc.inputPatchLen;
   const totalLen = numPatches * patchLen;
   const input = new Float32Array(totalLen);
@@ -55,7 +49,7 @@ function generateSineInput(numPatches: number): { input: Float32Array; mask: Uin
 
 /** Generate input with linear trend + noise (business-metric-like). */
 function generateTrendInput(numPatches: number): { input: Float32Array; mask: Uint8Array } {
-  const rng = seededRand(99);
+  const rng = mulberry32(99);
   const patchLen = mc.inputPatchLen;
   const totalLen = numPatches * patchLen;
   const input = new Float32Array(totalLen);
