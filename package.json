@@ -6,13 +6,15 @@
   "workspaces": [
     "packages/timesfm-core",
     "packages/timesfm-xreg",
-    "packages/timesfm-cli"
+    "packages/timesfm-cli",
+    "packages/timesfm-web"
   ],
   "scripts": {
-    "build": "tsc -b packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli",
+    "build": "tsc -b packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web",
     "build:core": "tsc -b packages/timesfm-core",
     "build:xreg": "tsc -b packages/timesfm-xreg",
     "build:cli": "tsc -b packages/timesfm-cli",
+    "build:web": "tsc -b packages/timesfm-web",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --config vitest.unit.config.ts",

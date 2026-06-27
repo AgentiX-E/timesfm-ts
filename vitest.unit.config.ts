@@ -15,6 +15,7 @@ export default defineConfig({
     alias: {
       '@agentix-e/timesfm-core': resolve(__dirname, 'packages/timesfm-core/src/index.ts'),
       '@agentix-e/timesfm-xreg': resolve(__dirname, 'packages/timesfm-xreg/src/index.ts'),
+      '@agentix-e/timesfm-web': resolve(__dirname, 'packages/timesfm-web/src/index.ts'),
     },
   },
   test: {
@@ -35,6 +36,7 @@ export default defineConfig({
       'packages/*/test/**/postprocessor.test.ts',
       'packages/*/test/**/model-downloader.test.ts',
       'packages/*/test/**/csv-forecast.test.ts',
+      'packages/*/test/**/web-engine.test.ts',
     ],
     testTimeout: 10000,
     hookTimeout: 10000,

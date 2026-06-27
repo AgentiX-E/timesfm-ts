@@ -1,0 +1,54 @@
+{
+  "name": "@agentix-e/timesfm-web",
+  "version": "0.3.0",
+  "description": "TimesFM time-series forecasting for the browser — WebAssembly inference via onnxruntime-web",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@agentix-e/timesfm-core": "workspace:*",
+    "onnxruntime-web": "^1.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "peerDependencies": {
+    "onnxruntime-web": "^1.22.0"
+  },
+  "keywords": [
+    "timesfm",
+    "time-series",
+    "forecasting",
+    "browser",
+    "webassembly",
+    "onnx",
+    "webgpu"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts.git",
+    "directory": "packages/timesfm-web"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

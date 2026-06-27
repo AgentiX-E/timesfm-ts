@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declarationDir": "./dist",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "paths": {
+      "@agentix-e/timesfm-core": ["../timesfm-core/src"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../timesfm-core" }]
+}

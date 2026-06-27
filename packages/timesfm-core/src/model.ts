@@ -109,10 +109,16 @@ export class TimesFMModel implements ITimesFMModel {
       );
     }
 
-    const engine = new TimesFMInferenceEngine(mc, {
-      executionProvider: options.executionProvider,
-    });
-    await engine.load(options.modelPath);
+    const engine =
+      options.engine ??
+      new TimesFMInferenceEngine(mc, {
+        executionProvider: options.executionProvider,
+      });
+
+    // Only load if the engine is not already loaded (external engine injection)
+    if (!engine.isLoaded()) {
+      await engine.load(options.modelPath);
+    }
 
     return new TimesFMModel(engine, mc);
   }

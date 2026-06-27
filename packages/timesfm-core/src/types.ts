@@ -207,6 +207,31 @@ export interface ModelLoadOptions {
   modelPath: string;
   /** Execution provider: 'cpu' | 'cuda' | 'dml' (default 'cpu'). */
   executionProvider?: 'cpu' | 'cuda' | 'dml';
+  /**
+   * Optional pre-built inference engine for dependency injection.
+   *
+   * When provided, the engine is used as-is (already loaded).
+   * When omitted, a default TimesFMInferenceEngine (onnxruntime-node) is created.
+   *
+   * **Web use case**: Pass a TimesFMWebInferenceEngine from @agentix-e/timesfm-web
+   * to run TimesFM in the browser with onnxruntime-web.
+   *
+   * **Testing use case**: Inject a mock engine for isolated unit testing.
+   *
+   * @example
+   * ```typescript
+   * import { TimesFMWebInferenceEngine } from '@agentix-e/timesfm-web';
+   *
+   * const webEngine = new TimesFMWebInferenceEngine(modelConfig);
+   * await webEngine.load('https://example.com/timesfm-2.5.onnx');
+   *
+   * const model = await TimesFMModel.fromPretrained({
+   *   modelPath: 'https://example.com/timesfm-2.5.onnx',
+   *   engine: webEngine,
+   * });
+   * ```
+   */
+  engine?: IInferenceEngine;
   /** Custom cache directory for downloaded models. */
   cacheDir?: string;
   /**
