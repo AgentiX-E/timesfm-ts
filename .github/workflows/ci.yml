@@ -145,7 +145,10 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Run benchmark (structured report)
-        run: pnpm exec tsx scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md
+        run: |
+          pnpm exec tsx scripts/benchmark-ci.js \
+            --all benchmark-report.json benchmark-report.md \
+            --html benchmark-report.html
         timeout-minutes: 10
         env:
           TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
@@ -154,9 +157,9 @@ jobs:
       - name: Benchmark summary
         run: |
           echo "### 📊 Benchmark Results" >> $GITHUB_STEP_SUMMARY
-          echo "| Context | Avg Latency (ms) | Throughput (seq/s) |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|------------------|---------------------|" >> $GITHUB_STEP_SUMMARY
-          node -e "const r=require('./benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
+          echo "| Context | Batch | Avg Latency (ms) | Throughput (seq/s) |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|------------------|---------------------|" >> $GITHUB_STEP_SUMMARY
+          node -e "const r=require('./benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+(l.batch_size||1)+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4
@@ -165,4 +168,72 @@ jobs:
           path: |
             benchmark-report.json
             benchmark-report.md
+            benchmark-report.html
+          retention-days: 7
+
+  # ─── Web (WASM) Benchmark — parallel with Node benchmark ───────────────
+  web-benchmark:
+    needs: [integration-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm build
+
+      # Restore cached model (same key as integration-test and benchmark)
+      - name: Restore cached ONNX model
+        uses: actions/cache/restore@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
+          fail-on-cache-miss: true
+
+      # ── Web Integration Tests (real model + onnxruntime-web WASM) ─────────
+      - name: Web Integration Tests
+        run: |
+          echo "🧪 Running web integration tests with real ONNX model..."
+          pnpm --filter @agentix-e/timesfm-web exec vitest run \
+            test/web-integration.test.ts \
+            --reporter=verbose \
+            --timeout=120000
+        env:
+          TIMESFM_WEB_TEST_MODEL: models/timesfm-2.5.onnx
+          TIMESFM_TEST_MODEL: models/timesfm-2.5.onnx
+        timeout-minutes: 10
+
+      # ── Web Benchmark (WASM) ──────────────────────────────────────────────
+      - name: Run web benchmark (WASM)
+        run: |
+          node scripts/web-benchmark-ci.js \
+            --all web-benchmark-report.json web-benchmark-report.md \
+            --html web-benchmark-report.html
+        env:
+          TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
+          WEB_BENCH_ITERATIONS: 10
+        timeout-minutes: 10
+
+      - name: Web benchmark summary
+        run: |
+          echo "### 🌐 Web (WASM) Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Context | Avg Latency (ms) | Throughput (seq/s) |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------------------|---------------------|" >> $GITHUB_STEP_SUMMARY
+          node -e "const r=require('./web-benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload web benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-benchmark-report
+          path: |
+            web-benchmark-report.json
+            web-benchmark-report.md
+            web-benchmark-report.html
           retention-days: 7

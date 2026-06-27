@@ -97,7 +97,11 @@ jobs:
         run: |
           RUN_ID="${TRIGGERING_WEB_BENCH_RUN_ID:-}"
           if [ -z "$RUN_ID" ]; then
-            RUN_ID=$(gh run list --workflow=web-benchmark.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+            # Try web-benchmark.yml first, then ci.yml (where web-benchmark runs in parallel)
+            RUN_ID=$(gh run list --workflow=web-benchmark.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
+            if [ -z "$RUN_ID" ]; then
+              RUN_ID=$(gh run list --workflow=ci.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId' 2>/dev/null)
+            fi
           fi
           if [ -n "$RUN_ID" ]; then
             echo "📥 Downloading web benchmark artifact from run $RUN_ID"
