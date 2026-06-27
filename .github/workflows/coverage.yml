@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v2
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
 
       - name: Export TimesFM ONNX model
         if: steps.cache-model.outputs.cache-hit != 'true'

@@ -77,9 +77,6 @@ pnpm run pipeline
 
 # Or pure Node.js
 node scripts/pipeline.js
-
-# Or pure Python
-python scripts/pipeline.py
 ```
 
 > See [MODEL-UPDATE.md](MODEL-UPDATE.md) for details.

@@ -55,7 +55,41 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
       );
       this._session = await this._ortModule.InferenceSession.create(modelPath);
     }
+
+    // Warmup: run a single dummy inference to trigger JIT compilation.
+    // First inference on ONNX Runtime is 2-5× slower due to lazy JIT
+    // compilation.  Running a warmup call here eliminates "cold start"
+    // variance from the first user-facing forecast() call.
+    await this._warmup();
     this._loaded = true;
+  }
+
+  /**
+   * Run a minimal warmup inference to trigger ONNX Runtime's JIT compilation.
+   *
+   * ONNX Runtime lazily compiles execution graphs on first use.  The first
+   * forward pass can be 2-5× slower than subsequent calls.  This warmup
+   * absorbs that cost during model loading so user forecasts are consistent.
+   */
+  private async _warmup(): Promise<void> {
+    if (!this._session || !this._ortModule) return;
+    try {
+      const ort = this._ortModule;
+      const tokenizerLen = this._config.tokenizerInputDims;
+      // Build a minimal dummy input: 1 batch, exportedPatches patches, all zeros
+      const dummyInput = new Float32Array(1 * this._config.exportedPatches * tokenizerLen);
+      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+      const feeds: Record<string, import('onnxruntime-node').Tensor> = {
+        inputs: new ort.Tensor('float32', dummyInput, [
+          1,
+          this._config.exportedPatches,
+          tokenizerLen,
+        ]),
+      };
+      await this._session.run(feeds);
+    } catch {
+      // Warmup failure is non-fatal — first real inference will handle it
+    }
   }
 
   isLoaded(): boolean {

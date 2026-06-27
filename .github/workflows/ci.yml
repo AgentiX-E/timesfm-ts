@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v1
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
 
       # Export test model from HuggingFace (requires Python + PyTorch)
       - name: Export TimesFM ONNX model
@@ -141,7 +141,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py') }}-v1
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
           fail-on-cache-miss: true
 
       - name: Run benchmark (structured report)

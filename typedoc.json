@@ -1,7 +1,11 @@
 {
-  "entryPoints": ["packages/timesfm-core/src/index.ts", "packages/timesfm-xreg/src/index.ts"],
+  "entryPoints": [
+    "packages/timesfm-core/src/index.ts",
+    "packages/timesfm-xreg/src/index.ts",
+    "packages/timesfm-cli/src/cli.ts"
+  ],
   "out": "docs/api",
-  "tsconfig": "packages/timesfm-core/tsconfig.json",
+  "tsconfig": "tsconfig.json",
   "excludePrivate": true,
   "excludeProtected": false,
   "includeVersion": true,

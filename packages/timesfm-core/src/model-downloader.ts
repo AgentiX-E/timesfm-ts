@@ -137,11 +137,27 @@ function resolveProxyConfig(options?: DownloadOptions): ProxyConfig | null {
   }
 
   // 3. Standard environment variables (HTTPS_PROXY first since we use HTTPS)
+  //    Skip if NO_PROXY / no_proxy matches the target host.
+  const noProxy = (process.env.NO_PROXY || process.env.no_proxy || '').toLowerCase();
+
   const standardUrl =
     process.env.HTTPS_PROXY ||
     process.env.https_proxy ||
     process.env.HTTP_PROXY ||
     process.env.http_proxy;
+
+  // If NO_PROXY matches the GitHub releases domain, skip standard proxy
+  if (standardUrl && noProxy) {
+    const noProxyPatterns = noProxy.split(',').map((p) => p.trim());
+    const isExcluded = noProxyPatterns.some(
+      (p) => p === '*' || p === 'github.com' || p === '.github.com',
+    );
+    if (!isExcluded) {
+      return { url: standardUrl };
+    }
+    return null;
+  }
+
   if (standardUrl) {
     return { url: standardUrl };
   }
@@ -349,9 +365,9 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       // Descriptor missing — skip checksum verification
     }
 
-    // Verify SHA-256 of extracted ONNX
+    // Verify SHA-256 of extracted ONNX (async streaming for large files)
     if (expectedSha256) {
-      const actualSha256 = sha256File(dest);
+      const actualSha256 = await sha256File(dest);
       if (actualSha256 !== expectedSha256) {
         cleanupPartial(cacheDir);
         throw new ChecksumMismatchError(
@@ -463,8 +479,40 @@ function spawnExtractor(command: string, args: string[]): Promise<void> {
 
 // ─── SHA-256 ────────────────────────────────────────────────────────────────
 
-/** Compute SHA-256 of a file. */
-function sha256File(filePath: string): string {
+/**
+ * Compute SHA-256 of a file asynchronously using streaming I/O.
+ *
+ * Uses Node.js stream pipeline to avoid blocking the event loop
+ * during hash computation of large files (e.g., 885 MB ONNX model).
+ *
+ * Falls back to synchronous hashing for small files (< 100 MB)
+ * where the event-loop overhead of async I/O isn't justified.
+ */
+async function sha256File(filePath: string): Promise<string> {
+  const { statSync, createReadStream } = await import('node:fs');
+  const { pipeline } = await import('node:stream/promises');
+
+  const fileSize = statSync(filePath).size;
+  // For files under 100 MB, sync is faster (avoids async overhead)
+  if (fileSize < 100 * 1024 * 1024) {
+    return sha256FileSync(filePath);
+  }
+
+  const hasher = createHash('sha256');
+  const readStream = createReadStream(filePath, { highWaterMark: 64 * 1024 });
+
+  try {
+    await pipeline(readStream, hasher);
+  } catch {
+    // Fall back to sync on stream failure (e.g., permission issues)
+    return sha256FileSync(filePath);
+  }
+
+  return hasher.digest('hex');
+}
+
+/** Synchronous SHA-256 fallback for small files or stream failure. */
+function sha256FileSync(filePath: string): string {
   const hasher = createHash('sha256');
   const buf = Buffer.alloc(64 * 1024);
   const fd = fs.openSync(filePath, 'r');
