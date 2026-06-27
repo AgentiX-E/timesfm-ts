@@ -21,9 +21,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: [
-      'packages/*/test/**/*.test.ts',
-    ],
+    include: ['packages/*/test/**/*.test.ts'],
     exclude: [
       // These tests require the 885 MB ONNX model (use pnpm test or pnpm test:coverage)
       '**/model.test.ts',

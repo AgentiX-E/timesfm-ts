@@ -758,7 +758,9 @@ async function main() {
   // ── Accuracy Benchmark (full TimesFM pipeline) ────────────────────────────
   if (!skipAccuracy) {
     console.log('\n  ── Accuracy (full pipeline) ──');
-    console.log('  (Using real-world test fixtures — business metric, stock price, seasonal temp, etc.)');
+    console.log(
+      '  (Using real-world test fixtures — business metric, stock price, seasonal temp, etc.)',
+    );
 
     // Close raw ONNX session before loading the full model to save memory
     try {
