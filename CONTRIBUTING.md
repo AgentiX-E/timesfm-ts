@@ -62,15 +62,6 @@ pnpm ci:full
 # One-click full pipeline (model export + tests + benchmarks)
 pnpm run pipeline
 
-# Quick mode (tests + benchmarks only, no model re-export)
-pnpm run pipeline:quick
-
-# Local CI simulation (same as CI fast checks)
-pnpm ci:local
-
-# Full local CI (includes integration tests — needs ONNX model)
-pnpm ci:full
-
 # Manual precommit check (same checks that git hook runs)
 pnpm precommit
 ```

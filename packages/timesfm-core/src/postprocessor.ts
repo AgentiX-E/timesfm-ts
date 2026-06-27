@@ -198,16 +198,40 @@ export function postProcess(
 /**
  * Flip the ordering of quantiles (excluding the mean at index 0):
  * [mean, q10, q20, ..., q90] → [mean, q90, q80, ..., q10]
+ *
+ * @param arr        The flat quantile array to flip.
+ * @param numQuantiles  Number of quantiles per step (10 for TimesFM 2.5).
+ * @param inPlace    If true, writes the result back into `arr` instead of allocating.
+ *                   Default false (safe, allocates new array).
  */
-export function flipQuantileArray(arr: Float32Array, numQuantiles: number): Float32Array {
+export function flipQuantileArray(
+  arr: Float32Array,
+  numQuantiles: number,
+  inPlace = false,
+): Float32Array {
   const numSteps = Math.floor(arr.length / numQuantiles);
-  const result = new Float32Array(arr.length);
+  const result = inPlace ? arr : new Float32Array(arr.length);
+  // Copy the mean (index 0) for each step if not in-place
+  if (!inPlace) {
+    for (let t = 0; t < numSteps; t++) {
+      result[t * numQuantiles] = arr[t * numQuantiles];
+    }
+  }
 
   for (let t = 0; t < numSteps; t++) {
     const base = t * numQuantiles;
-    result[base] = arr[base]; // mean stays in place
+    // Swap quantiles 1↔9, 2↔8, 3↔7, 4↔6; mean stays at 0
     for (let q = 1; q < numQuantiles; q++) {
-      result[base + q] = arr[base + numQuantiles - q];
+      const dst = base + q;
+      const src = base + numQuantiles - q;
+      // In-place: only copy when src > dst to avoid overwriting
+      if (inPlace && src > dst) {
+        const tmp = arr[dst];
+        result[dst] = arr[src];
+        result[src] = tmp;
+      } else if (!inPlace) {
+        result[dst] = arr[src];
+      }
     }
   }
 

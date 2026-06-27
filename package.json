@@ -31,7 +31,7 @@
     "export:model": "python3 scripts/export-onnx.py --output models/timesfm-2.5.onnx",
     "check:latest": "python3 scripts/export-onnx.py --check-latest --diff -m google/timesfm-2.5-200m-pytorch",
     "check:model": "node packages/timesfm-core/scripts/check-model.js --model models/timesfm-2.5.onnx",
-    "benchmark": "tsx scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md",
+    "benchmark": "BENCH_ITERATIONS=10 tsx scripts/benchmark-ci.js --all benchmark-report.json benchmark-report.md",
     "ci": "pnpm build && pnpm lint && pnpm format:check && pnpm test:unit && pnpm test && pnpm test:coverage",
     "ci:local": "pnpm build && pnpm lint && pnpm format:check && pnpm test:unit",
     "ci:full": "pnpm build && pnpm lint && pnpm format:check && pnpm test:unit && pnpm test",

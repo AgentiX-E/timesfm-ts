@@ -128,7 +128,7 @@ Implements `IInferenceEngine`:
 **File**: `packages/timesfm-core/src/model-downloader.ts`
 
 - **Streaming download**: Uses Node.js `fetch` reader → file `writeStream` (no 885 MB heap buffer)
-- **SHA-256 integrity**: Hashes during download for verification
+- **SHA-256 integrity**: Hashes the extracted ONNX file after download for verification
 - **Atomic writes**: Downloads to `.tmp` then renames
 - **Cache management**: Platform-aware cache directory (`XDG_CACHE_HOME`)
 

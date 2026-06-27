@@ -5,7 +5,7 @@ Exogenous covariates (XReg) extension for TimesFM — boost forecast accuracy by
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
-📚 [API Documentation](https://agentix-e.github.io/agentix-timesfm-ts/api/) · 💻 [Source](https://github.com/AgentiX-E/agentix-timesfm-ts)
+📚 [API Documentation](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm_xreg.html) · 💻 [Source](https://github.com/AgentiX-E/agentix-timesfm-ts)
 
 ```bash
 npm install @agentix-e/timesfm-xreg

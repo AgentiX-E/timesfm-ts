@@ -49,39 +49,46 @@ jobs:
         run: mkdir -p docs/benchmark docs/coverage
 
       # ── Download benchmark report artifact ───────────────────────────────
-      # Always downloads the latest successful benchmark artifact.
+      # Downloads the latest successful benchmark artifact.
       # Falls back to a placeholder page if no artifact is available yet.
+      # On workflow_run trigger, also tries the triggering workflow's run.
       - name: Download benchmark report
         id: download-benchmark
         run: |
-          RUN_ID=$(gh run list --workflow=benchmark.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          RUN_ID="${TRIGGERING_BENCH_RUN_ID:-}"
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow=benchmark.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          fi
           if [ -n "$RUN_ID" ]; then
             echo "📥 Downloading benchmark artifact from run $RUN_ID"
-            gh run download "$RUN_ID" --name=benchmark-report --dir=docs/benchmark
-            echo "downloaded=true" >> "$GITHUB_OUTPUT"
+            gh run download "$RUN_ID" --name=benchmark-report --dir=docs/benchmark 2>/dev/null && echo "downloaded=true" >> "$GITHUB_OUTPUT" || echo "downloaded=false" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️  No successful benchmark run found"
             echo "downloaded=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+          TRIGGERING_BENCH_RUN_ID: ${{ github.event.workflow_run.id }}
         continue-on-error: true
 
       # ── Download coverage report artifact ────────────────────────────────
       - name: Download coverage report
         id: download-coverage
         run: |
-          RUN_ID=$(gh run list --workflow=coverage.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          RUN_ID="${TRIGGERING_COVERAGE_RUN_ID:-}"
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow=coverage.yml --branch=master --status=success --limit=1 --json databaseId -q '.[0].databaseId')
+          fi
           if [ -n "$RUN_ID" ]; then
             echo "📥 Downloading coverage artifact from run $RUN_ID"
-            gh run download "$RUN_ID" --name=coverage-report-html --dir=docs/coverage
-            echo "downloaded=true" >> "$GITHUB_OUTPUT"
+            gh run download "$RUN_ID" --name=coverage-report-html --dir=docs/coverage 2>/dev/null && echo "downloaded=true" >> "$GITHUB_OUTPUT" || echo "downloaded=false" >> "$GITHUB_OUTPUT"
           else
             echo "⚠️  No successful coverage run found"
             echo "downloaded=false" >> "$GITHUB_OUTPUT"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+          TRIGGERING_COVERAGE_RUN_ID: ${{ github.event.workflow_run.id }}
         continue-on-error: true
 
       # ── Benchmark placeholder (if artifact not downloaded) ───────────────
