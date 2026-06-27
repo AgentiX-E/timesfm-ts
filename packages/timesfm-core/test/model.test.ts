@@ -11,7 +11,7 @@
  *   4. Edge cases (NaN, short series, batch padding, negative values)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { TimesFMModel } from '../src/model';
 import { createForecastConfig } from '../src/config';
 import { getTestModelPath } from './helpers';
@@ -420,6 +420,29 @@ describe('TimesFMModel — realistic data patterns', () => {
     }
   });
 
+  it('forecastWithCovariates throws when xreg import fails', async () => {
+    model.compile(createForecastConfig({ maxContext: 128, maxHorizon: 64 }));
+    // Use vi.doMock to simulate @agentix-e/timesfm-xreg not being installed.
+    // This registers a mock factory that throws, covering lines 377-383 in model.ts.
+    vi.doMock('@agentix-e/timesfm-xreg', () => {
+      throw new Error('Cannot find module');
+    });
+
+    try {
+      await expect(
+        model.forecastWithCovariates({
+          inputs: [new Float32Array(Array.from({ length: 40 }, (_, i) => i + 1))],
+          dynamicNumericalCovariates: {
+            trend: [new Float32Array(Array.from({ length: 48 }, (_, i) => i * 0.1))],
+          },
+          xregMode: 'xreg + timesfm',
+        }),
+      ).rejects.toThrow(/requires @agentix-e\/timesfm-xreg/);
+    } finally {
+      vi.doUnmock('@agentix-e/timesfm-xreg');
+    }
+  });
+
   it('forecastWithCovariates dynamically imports xreg', async () => {
     model.compile(createForecastConfig({ maxContext: 128, maxHorizon: 64 }));
     // In the monorepo, @agentix-e/timesfm-xreg is available as a workspace package.
@@ -432,5 +455,46 @@ describe('TimesFMModel — realistic data patterns', () => {
       xregMode: 'xreg + timesfm',
     });
     expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+  });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage
+  // -------------------------------------------------------------------
+
+  it('backcast is undefined when returnBackcast is not requested', async () => {
+    model.compile(createForecastConfig({ maxContext: 128, maxHorizon: 64 }));
+    const data = businessMetric(contextLen);
+
+    const result = await model.forecast(16, [data]);
+    // Default config does not request backcast — line 366 in model.ts returns undefined
+    expect(result.backcast).toBeUndefined();
+  });
+
+  it('forecast supports AbortSignal (aborted before call)', async () => {
+    model.compile(createForecastConfig({ maxContext: 128, maxHorizon: 64 }));
+    const data = businessMetric(80);
+    const controller = new AbortController();
+    controller.abort();
+
+    // The pre-call abort check at line 186 should throw
+    await expect(model.forecast(16, [data], { signal: controller.signal })).rejects.toThrow();
+  });
+
+  it('forecast calls onProgress callback with expected phases', async () => {
+    model.compile(createForecastConfig({ maxContext: 128, maxHorizon: 64 }));
+    const data = businessMetric(80);
+    const phases: string[] = [];
+
+    await model.forecast(16, [data], {
+      onProgress: (e) => {
+        phases.push(e.phase);
+      },
+    });
+
+    // Single batch → the loop should emit preprocess, prefill, and postprocess at minimum
+    expect(phases).toContain('preprocess');
+    expect(phases).toContain('postprocess');
+    // onProgress events carry step/total/batchIndex metadata
+    expect(phases.length).toBeGreaterThanOrEqual(2);
   });
 });

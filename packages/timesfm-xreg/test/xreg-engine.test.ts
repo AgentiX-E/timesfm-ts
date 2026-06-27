@@ -298,4 +298,130 @@ describe('forecastWithCovariates', () => {
     expect(result.pointForecast.length).toBe(1);
     expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
   });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage
+  // -------------------------------------------------------------------
+
+  it('works with no covariates at all (xreg acts as intercept-only)', async () => {
+    // When no covariates are supplied the design matrix has only the intercept column.
+    // testLens falls back to fc.maxHorizon (line 361 in xreg-engine.ts).
+    const contextLen = 30;
+
+    const result = await forecastWithCovariates(model, {
+      inputs: [new Float32Array(Array.from({ length: contextLen }, (_, i) => i + 1))],
+      xregMode: 'xreg + timesfm',
+    });
+
+    expect(result.pointForecast.length).toBe(1);
+    expect(result.pointForecast[0].length).toBeGreaterThan(0);
+    expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+    // xregOutputs should exist (intercept-only linear fit)
+    expect(result.xregOutputs.length).toBe(1);
+  });
+
+  it('handles all-constant dynamic covariates (std near zero branch)', async () => {
+    // A covariate with zero variance triggers the safeStd=1 branch at line 102
+    // (z-score normalization with near-zero std should not divide by zero).
+    const horizon = 8;
+    const contextLen = 40;
+    const totalLen = contextLen + horizon;
+
+    const result = await forecastWithCovariates(model, {
+      inputs: [new Float32Array(Array.from({ length: contextLen }, (_, i) => i + 1))],
+      dynamicNumericalCovariates: {
+        constantCov: [new Float32Array(totalLen).fill(5)], // all same value → std = 0
+      },
+      xregMode: 'xreg + timesfm',
+    });
+
+    expect(result.pointForecast.length).toBe(1);
+    expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+  });
+
+  it('handles combined dynamic, static, and categorical covariates', async () => {
+    // Exercise buildDesignMatrices with all covariate types simultaneously.
+    const horizon = 8;
+    const contextLen = 40;
+    const totalLen = contextLen + horizon;
+
+    const result = await forecastWithCovariates(model, {
+      inputs: [new Float32Array(Array.from({ length: contextLen }, (_, i) => i + 1))],
+      dynamicNumericalCovariates: {
+        trend: [new Float32Array(Array.from({ length: totalLen }, (_, i) => i * 0.1))],
+      },
+      dynamicCategoricalCovariates: {
+        season: [Array.from({ length: totalLen }, (_, i) => i % 4)],
+      },
+      staticNumericalCovariates: {
+        score: [42],
+      },
+      staticCategoricalCovariates: {
+        region: ['east'],
+      },
+      xregMode: 'xreg + timesfm',
+    });
+
+    expect(result.pointForecast.length).toBe(1);
+    expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+  });
+
+  it('timesfm + xreg mode works with multiple series', async () => {
+    // Test the timesfm + xreg path with a batch of multiple series.
+    const horizon = 8;
+    const contextLen = 40;
+    const totalLen = contextLen + horizon;
+
+    const inputs: Float32Array[] = [
+      new Float32Array(Array.from({ length: contextLen }, (_, i) => i + 1)),
+      new Float32Array(Array.from({ length: contextLen }, (_, i) => (i + 1) * 10)),
+    ];
+
+    const result = await forecastWithCovariates(model, {
+      inputs,
+      dynamicNumericalCovariates: {
+        trend: [
+          new Float32Array(Array.from({ length: totalLen }, (_, i) => i * 0.1)),
+          new Float32Array(Array.from({ length: totalLen }, (_, i) => Math.sin(i * 0.3))),
+        ],
+      },
+      xregMode: 'timesfm + xreg',
+    });
+
+    expect(result.pointForecast.length).toBe(2);
+    expect(result.pointForecast[0].length).toBeGreaterThan(0);
+    expect(result.pointForecast[1].length).toBeGreaterThan(0);
+    expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+    expect(Number.isFinite(result.pointForecast[1][0])).toBe(true);
+  });
+
+  it('defaults xregMode to "xreg + timesfm" when omitted', async () => {
+    // Cover the ?? 'xreg + timesfm' default branch at line 337.
+    const contextLen = 30;
+
+    const result = await forecastWithCovariates(model, {
+      inputs: [new Float32Array(Array.from({ length: contextLen }, (_, i) => i + 1))],
+      dynamicNumericalCovariates: {
+        price: [new Float32Array(Array.from({ length: contextLen + 8 }, (_, i) => i + 1))],
+      },
+    });
+
+    expect(result.pointForecast.length).toBe(1);
+    expect(Number.isFinite(result.pointForecast[0][0])).toBe(true);
+  });
+
+  it('throws when model is not compiled', async () => {
+    // Cover line 335: if (!fc) throw new Error(...)
+    const rawModel = await TimesFMModel.fromPretrained({ modelPath: getModelPath() });
+    // Do NOT compile — forecastConfig is null
+    expect(rawModel.forecastConfig).toBeNull();
+
+    await expect(
+      forecastWithCovariates(rawModel, {
+        inputs: [new Float32Array([1, 2, 3])],
+      }),
+    ).rejects.toThrow('Model not compiled');
+
+    await rawModel.dispose();
+  });
 });

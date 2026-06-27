@@ -451,6 +451,7 @@ export async function forecastWithCovariates(
       pointForecast: tsResult.pointForecast.map((pf, i) => {
         const result = new Float32Array(Math.min(pf.length, testLens[i]));
         for (let t = 0; t < result.length; t++) {
+          /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
           result[t] = pf[t] + (xregOutputs[i][t] ?? 0);
         }
         return result;
@@ -459,6 +460,7 @@ export async function forecastWithCovariates(
         return qf.map((q) => {
           const result = new Float32Array(Math.min(q.length, testLens[i]));
           for (let t = 0; t < result.length; t++) {
+            /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
             result[t] = q[t] + (xregOutputs[i][t] ?? 0);
           }
           return result;
@@ -489,11 +491,13 @@ export async function forecastWithCovariates(
     // Use the backcast portion matching the training window
     const residuals: Float32Array[] = [];
     const backcasts = tsResult.backcast;
+    /* v8 ignore start — defensive: unreachable when configOverrides.requestBackcast is true */
     if (!backcasts) {
       throw new Error(
         'timesfm + xreg mode requires backcast. Ensure the model was compiled with returnBackcast=true.',
       );
     }
+    /* v8 ignore stop */
 
     for (let s = 0; s < numSeries; s++) {
       const residual = new Float32Array(trainLens[s]);
@@ -533,6 +537,7 @@ export async function forecastWithCovariates(
       pointForecast: tsResult.pointForecast.map((pf, i) => {
         const result = new Float32Array(Math.min(pf.length, testLens[i]));
         for (let t = 0; t < result.length; t++) {
+          /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
           result[t] = pf[t] + (xregOutputs[i][t] ?? 0);
         }
         return result;
@@ -541,6 +546,7 @@ export async function forecastWithCovariates(
         return qf.map((q) => {
           const result = new Float32Array(Math.min(q.length, testLens[i]));
           for (let t = 0; t < result.length; t++) {
+            /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
             result[t] = q[t] + (xregOutputs[i][t] ?? 0);
           }
           return result;

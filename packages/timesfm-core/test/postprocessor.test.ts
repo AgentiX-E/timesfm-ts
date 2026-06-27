@@ -23,6 +23,7 @@ import {
   TIMESFM_25_CONFIG,
   DEFAULT_FORECAST_CONFIG,
   type ForecastConfig,
+  type DecodeResult,
 } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
@@ -600,6 +601,146 @@ describe('postprocessor — postProcess (main entry point)', () => {
     expect(output.backcast![0].length).toBeGreaterThan(0);
     // With mu=50, sigma=2, the backcast values should be denormalized
     for (const v of output.backcast![0]) {
+      expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage — reverseInputNormalization
+  // -------------------------------------------------------------------
+
+  it('reverseInputNormalization uses fallback stats when entry is missing', () => {
+    // Line 322: { mu, sigma } = stats[b] ?? { mu: 0, sigma: 1 }
+    // When stats[b] is undefined, the nullish coalescing fallback kicks in.
+    const ff0 = new Float32Array([1, 2, 3]);
+    const ff1 = new Float32Array([4, 5, 6]);
+    const stats = [{ mu: 10, sigma: 2 }]; // only 1 entry for 2 forecasts
+
+    const result = reverseInputNormalization([ff0, ff1], stats);
+    // ff0: stats[0]={mu:10, sigma:2} → 1*2+10=12, 2*2+10=14, 3*2+10=16
+    expect(Array.from(result[0])).toEqual([12, 14, 16]);
+    // ff1: stats[1]=undefined → ?? {mu:0, sigma:1} → raw: 4, 5, 6
+    expect(Array.from(result[1])).toEqual([4, 5, 6]);
+  });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage — postProcess with forceFlipInvariance
+  // -------------------------------------------------------------------
+
+  it('applies forceFlipInvariance when flipDecode is provided', () => {
+    const fcFlip: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      forceFlipInvariance: true,
+      normalizeInputs: false,
+      inferIsPositive: false,
+    };
+    const horizon = 2;
+    // main: all 10's, flip (negated input): all 6's
+    const mainDr = makeDecodeResult(mc.outputPatchLen, () => 10);
+    const flipDr = makeDecodeResult(mc.outputPatchLen, () => 6);
+
+    const output = postProcess(mainDr, horizon, fcFlip, mc, null, flipDr, null);
+
+    // Formula: (forecast(x) - forecast(-x)) / 2 = (10 - 6) / 2 = 2
+    expect(output.pointForecast.length).toBe(1);
+    expect(output.pointForecast[0].length).toBe(horizon);
+    // Point forecast = median (index 5) = 2
+    expect(output.pointForecast[0][0]).toBeCloseTo(2, 5);
+  });
+
+  it('applies forceFlipInvariance with arOutputs in both main and flip decode', () => {
+    const fcFlip: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      forceFlipInvariance: true,
+      normalizeInputs: false,
+      inferIsPositive: false,
+    };
+    const horizon = 2;
+    const timesteps = mc.outputPatchLen;
+    const mainPf = new Float32Array(timesteps * NUM_Q);
+    mainPf.fill(10);
+    const flipPf = new Float32Array(timesteps * NUM_Q);
+    flipPf.fill(6);
+
+    const mainDr: DecodeResult = {
+      pfOutputs: [mainPf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: [new Float32Array(10)], // ar outputs with values > 0
+    };
+    const flipDr: DecodeResult = {
+      pfOutputs: [flipPf],
+      quantileSpreads: [new Float32Array(timesteps * NUM_Q)],
+      arOutputs: [new Float32Array(10)], // ar outputs for negated input
+    };
+
+    const output = postProcess(mainDr, horizon, fcFlip, mc, null, flipDr, null);
+    expect(output.pointForecast.length).toBe(1);
+    expect(output.pointForecast[0]).toHaveLength(horizon);
+  });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage — backcast normalization branches (lines 135-136)
+  // -------------------------------------------------------------------
+
+  it('backcast normalization uses safeSigma fallback when sigma is near zero', () => {
+    // Line 136: safeSigma = sigma < 1e-6 ? 1.0 : sigma
+    const fcWithAll: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      returnBackcast: true,
+      normalizeInputs: true,
+    };
+    const timesteps = mc.outputPatchLen * 2; // 256 → 2 patches
+    const dr = makeDecodeResult(timesteps, (_b, t, q) => t * 100 + q);
+    const stats = [{ mu: 50, sigma: 0 }]; // sigma=0 → safeSigma=1
+
+    const output = postProcess(dr, 2, fcWithAll, mc, stats, null, null);
+    expect(output.backcast).toBeDefined();
+    expect(output.backcast![0].length).toBeGreaterThan(0);
+    // Values denormalized as: raw * 1.0 + 50
+    for (const v of output.backcast![0]) {
+      expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+
+  it('backcast normalization uses fallback stats when entry is missing', () => {
+    // Line 135: inputStats[b] ?? { mu: 0, sigma: 1 }
+    const fcWithAll: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      returnBackcast: true,
+      normalizeInputs: true,
+    };
+    const timesteps = mc.outputPatchLen * 2; // 256 → 2 patches
+    const dr = makeDecodeResult(timesteps, (_b, t, q) => t * 100 + q, 2); // batch of 2
+    const stats = [{ mu: 50, sigma: 2 }]; // only 1 entry
+
+    const output = postProcess(dr, 2, fcWithAll, mc, stats, null, null);
+    expect(output.backcast).toBeDefined();
+    expect(output.backcast![0].length).toBeGreaterThan(0);
+    expect(output.backcast![1].length).toBeGreaterThan(0);
+    // Element 0 uses stats[0], element 1 uses fallback {mu:0, sigma:1}
+    // Values differ because mu differs (50 vs 0)
+    expect(output.backcast![0][0]).not.toEqual(output.backcast![1][0]);
+  });
+
+  // -------------------------------------------------------------------
+  // Edge path coverage — continuous quantile head via postProcess
+  // -------------------------------------------------------------------
+
+  it('applies continuous quantile head when flag is set', () => {
+    const fcCH: ForecastConfig = {
+      ...DEFAULT_FORECAST_CONFIG,
+      useContinuousQuantileHead: true,
+      normalizeInputs: false,
+      inferIsPositive: false,
+    };
+    const timesteps = mc.outputPatchLen; // 128 → 1 patch
+    const dr = makeDecodeResult(timesteps, (_b, t, q) => t * 100 + q);
+
+    const output = postProcess(dr, 2, fcCH, mc, null, null, null);
+    expect(output.pointForecast.length).toBe(1);
+    expect(output.pointForecast[0].length).toBe(2);
+    // All values should be finite
+    for (const v of output.pointForecast[0]) {
       expect(Number.isFinite(v)).toBe(true);
     }
   });
