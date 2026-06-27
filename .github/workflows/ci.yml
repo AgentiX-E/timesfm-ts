@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+      - run: pnpm config set approve-builds true 2>/dev/null || true
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
@@ -41,8 +42,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
       - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm vitest run --config vitest.unit.config.ts
 
@@ -62,8 +63,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
       - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
   # ─── Integration Tests (requires ONNX model) ──────────────────────────
@@ -84,8 +85,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pnpm install --frozen-lockfile
       - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
       # Cache ONNX model to avoid repeated 885 MB download
@@ -132,8 +133,8 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
       - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
       # Restore cached model from integration-test cache key
@@ -185,8 +186,8 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
       - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
       # Restore cached model (same key as integration-test and benchmark)

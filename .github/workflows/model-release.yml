@@ -114,7 +114,7 @@ jobs:
             --output models/timesfm-2.5.onnx \
             --skip-validation
       - name: Install & build
-        run: pnpm install --frozen-lockfile && pnpm build
+        run: pnpm config set approve-builds true 2>/dev/null || true; pnpm install --frozen-lockfile && pnpm build
       - name: Run integration tests
         run: pnpm test
         env:
