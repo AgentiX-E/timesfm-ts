@@ -289,16 +289,19 @@ jobs:
           name: coverage-report
           path: docs/coverage
 
-      # ── Build coverage summary + root landing page ─────────────────
+      # ── Build combined benchmark report (Node + WASM comparison) ────
+      - name: Generate combined benchmark report
+        run: |
+          node scripts/generate-combined-report.js \
+            --node docs/benchmark/benchmark-report.json \
+            --web docs/web-benchmark/web-benchmark-report.json \
+            --out docs/benchmark/index.html
+
+      # ── Build coverage + root landing page + web-benchmark redirect ────
       - name: Prepare pages
         run: |
           node -e '
           const fs = require("fs");
-          const path = require("path");
-
-          // ── Benchmark redirect ──
-          fs.writeFileSync("docs/benchmark/index.html",
-            `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=benchmark-report.html"><title>Benchmark</title></head><body><p>Redirecting to <a href="benchmark-report.html">benchmark report</a>…</p></body></html>`);
 
           // ── Web benchmark redirect ──
           fs.writeFileSync("docs/web-benchmark/index.html",
