@@ -77,7 +77,7 @@ jobs:
       - name: Web Benchmark (WASM)
         run: |
           echo "🌐 Running web (WASM) benchmark..."
-          node scripts/web-benchmark-ci.js \
+          pnpm exec tsx scripts/web-benchmark-ci.js \
             --all web-benchmark-report.json web-benchmark-report.md \
             --html web-benchmark-report.html
         env:
