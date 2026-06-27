@@ -289,53 +289,45 @@ jobs:
           name: coverage-report
           path: docs/coverage
 
-      # ── Build coverage index (from lcov-report if present) ────────────
-      - name: Prepare coverage pages
+      # ── Build coverage summary + root landing page ─────────────────
+      - name: Prepare pages
         run: |
-          if [ -d docs/coverage/lcov-report ]; then
-            # Link lcov-report as the main coverage page
-            cp docs/coverage/lcov-report/* docs/coverage/ 2>/dev/null || true
-          fi
-          # Build summary card if no index.html
-          if [ ! -f docs/coverage/index.html ]; then
-            if [ -f docs/coverage/coverage-summary.json ]; then
-              TOTAL=$(node -e "const c=require('./docs/coverage/coverage-summary.json').total;console.log(JSON.stringify({l:c.lines.pct.toFixed(1),b:c.branches.pct.toFixed(1),f:c.functions.pct.toFixed(1),s:c.statements.pct.toFixed(1)}))")
-              L=$(echo "$TOTAL" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).l))")
-              B=$(echo "$TOTAL" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).b))")
-              F=$(echo "$TOTAL" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).f))")
-              S=$(echo "$TOTAL" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).s))")
-            else
-              L="N/A"; B="N/A"; F="N/A"; S="N/A"
-            fi
-            cat > docs/coverage/index.html <<HEREDOC
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="UTF-8"><title>Coverage Report · agentix-timesfm-ts</title>
-            <style>body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1a1a2e}
-            h1{border-bottom:3px solid #2563eb;padding-bottom:.5rem}h2{margin-top:2rem;color:#1e40af}
-            .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1.5rem 0}
-            .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1.25rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-            .card .pct{font-size:2.5rem;font-weight:700;color:#16a34a}.card .label{color:#6b7280;font-size:.875rem;margin-top:.25rem}
-            </style></head>
-            <body>
-            <h1>📈 Coverage Report</h1>
-            <p>Generated $(date -Iseconds) · <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">agentix-timesfm-ts</a></p>
-            <div class=grid>
-              <div class=card><div class=pct>${L}%</div><div class=label>Lines</div></div>
-              <div class=card><div class=pct>${B}%</div><div class=label>Branches</div></div>
-              <div class=card><div class=pct>${F}%</div><div class=label>Functions</div></div>
-              <div class=card><div class=pct>${S}%</div><div class=label>Statements</div></div>
-            </div>
-            <p><small>Thresholds: ≥95% lines · functions · branches · statements</small></p>
-            </body></html>
-            HEREDOC
-          fi
+          node -e '
+          const fs = require("fs");
+          const path = require("path");
 
-      # ── Root landing page ─────────────────────────────────────────────
-      - name: Build root pages index
-        run: |
-          cat > docs/index.html <<HEREDOC
-          <!DOCTYPE html>
+          // ── Coverage index ──
+          let coverageHtml = "";
+          try {
+            const summary = require("./docs/coverage/coverage-summary.json").total;
+            const pct = (k) => summary[k].pct.toFixed(1);
+            coverageHtml = `<!DOCTYPE html>
+          <html lang="en">
+          <head><meta charset="UTF-8"><title>Coverage Report · agentix-timesfm-ts</title>
+          <style>body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1a1a2e}
+          h1{border-bottom:3px solid #2563eb;padding-bottom:.5rem}h2{margin-top:2rem;color:#1e40af}
+          .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1.5rem 0}
+          .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1.25rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+          .card .pct{font-size:2.5rem;font-weight:700;color:#16a34a}.card .label{color:#6b7280;font-size:.875rem;margin-top:.25rem}
+          </style></head>
+          <body>
+          <h1>📈 Coverage Report</h1>
+          <p>Generated ${new Date().toISOString()} · <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">agentix-timesfm-ts</a></p>
+          <div class=grid>
+            <div class=card><div class=pct>${pct("lines")}%</div><div class=label>Lines</div></div>
+            <div class=card><div class=pct>${pct("branches")}%</div><div class=label>Branches</div></div>
+            <div class=card><div class=pct>${pct("functions")}%</div><div class=label>Functions</div></div>
+            <div class=card><div class=pct>${pct("statements")}%</div><div class=label>Statements</div></div>
+          </div>
+          <p><small>Thresholds: ≥95% lines · functions · branches · statements</small></p>
+          </body></html>`;
+          } catch(e) {
+            coverageHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Coverage</title></head><body><h1>📈 Coverage</h1><p>Report pending — check back after CI completes.</p></body></html>`;
+          }
+          fs.writeFileSync("docs/coverage/index.html", coverageHtml);
+
+          // ── Root landing page ──
+          const rootHtml = `<!DOCTYPE html>
           <html lang="en">
           <head><meta charset="UTF-8"><title>agentix-timesfm-ts · Docs</title>
           <style>body{font-family:system-ui,sans-serif;max-width:800px;margin:3rem auto;padding:0 1.5rem;line-height:1.7;color:#1a1a2e;background:#fafbfc}
@@ -352,8 +344,9 @@ jobs:
           <div class=card><h2>🌐 <a href="web-benchmark/">Web (WASM) Benchmark</a></h2><p>onnxruntime-web WASM inference performance vs Node.js native</p></div>
           <div class=card><h2>📈 <a href="coverage/">Test Coverage</a></h2><p>Code coverage reports (lines, branches, functions, statements)</p></div>
           <div class=card><h2>💻 <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">Source Code</a></h2><p>GitHub repository with README, contributing guide, and full source</p></div>
-          </body></html>
-          HEREDOC
+          </body></html>`;
+          fs.writeFileSync("docs/index.html", rootHtml);
+          '
 
       # ── Deploy to GitHub Pages ────────────────────────────────────────
       - name: Setup Pages
