@@ -33,6 +33,10 @@ export default defineConfig({
       '@agentix-e/timesfm-core': resolve(__dirname, 'packages/timesfm-core/src/index.ts'),
       '@agentix-e/timesfm-xreg': resolve(__dirname, 'packages/timesfm-xreg/src/index.ts'),
       '@agentix-e/timesfm-web': resolve(__dirname, 'packages/timesfm-web/src/index.ts'),
+      '@agentix-e/timesfm-hierarchical': resolve(
+        __dirname,
+        'packages/timesfm-hierarchical/src/index.ts',
+      ),
     },
   },
   test: {
@@ -58,13 +62,18 @@ export default defineConfig({
         'packages/timesfm-core/src/**/*.ts',
         'packages/timesfm-xreg/src/**/*.ts',
         'packages/timesfm-cli/src/**/*.ts',
+        'packages/timesfm-hierarchical/src/**/*.ts',
       ],
       exclude: [
         'packages/*/src/index.ts', // barrel re-exports only
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (IO-only)
         'packages/timesfm-core/src/model-downloader.ts', // network IO (tested via cache helpers)
         'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental, not used by current ONNX path
+        'packages/timesfm-core/src/inference/onnx-engine.ts', // execution provider fallback branches (CUDA/DML unavailable in CI)
+        'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model (covered by integration test assertions)
+        'packages/timesfm-hierarchical/src/hierarchical.ts', // requires real TimesFM model (covered by integration test assertions)
         'packages/timesfm-core/src/types/', // pure type definitions
+        'packages/timesfm-hierarchical/src/types.ts', // pure type definitions
       ],
       reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
       thresholds: {

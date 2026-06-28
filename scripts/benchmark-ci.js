@@ -838,65 +838,15 @@ async function main() {
     const core = coreMod.default || coreMod;
     const { TimesFMModel, createForecastConfig } = core;
 
-    // ── Real-world test fixture generators (inline for ESM/CJS interop) ──
-    // These are simplified inline versions of test-fixtures.ts generators.
-    // All use seed=42 Mulberry32 PRNG — deterministic, reproducible.
-    const SEED = 42;
-    function mulberry32(s) {
-      return () => {
-        s |= 0;
-        s = (s + 0x6d2b79f5) | 0;
-        let t = Math.imul(s ^ (s >>> 15), 1 | s);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-
-    function businessMetric(len) {
-      const r = mulberry32(SEED);
-      const arr = new Float32Array(len);
-      for (let i = 0; i < len; i++)
-        arr[i] = 100 + i * 0.5 + 20 * Math.sin((2 * Math.PI * i) / 7) + (r() - 0.5) * 10;
-      return arr;
-    }
-    function stockPrice(len) {
-      const r = mulberry32(SEED);
-      const arr = new Float32Array(len);
-      let p = 100;
-      for (let i = 0; i < len; i++) {
-        const u1 = Math.max(r(), 1e-10),
-          u2 = r();
-        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-        p *= 1 + 0.0002 + 0.015 * z;
-        arr[i] = p;
-      }
-      return arr;
-    }
-    function hourlyTemp(len) {
-      const r = mulberry32(SEED);
-      const arr = new Float32Array(len);
-      for (let i = 0; i < len; i++)
-        arr[i] = 20 + 8 * Math.sin((2 * Math.PI * (i + 6)) / 24) + (r() - 0.5) * 2;
-      return arr;
-    }
-    function eCommerce(len) {
-      const r = mulberry32(SEED);
-      const arr = new Float32Array(len);
-      for (let i = 0; i < len; i++) {
-        const trend = 1000 * (1 + i * 0.001);
-        const weekly = 1 + 0.3 * Math.sin((2 * Math.PI * i) / 7);
-        const yearly = 1 + 0.2 * Math.sin((2 * Math.PI * i) / 365);
-        arr[i] = trend * weekly * yearly * (1 + (r() - 0.5) * 0.1);
-      }
-      return arr;
-    }
-    function regimeShift(len) {
-      const r = mulberry32(SEED);
-      const arr = new Float32Array(len);
-      const mid = Math.floor(len / 2);
-      for (let i = 0; i < len; i++) arr[i] = (i < mid ? 10 : 30) + (r() - 0.5) * 4;
-      return arr;
-    }
+    // ── Real-world test fixture generators (imported from test-fixtures.ts) ═══
+    // Single source of truth — the same generators used by the full test suite.
+    const fixturesMod = await import(
+      path.join(__dirname, '..', 'packages', 'timesfm-core', 'test', 'test-fixtures.ts')
+    );
+    const { businessMetric, stockPrice, hourlyTemp, eCommerce, regimeShift } =
+      typeof fixturesMod.default === 'object' && fixturesMod.default !== null
+        ? fixturesMod.default
+        : fixturesMod;
 
     // Use 5 diverse real-world fixture types (deterministic via seed=42).
     const horizon = 12;

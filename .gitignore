@@ -16,3 +16,5 @@ models/timesfm-2.5-descriptor.json
 models/timesfm-2.5.onnx.meta.json
 benchmark-report.json
 benchmark-report.md
+# Audit / review reports — generated artifacts, not project docs
+AUDIT_REPORT.md

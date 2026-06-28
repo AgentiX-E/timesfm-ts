@@ -54,13 +54,13 @@ pnpm lint:fix
 pnpm format
 pnpm format:check
 
-# Local CI simulation (mirrors CI fast checks: build + lint + format + unit tests with coverage)
+# Local CI simulation (mirrors CI unit-test job: build + lint + format + unit tests with coverage)
 pnpm ci:local
 
-# Full CI simulation (includes integration tests — requires ONNX model)
+# Same as ci:local — fast pre-merge check with coverage thresholds
 pnpm ci
 
-# Full local verification (adds integration tests + full coverage)
+# Full CI simulation (adds integration tests with real ONNX model + full coverage)
 pnpm ci:full
 
 # One-click full pipeline (model export + tests + benchmarks)

@@ -6,6 +6,7 @@
  *   - src/timesfm/timesfm_2p5/timesfm_2p5_base.py (TimesFM_2p5_200M_Definition)
  */
 
+import type { ModelPrecision } from './model-descriptor';
 // ---------------------------------------------------------------------------
 // Numeric aliases
 // ---------------------------------------------------------------------------
@@ -207,6 +208,14 @@ export interface ModelLoadOptions {
   modelPath: string;
   /** Execution provider: 'cpu' | 'cuda' | 'dml' (default 'cpu'). */
   executionProvider?: 'cpu' | 'cuda' | 'dml';
+  /**
+   * Hint for which precision variant to load.
+   * The engine itself does not branch on precision — ONNX Runtime
+   * transparently executes QDQ (INT8) graphs.  This field is
+   * informational metadata forwarded from the model descriptor
+   * for logging and diagnostics.
+   */
+  precision?: ModelPrecision;
   /**
    * Optional pre-built inference engine for dependency injection.
    *

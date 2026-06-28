@@ -45,10 +45,12 @@ export {
   type ProcessingDescriptor,
   type ModelIdentity,
   ENGINE_SUPPORTED_SCHEMA,
+  PRECISION_DEFAULT,
   descriptorToModelConfig,
   loadModelDescriptor,
   resolveModelConfig,
 } from './model-descriptor';
+export type { ModelPrecision } from './model-descriptor';
 
 // ---- Types ----
 export type {
