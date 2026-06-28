@@ -1,0 +1,107 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Reusable workflow: Deploy GitHub Pages
+#
+# Generates unified docs/ directory from TypeDoc API docs, benchmark reports,
+# and coverage data, then deploys to GitHub Pages.
+#
+# Called by:
+#   • ci.yml (on push to master/main)
+#   • release.yml (after npm publish)
+# ──────────────────────────────────────────────────────────────────────────────
+name: Deploy Pages
+
+on:
+  workflow_call:
+    inputs:
+      artifact-run-id:
+        description: 'Run ID to download artifacts from (defaults to current run)'
+        type: string
+        default: ''
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # ── Generate TypeDoc API docs ────────────────────────────────────────
+      - name: Generate API documentation
+        run: pnpm docs:generate
+
+      # ── Download artifacts from the caller workflow run ──────────────────
+      - name: Download benchmark report
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-report
+          path: docs/benchmark
+          run-id: ${{ inputs.artifact-run-id || github.run_id }}
+        continue-on-error: true
+
+      - name: Download web benchmark report
+        uses: actions/download-artifact@v4
+        with:
+          name: web-benchmark-report
+          path: docs/web-benchmark
+          run-id: ${{ inputs.artifact-run-id || github.run_id }}
+        continue-on-error: true
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: docs/coverage
+          run-id: ${{ inputs.artifact-run-id || github.run_id }}
+        continue-on-error: true
+
+      # ── Build combined benchmark report (Node + WASM comparison) ─────────
+      - name: Generate combined benchmark report
+        run: |
+          if [ -f docs/benchmark/benchmark-report.json ] && [ -f docs/web-benchmark/web-benchmark-report.json ]; then
+            node scripts/generate-combined-report.js \
+              --node docs/benchmark/benchmark-report.json \
+              --web docs/web-benchmark/web-benchmark-report.json \
+              --out docs/benchmark/index.html
+            echo "[deploy-pages] Combined benchmark report generated"
+          else
+            echo "[deploy-pages] Skipping combined benchmark (missing benchmark data)"
+          fi
+        continue-on-error: true
+
+      # ── Build coverage dashboard + root landing page ─────────────────────
+      - name: Prepare pages
+        run: node scripts/prepare-pages.js
+
+      # ── Deploy to GitHub Pages ───────────────────────────────────────────
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

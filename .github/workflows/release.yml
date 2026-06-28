@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  pages: write
 
 concurrency:
   group: release-${{ github.ref_name }}
@@ -268,88 +269,14 @@ jobs:
           done
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 5 — Deploy Documentation to GitHub Pages
+  # Stage 5 — Deploy Documentation to GitHub Pages (reuses shared workflow)
   # ═══════════════════════════════════════════════════════════════════════════
   deploy-pages:
     needs: [quality, benchmark, web-benchmark, publish-npm]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     permissions:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - run: pnpm config set approve-builds true 2>/dev/null || true
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-
-      # ── Generate TypeDoc API docs ──
-      - name: Generate API documentation
-        run: pnpm docs:generate
-
-      # ── Download artifacts from this workflow run ──
-      - name: Download benchmark report
-        uses: actions/download-artifact@v4
-        with:
-          name: benchmark-report
-          path: docs/benchmark
-        continue-on-error: true
-
-      - name: Download web benchmark report
-        uses: actions/download-artifact@v4
-        with:
-          name: web-benchmark-report
-          path: docs/web-benchmark
-        continue-on-error: true
-
-      - name: Download coverage report
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: docs/coverage
-        continue-on-error: true
-
-      # ── Build combined benchmark report (Node + WASM comparison) ──
-      #   hashFiles() is evaluated at workflow parse time, before artifacts are
-      #   downloaded — use a shell-level conditional instead of `if:` expression.
-      - name: Generate combined benchmark report
-        run: |
-          if [ -f docs/benchmark/benchmark-report.json ] && [ -f docs/web-benchmark/web-benchmark-report.json ]; then
-            node scripts/generate-combined-report.js \
-              --node docs/benchmark/benchmark-report.json \
-              --web docs/web-benchmark/web-benchmark-report.json \
-              --out docs/benchmark/index.html
-            echo "[deploy-pages] Combined benchmark report generated"
-          else
-            echo "[deploy-pages] Skipping combined benchmark (missing benchmark data)"
-          fi
-        continue-on-error: true
-
-      # ── Build coverage dashboard + root landing page ──
-      - name: Prepare pages
-        run: node scripts/prepare-pages.js
-
-      # ── Deploy to GitHub Pages ──
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: docs
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    uses: ./.github/workflows/_deploy-pages.yml
+    with:
+      artifact-run-id: ${{ github.run_id }}

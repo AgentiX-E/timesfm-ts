@@ -204,6 +204,10 @@ pnpm run check:latest
 | 📚 **API Docs**   | Full TypeDoc reference for all packages                           | [agentix-e.github.io/agentix-timesfm-ts/api/](https://agentix-e.github.io/agentix-timesfm-ts/api/)           |
 | 📊 **Benchmark**  | Inference latency, throughput & accuracy reports (Node.js + WASM) | [agentix-e.github.io/.../benchmark/](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)              |
 | 📈 **Coverage**   | Line, branch, function & statement coverage                       | [agentix-e.github.io/agentix-timesfm-ts/coverage/](https://agentix-e.github.io/agentix-timesfm-ts/coverage/) |
+| 🏗️ **Architecture** | Component design, data flow, types system                      | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                                                                  |
+| 💠 **Accuracy**    | Python vs TypeScript TimesFM accuracy comparison                  | [docs/ACCURACY.md](docs/ACCURACY.md)                                                                          |
+| 🔄 **Migration**   | Guide for migrating from Google TimesFM (Python)                  | [docs/MIGRATION.md](docs/MIGRATION.md)                                                                        |
+| 🔧 **Troubleshooting** | Common issues and solutions                                  | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)                                                            |
 | 📦 **npm (core)** | `@agentix-e/timesfm-core`                                         | [npmjs.com/package/@agentix-e/timesfm-core](https://www.npmjs.com/package/@agentix-e/timesfm-core)           |
 | 📦 **npm (xreg)** | `@agentix-e/timesfm-xreg`                                         | [npmjs.com/package/@agentix-e/timesfm-xreg](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)           |
 | 📦 **npm (cli)**  | `@agentix-e/timesfm-cli`                                          | [npmjs.com/package/@agentix-e/timesfm-cli](https://www.npmjs.com/package/@agentix-e/timesfm-cli)             |

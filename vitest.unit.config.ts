@@ -39,6 +39,8 @@ export default defineConfig({
       // These tests require the 885 MB ONNX model — covered by integration tier (vitest.config.ts)
       '**/model.test.ts',
       '**/engine.test.ts',
+      '**/decode-loop.integration.test.ts',
+      '**/real-world-datasets.test.ts',
       '**/web-integration.test.ts',
       '**/xreg-engine.test.ts',
       '**/concurrency.test.ts',
