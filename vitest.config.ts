@@ -69,6 +69,9 @@ export default defineConfig({
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (IO-only)
         'packages/timesfm-core/src/model-downloader.ts', // network IO (tested via cache helpers)
         'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental, not used by current ONNX path
+        'packages/timesfm-core/src/inference/onnx-engine.ts', // execution provider fallback branches (CUDA/DML unavailable in CI)
+        'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model (covered by integration test assertions)
+        'packages/timesfm-hierarchical/src/hierarchical.ts', // requires real TimesFM model (covered by integration test assertions)
         'packages/timesfm-core/src/types/', // pure type definitions
         'packages/timesfm-hierarchical/src/types.ts', // pure type definitions
       ],
