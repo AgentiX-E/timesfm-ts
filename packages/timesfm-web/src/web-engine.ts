@@ -256,8 +256,17 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
     const session = this._session;
     const batchSize = inputs.length;
 
-    // Read input name dynamically from session metadata to support
-    // models with non-standard naming conventions (aligned with ONNX engine).
+    // Build output name mapping: preferred canonical name → actual name.
+    // This matches the ONNX engine's dynamic output name resolution,
+    // supporting models exported with non-standard naming conventions.
+    const resolveOutputName = (preferred: string): string => {
+      if (session.outputNames.includes(preferred)) return preferred;
+      const canonicalOrder = ['input_emb', 'output_emb', 'output_ts', 'output_qs'];
+      const idx = canonicalOrder.indexOf(preferred);
+      if (idx >= 0 && idx < session.outputNames.length) return session.outputNames[idx];
+      return preferred;
+    };
+
     const inputName = session.inputNames[0] || 'inputs';
 
     // Run each batch element sequentially through the ONNX session.
@@ -294,10 +303,10 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
         return new Float32Array(t.data as Float32Array);
       };
 
-      inputEmbs.push(extract(results['input_emb']));
-      outputEmbs.push(extract(results['output_emb']));
-      outputTSs.push(extract(results['output_ts']));
-      outputQSs.push(extract(results['output_qs']));
+      inputEmbs.push(extract(results[resolveOutputName('input_emb')]));
+      outputEmbs.push(extract(results[resolveOutputName('output_emb')]));
+      outputTSs.push(extract(results[resolveOutputName('output_ts')]));
+      outputQSs.push(extract(results[resolveOutputName('output_qs')]));
     }
 
     return {

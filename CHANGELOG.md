@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`--proxy-password` CLI flag** for `timesfm setup` — proxy authentication password can now be passed via CLI argument (in addition to the existing `TIMESFM_PROXY_PASSWORD` environment variable).
 - Coverage threshold enforcement in CI unit-test and integration-test jobs — both workflows now explicitly check ≥95% on all four metrics (lines, branches, functions, statements) with gate failure.
 - `vitest.unit.config.ts` now generates `lcov` coverage format for CI artifact compatibility.
+- **`web-engine.ts`** and **`model-loader.ts`** added to TypeDoc entry points for comprehensive browser API documentation.
+- `vitest.globalSetup.ts` migrated to ESM-compatible `import.meta.url` pattern (replaced `__dirname`).
 
 ### Changed
 
@@ -21,8 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/index.html` root landing page** — merged Web/WASM benchmark link into the main Benchmark Reports card for consolidated navigation.
 - **CI `deploy-pages` job** — generate-combined-report step now has file-existence fallback for missing benchmark data.
 - **`pnpm ci` and `pnpm ci:local`** commands unified — both now run build + lint + format + unit tests with coverage (matching CI pre-merge checks exactly).
+- **`pnpm ci:full`** — consolidated to build + lint + format + unit coverage + full coverage (removed redundant intermediate test run).
 - **`vitest.config.ts` coverage excludes** — no longer excludes `model.ts`, `onnx-engine.ts`, and `timesfm-web/src/**` from coverage (these are covered by integration tests with real ONNX model).
-- **`model-release.yml`** — initial `timesfm-latest` release creation no longer pushes a git tag (avoids protected-branch conflicts).
+- **`model-release.yml`** — fixed Node.js version from non-existent `24` to `22`; initial `timesfm-latest` release creation no longer pushes a git tag (avoids protected-branch conflicts).
+- **`web-engine.ts`** — output name resolution now uses dynamic `resolveOutputName()` matching the ONNX engine, supporting models with non-standard naming conventions.
+- **`benchmark-ci.js`** — fixture generators now imported from `test-fixtures.ts` instead of inline duplication (single source of truth, same seed=42 determinism).
 
 ### Fixed
 

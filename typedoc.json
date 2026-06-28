@@ -4,7 +4,9 @@
     "packages/timesfm-xreg/src/index.ts",
     "packages/timesfm-cli/src/cli.ts",
     "packages/timesfm-cli/src/csv-forecast.ts",
-    "packages/timesfm-web/src/index.ts"
+    "packages/timesfm-web/src/index.ts",
+    "packages/timesfm-web/src/web-engine.ts",
+    "packages/timesfm-web/src/model-loader.ts"
   ],
   "out": "docs/api",
   "tsconfig": "tsconfig.json",
