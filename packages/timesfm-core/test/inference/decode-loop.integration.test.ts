@@ -91,7 +91,9 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
   let engine: TimesFMInferenceEngine;
 
   beforeAll(async () => {
-    engine = new TimesFMInferenceEngine({ executionProvider: 'cpu' });
+    engine = new TimesFMInferenceEngine(TIMESFM_25_CONFIG, {
+      executionProvider: 'cpu',
+    });
     await engine.load(MODEL_PATH);
   }, 120000);
 
