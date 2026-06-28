@@ -298,7 +298,7 @@ jobs:
   # GitHub Pages — publish API docs + benchmark + coverage on push to master
   # ═══════════════════════════════════════════════════════════════════════
   deploy-pages:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     needs: [lint, unit-test, build, integration-test, benchmark, web-benchmark]
     runs-on: ubuntu-latest
     timeout-minutes: 10
