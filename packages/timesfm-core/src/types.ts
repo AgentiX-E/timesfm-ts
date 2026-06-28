@@ -368,6 +368,7 @@ export interface ITimesFMModel {
     inputs: Float32Array[],
     options?: ForecastCallOptions,
   ): Promise<ForecastOutput>;
+  forecastWithCovariates(params: CovariateForecastParams): Promise<CovariateForecastOutput>;
   dispose(): Promise<void>;
   readonly isCompiled: boolean;
   readonly forecastConfig: ForecastConfig | null;
@@ -428,8 +429,11 @@ export interface RawModelOutput {
  * KV Cache state for one transformer layer.
  *
  * Mirrors the Python `DecodeCache` dataclass in torch/util.py.
+ *
+ * Note: The `KVCache` type alias (array of KVCacheLayer) lives in
+ * `inference/kv-cache.ts` where layered KV caches are composed.
  */
-export interface KVCache {
+export interface KVCacheLayer {
   /** Next position index to write into (per batch element). */
   nextIndex: Int32Array;
   /** Cumulative count of masked (padding) patches. */

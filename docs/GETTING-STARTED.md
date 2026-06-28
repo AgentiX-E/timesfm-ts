@@ -404,18 +404,20 @@ node packages/timesfm-cli/dist/cli.js forecast \
 
 ### CLI Parameters
 
-| Parameter                  | Required | Description                        |
-| -------------------------- | -------- | ---------------------------------- |
-| `-m, --model <path>`       | ✅       | ONNX model file path               |
-| `-H, --horizon <n>`        | ✅       | Number of forecast steps           |
-| `-d, --date-col <name>`    | ❌       | Date column name (default: date)   |
-| `-v, --value-cols <names>` | ❌       | Comma-separated value column names |
-| `-o, --output <path>`      | ❌       | Output file path                   |
-| `--output-format <fmt>`    | ❌       | Output format: csv or json         |
-| `--context <n>`            | ❌       | Max context length (default: 1024) |
-| `--no-normalize`           | ❌       | Disable input normalization        |
-| `--no-flip-invariance`     | ❌       | Disable flip invariance            |
-| `--no-positive`            | ❌       | Disable non-negative constraint    |
+| Parameter                       | Required | Description                        |
+| ------------------------------- | -------- | ---------------------------------- |
+| `-m, --model <path>`            | ✅       | ONNX model file path               |
+| `-H, --horizon <n>`             | ✅       | Number of forecast steps           |
+| `-d, --date-col <name>`         | ❌       | Date column name (default: date)   |
+| `-v, --value-cols <names>`      | ❌       | Comma-separated value column names |
+| `-o, --output <path>`           | ❌       | Output file path                   |
+| `--output-format <fmt>`         | ❌       | Output format: csv or json         |
+| `--context <n>`                 | ❌       | Max context length (default: 1024) |
+| `--no-normalize`                | ❌       | Disable input normalization        |
+| `--no-flip-invariance`          | ❌       | Disable flip invariance            |
+| `--no-positive`                 | ❌       | Disable non-negative constraint    |
+| `--no-fix-quantile-crossing`    | ❌       | Disable quantile crossing fix      |
+| `--no-continuous-quantile-head` | ❌       | Disable continuous quantile head   |
 
 ### CSV Input Format
 

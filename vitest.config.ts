@@ -82,6 +82,7 @@ export default defineConfig({
         'packages/timesfm-core/src/**/*.ts',
         'packages/timesfm-xreg/src/**/*.ts',
         'packages/timesfm-cli/src/**/*.ts',
+        'packages/timesfm-web/src/**/*.ts',
         'packages/timesfm-hierarchical/src/**/*.ts',
       ],
       exclude: [
@@ -89,9 +90,6 @@ export default defineConfig({
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (stdio); tested via CLI smoke tests
         'packages/timesfm-core/src/model-downloader.ts', // network IO; cache helpers tested, download paths require GH Releases
         'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental — reserved for future native-KV ONNX export
-        'packages/timesfm-core/src/inference/onnx-engine.ts', // CUDA/DML fallback branches require GPU hardware (unavailable in CI)
-        'packages/timesfm-xreg/src/xreg-engine.ts', // tested by real-model integration test; dynamic-import error paths excluded
-        'packages/timesfm-hierarchical/src/hierarchical.ts', // tested by real-model integration test; dynamic-import error paths excluded
         'packages/timesfm-core/src/types/', // pure type definitions — no runtime code
         'packages/timesfm-hierarchical/src/types.ts', // pure type definitions — no runtime code
       ],

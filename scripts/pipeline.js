@@ -7,7 +7,7 @@
  * Usage:
  *   node scripts/pipeline.js              # Full pipeline
  *   node scripts/pipeline.js --export      # Export ONNX only
- *   node scripts/pipeline.js --test        # Run regression tests only
+ *   node scripts/pipeline.js --test        # Run all regression tests only
  *   node scripts/pipeline.js --benchmark   # Run benchmark only
  *   node scripts/pipeline.js --check-latest # Check HF latest version
  *   node scripts/pipeline.js --quick       # Skip export (quick mode)
@@ -114,7 +114,7 @@ function validateModel() {
 // ─── Phase 4: Full regression test ──────────────────────────────────────────
 
 function runTests() {
-  title('Phase 4/5  Full Regression Test (111 tests)');
+  title('Phase 4/5  Full Regression Test (all tests)');
   runNpx('vitest run --reporter=verbose');
 }
 
@@ -139,7 +139,7 @@ Usage:
 Options:
   --pipeline      Full pipeline: check version → export → test → benchmark (default)
   --export        Export ONNX model only
-  --test          Run 111 regression tests only (use existing model)
+  --test          Run all regression tests only (use existing model)
   --benchmark     Run inference benchmark only
   --check-latest  Check HuggingFace latest version
   --quick         Quick mode: skip export, run test + benchmark

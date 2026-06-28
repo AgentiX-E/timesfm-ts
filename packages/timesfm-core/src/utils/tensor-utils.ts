@@ -227,26 +227,39 @@ export function negate(arr: Float32Array): Float32Array {
 // ---------------------------------------------------------------------------
 
 /**
- * Mean of a 1-D array.
+ * Mean of a 1-D array.  Skips NaN and non-finite values.
+ *
+ * For numerically-stable, masked statistics consider using `computeStats()`
+ * from `./stats` instead.
  */
 export function mean(arr: Float32Array): number {
-  if (arr.length === 0) return 0;
   let sum = 0;
-  for (let i = 0; i < arr.length; i++) sum += arr[i];
-  return sum / arr.length;
+  let count = 0;
+  for (let i = 0; i < arr.length; i++) {
+    if (Number.isFinite(arr[i])) {
+      sum += arr[i];
+      count++;
+    }
+  }
+  return count > 0 ? sum / count : 0;
 }
 
 /**
- * Population standard deviation of a 1-D array.
+ * Population standard deviation of a 1-D array.  Skips NaN and non-finite values.
+ *
+ * Uses a two-pass algorithm for numerical stability.  For production
+ * use with weighting or masks, prefer `computeStats()` from `./stats`.
  */
 export function std(arr: Float32Array): number {
-  if (arr.length <= 1) return 0;
+  let count = 0;
+  for (let i = 0; i < arr.length; i++) if (Number.isFinite(arr[i])) count++;
+  if (count <= 1) return 0;
   const m = mean(arr);
   let sumSq = 0;
   for (let i = 0; i < arr.length; i++) {
-    sumSq += (arr[i] - m) ** 2;
+    if (Number.isFinite(arr[i])) sumSq += (arr[i] - m) ** 2;
   }
-  return Math.sqrt(sumSq / arr.length);
+  return Math.sqrt(Math.max(0, sumSq / count));
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   type ModelConfig,
   type ModelLoadOptions,
 } from '../types';
+import { InferenceError } from '../errors';
 
 const PROVIDER_MAP: Record<string, string> = {
   cpu: 'CPUExecutionProvider',
@@ -143,8 +144,23 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
       throw new Error('ONNX engine not loaded. Call load() first.');
     }
 
-    const ort = this._ortModule;
-    const session = this._session;
+    try {
+      return await this._forwardUnsafe(inputs, masks);
+    } catch (err) {
+      throw new InferenceError(
+        `ONNX Runtime inference failed: ${(err as Error).message}`,
+        err instanceof Error ? err : undefined,
+      );
+    }
+  }
+
+  private async _forwardUnsafe(
+    inputs: Float32Array[],
+    masks: Uint8Array[],
+  ): Promise<RawModelOutput> {
+    // Narrowing: forward() already checked these are non-null before calling this private method.
+    const ort = this._ortModule!;
+    const session = this._session!;
     const batchSize = inputs.length;
     const inputPatchLen = this._config.inputPatchLen;
     const tokenizerLen = this._config.tokenizerInputDims;

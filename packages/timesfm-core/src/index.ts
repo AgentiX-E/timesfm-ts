@@ -15,6 +15,7 @@ export {
   DownloadError,
   ProxyAuthError,
   ChecksumMismatchError,
+  InferenceError,
 } from './errors';
 
 // ---- Public API ----
@@ -97,6 +98,7 @@ export {
 export {
   createRunningStats,
   updateRunningStats,
+  /** @deprecated Internal helper; use {@link updateRunningStats} for per-patch statistics. */
   updateRunningStatsBatch,
   computeStats,
 } from './utils/stats';

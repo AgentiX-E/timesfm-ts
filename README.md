@@ -34,12 +34,13 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 
 ## Packages
 
-| Package                   | npm                                                                                                                              | Description                                                               |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `@agentix-e/timesfm-core` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-core?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-core) | Core inference engine + preprocessing + postprocessing + model downloader |
-| `@agentix-e/timesfm-xreg` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg) | Covariate regression extension (Ridge + OneHot)                           |
-| `@agentix-e/timesfm-cli`  | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-cli?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-cli)   | CLI tool (includes `timesfm setup` auto model download)                   |
-| `@agentix-e/timesfm-web`  | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-web?color=orange)](https://www.npmjs.com/package/@agentix-e/timesfm-web) | **Browser** inference engine (onnxruntime-web: WASM / WebGPU / WebGL)     |
+| Package                           | npm                                                                                                                                              | Description                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `@agentix-e/timesfm-core`         | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-core?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-core)                 | Core inference engine + preprocessing + postprocessing + model downloader  |
+| `@agentix-e/timesfm-xreg`         | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)                 | Covariate regression extension (Ridge + OneHot)                            |
+| `@agentix-e/timesfm-cli`          | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-cli?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-cli)                   | CLI tool (includes `timesfm setup` auto model download)                    |
+| `@agentix-e/timesfm-web`          | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-web?color=orange)](https://www.npmjs.com/package/@agentix-e/timesfm-web)                 | **Browser** inference engine (onnxruntime-web: WASM / WebGPU / WebGL)      |
+| `@agentix-e/timesfm-hierarchical` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-hierarchical?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-hierarchical) | Hierarchical time series reconciliation engine (bottom-up, top-down, MinT) |
 
 > **Layered strategy**: npm packages contain only code (~150 KB), models (885 MB zip / ~928 MB ONNX) are downloaded on-demand via GitHub Releases.
 

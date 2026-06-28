@@ -12,28 +12,17 @@
  * so that during autoregressive generation we only need to compute
  * attention for the new tokens, not the entire sequence.
  *
+ * Types `KVCacheLayer` and `KVCache` are re-exported from `../types`
+ * for convenience; `KVCacheLayer` is the canonical per-layer interface
+ * and `KVCache` is the composed array-of-layers type.
+ *
  * @see DecodeCache in torch/util.py (Python reference)
  */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import type { KVCacheLayer } from '../types';
 
-/**
- * KV Cache for a single transformer layer.
- *
- * Layout: [batchSize, maxCacheSize, numHeads, headDim]
- */
-export interface KVCacheLayer {
-  /** Next write position per batch element. */
-  nextIndex: Int32Array;
-  /** Cumulative count of masked (padding) positions per batch element. */
-  numMasked: Int32Array;
-  /** Cached Key tensors. */
-  key: Float32Array;
-  /** Cached Value tensors. */
-  value: Float32Array;
-}
+// Re-export for convenience
+export type { KVCacheLayer };
 
 /**
  * Full KV cache across all transformer layers.
