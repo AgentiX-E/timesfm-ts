@@ -4,7 +4,7 @@
  * Creates:
  *   1. docs/index.html              — Root landing page with navigation cards
  *   2. docs/coverage/index.html     — Coverage dashboard (lines/branches/functions/statements)
- *   3. docs/web-benchmark/index.html — Meta-refresh redirect to the web benchmark report
+ *   3. docs/web-benchmark/          — Ensures directory for WASM benchmark data
  *
  * Used by the CI deploy-pages job as an independent script to avoid shell escaping
  * issues that arise with inline `node -e '...'` containing JS template literals.
@@ -21,25 +21,11 @@ function ensureDir(dirPath) {
   }
 }
 
-// ── Web benchmark redirect ───────────────────────────────────────────────
+// ── Web benchmark data directory ─────────────────────────────────────────
 
-function writeWebBenchmarkRedirect() {
+function ensureWebBenchmarkDir() {
   ensureDir('docs/web-benchmark');
-  const html = [
-    '<!DOCTYPE html>',
-    '<html lang="en">',
-    '<head>',
-    '<meta charset="UTF-8">',
-    '<meta http-equiv="refresh" content="0;url=web-benchmark-report.html">',
-    '<title>Web Benchmark</title>',
-    '</head>',
-    '<body>',
-    '<p>Redirecting to <a href="web-benchmark-report.html">web benchmark report</a>&hellip;</p>',
-    '</body>',
-    '</html>',
-  ].join('\n');
-  fs.writeFileSync('docs/web-benchmark/index.html', html + '\n');
-  console.log('[prepare-pages] Wrote docs/web-benchmark/index.html');
+  console.log('[prepare-pages] Ensured docs/web-benchmark/ directory');
 }
 
 // ── Coverage index ───────────────────────────────────────────────────────
@@ -153,8 +139,7 @@ function writeRootLandingPage() {
       '<h1>&#x1F680; agentix-timesfm-ts</h1>',
       '<p>Node.js/TypeScript reimplementation of Google Research&apos;s TimesFM 2.5 &mdash; zero-shot time series forecasting.</p>',
       '<div class=card><h2>&#x1F4DA; <a href="api/index.html">API Documentation</a></h2><p>Full TypeDoc reference for all packages</p></div>',
-      '<div class=card><h2>&#x1F4CA; <a href="benchmark/">Benchmark Reports</a></h2><p>Inference latency, throughput, and prediction accuracy benchmarks</p></div>',
-      '<div class=card><h2>&#x1F310; <a href="web-benchmark/">Web (WASM) Benchmark</a></h2><p>onnxruntime-web WASM inference performance vs Node.js native</p></div>',
+      '<div class=card><h2>&#x1F4CA; <a href="benchmark/">Benchmark Reports</a></h2><p>Inference latency, throughput, and prediction accuracy benchmarks (Node.js + WASM comparison)</p></div>',
       '<div class=card><h2>&#x1F4C8; <a href="coverage/">Test Coverage</a></h2><p>Code coverage reports (lines, branches, functions, statements)</p></div>',
       '<div class=card><h2>&#x1F4BB; <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">Source Code</a></h2><p>GitHub repository with README, contributing guide, and full source</p></div>',
       '</body>',
@@ -167,7 +152,7 @@ function writeRootLandingPage() {
 
 // ── Main ─────────────────────────────────────────────────────────────────
 
-writeWebBenchmarkRedirect();
+writeWebBenchmarkDir();
 writeCoverageIndex();
 writeRootLandingPage();
 console.log('[prepare-pages] All pages generated successfully.');

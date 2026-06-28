@@ -10,7 +10,8 @@
  *   # With proxy (corporate network)
  *   timesfm setup --proxy-url http://proxy.company.com:8080
  *   timesfm setup --proxy-url http://proxy.company.com:8080 --proxy-username user
- *   # Password via environment variable (never in CLI args)
+ *   timesfm setup --proxy-url http://proxy:8080 --proxy-username user --proxy-password pass
+ *   # Password via environment variable (recommended for security)
  *   TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
  *
  *   # Forecast
@@ -43,15 +44,19 @@ program
   )
   .option('--proxy-url <url>', 'Proxy URL for downloading through corporate firewall')
   .option('--proxy-username <user>', 'Proxy authentication username')
+  .option('--proxy-password <pass>', 'Proxy authentication password (prefer env variable)')
   .action(async (options: Record<string, unknown>) => {
     try {
       const core = await import('@agentix-e/timesfm-core');
 
       // Build proxy config from CLI args + environment variables
+      // Priority: CLI args → TIMESFM_PROXY_* env vars → standard *_proxy env vars
       const proxyUrl = (options.proxyUrl as string) || process.env.TIMESFM_PROXY_URL || undefined;
       const proxyUsername =
         (options.proxyUsername as string) || process.env.TIMESFM_PROXY_USERNAME || undefined;
-      const proxyPassword = process.env.TIMESFM_PROXY_PASSWORD || undefined;
+      // Password: CLI arg takes precedence, then env var
+      const proxyPassword =
+        (options.proxyPassword as string) || process.env.TIMESFM_PROXY_PASSWORD || undefined;
 
       const proxyConfig = proxyUrl
         ? { url: proxyUrl, username: proxyUsername, password: proxyPassword }
