@@ -48,9 +48,12 @@ TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-
 
 # Option C: TIMESFM-specific environment variables
 TIMESFM_PROXY_URL=http://proxy:8080 TIMESFM_PROXY_USERNAME=user TIMESFM_PROXY_PASSWORD=pass timesfm setup
+
+# Option D: All proxy parameters via CLI (password in CLI for convenience, but prefer env var)
+timesfm setup --proxy-url http://proxy:8080 --proxy-username user --proxy-password pass
 ```
 
-Proxy resolution priority: `--proxy-url` → `TIMESFM_PROXY_URL` → `HTTPS_PROXY` → `https_proxy` → `HTTP_PROXY` → `http_proxy`. `NO_PROXY` / `no_proxy` are respected.
+Proxy resolution priority: `--proxy-url` → `TIMESFM_PROXY_URL` → `HTTPS_PROXY` → `https_proxy` → `HTTP_PROXY` → `http_proxy`. `NO_PROXY` / `no_proxy` are respected. Password priority: `--proxy-password` → `TIMESFM_PROXY_PASSWORD`. For security, prefer the environment variable to avoid exposing credentials in shell history.
 
 ### `timesfm forecast`
 

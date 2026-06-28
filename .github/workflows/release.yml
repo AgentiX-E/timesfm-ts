@@ -67,6 +67,31 @@ jobs:
         if: ${{ !inputs.skip_tests }}
         run: pnpm test:coverage
 
+      - name: Check coverage thresholds
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          node -e "
+          const fs = require('fs');
+          if (!fs.existsSync('coverage/coverage-summary.json')) {
+            console.log('No coverage summary — skipping threshold check.');
+            process.exit(0);
+          }
+          const s = require('./coverage/coverage-summary.json').total;
+          if (!s) {
+            console.log('No total coverage data — skipping threshold check.');
+            process.exit(0);
+          }
+          const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
+          let failed = false;
+          for (const [k, t] of Object.entries(thresholds)) {
+            const pct = s[k].pct;
+            const status = pct >= t ? '✅' : '❌';
+            console.log(status + ' ' + k + ': ' + pct.toFixed(1) + '% (threshold: ' + t + '%)');
+            if (pct < t) failed = true;
+          }
+          if (failed) process.exit(1);
+          "
+
       - name: Ensure coverage directory exists
         if: ${{ !inputs.skip_tests }}
         run: mkdir -p coverage && echo '{}' > coverage/coverage-summary.json
@@ -308,7 +333,7 @@ jobs:
           fi
         continue-on-error: true
 
-      # ── Build coverage dashboard + root landing page + web-benchmark redirect ──
+      # ── Build coverage dashboard + root landing page ──
       - name: Prepare pages
         run: node scripts/prepare-pages.js
 

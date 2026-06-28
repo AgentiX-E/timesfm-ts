@@ -185,8 +185,6 @@ jobs:
           This release is automatically updated when a new model version is detected." \
               -f prerelease=false
           else
-            git tag timesfm-latest
-            git push origin timesfm-latest
             gh release create timesfm-latest \
               release-assets/timesfm-onnx-2.5.zip \
               --title "TimesFM ONNX — Latest" \
@@ -195,7 +193,8 @@ jobs:
           **Current HF revision:** \`${SHA}\`
           **Model tag:** \`${RELEASE_TAG}\`
 
-          This release is automatically updated when a new model version is detected."
+          This release is automatically updated when a new model version is detected." \
+              --latest=false
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

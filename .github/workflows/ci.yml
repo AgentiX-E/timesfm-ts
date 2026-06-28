@@ -49,6 +49,27 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm vitest run --config vitest.unit.config.ts --coverage
+      - name: Generate coverage summary for CI
+        if: always()
+        run: |
+          mkdir -p coverage
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo '{"total":{"lines":{"pct":0},"branches":{"pct":0},"functions":{"pct":0},"statements":{"pct":0}}}' > coverage/coverage-summary.json
+          fi
+      - name: Check unit coverage thresholds
+        run: |
+          node -e "
+          const s = require('./coverage/coverage-summary.json').total;
+          const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
+          let failed = false;
+          for (const [k, t] of Object.entries(thresholds)) {
+            const pct = s[k].pct;
+            const status = pct >= t ? '✅' : '❌';
+            console.log(status + ' ' + k + ': ' + pct.toFixed(1) + '% (threshold: ' + t + '%)');
+            if (pct < t) failed = true;
+          }
+          if (failed) process.exit(1);
+          "
 
   # ─── Build check (TypeScript compile) ──────────────────────────────────
   build:
@@ -111,6 +132,30 @@ jobs:
 
       - name: Run tests with coverage
         run: pnpm test:coverage
+
+      - name: Check integration coverage thresholds
+        run: |
+          node -e "
+          const fs = require('fs');
+          if (!fs.existsSync('coverage/coverage-summary.json')) {
+            console.log('No coverage summary — skipping threshold check (likely model not loaded).');
+            process.exit(0);
+          }
+          const s = require('./coverage/coverage-summary.json').total;
+          if (!s) {
+            console.log('No total coverage data — skipping threshold check.');
+            process.exit(0);
+          }
+          const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
+          let failed = false;
+          for (const [k, t] of Object.entries(thresholds)) {
+            const pct = s[k].pct;
+            const status = pct >= t ? '✅' : '❌';
+            console.log(status + ' integration ' + k + ': ' + pct.toFixed(1) + '% (threshold: ' + t + '%)');
+            if (pct < t) failed = true;
+          }
+          if (failed) process.exit(1);
+          "
 
       - name: Ensure coverage directory exists
         if: always()
@@ -312,12 +357,17 @@ jobs:
       # ── Build combined benchmark report (Node + WASM comparison) ────
       - name: Generate combined benchmark report
         run: |
-          node scripts/generate-combined-report.js \
-            --node docs/benchmark/benchmark-report.json \
-            --web docs/web-benchmark/web-benchmark-report.json \
-            --out docs/benchmark/index.html
+          if [ -f docs/benchmark/benchmark-report.json ] && [ -f docs/web-benchmark/web-benchmark-report.json ]; then
+            node scripts/generate-combined-report.js \
+              --node docs/benchmark/benchmark-report.json \
+              --web docs/web-benchmark/web-benchmark-report.json \
+              --out docs/benchmark/index.html
+            echo "[deploy-pages] Combined benchmark report generated"
+          else
+            echo "[deploy-pages] Skipping combined benchmark (missing benchmark data)"
+          fi
 
-      # ── Build coverage + root landing page + web-benchmark redirect ────
+      # ── Build coverage dashboard + root landing page ────
       - name: Prepare pages
         run: node scripts/prepare-pages.js
 

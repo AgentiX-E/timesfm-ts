@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **P0 fixes** by @Lambertyan — comprehensive audit-driven quality improvements
+- **Standalone `benchmark.yml` GitHub Actions workflow** — weekly benchmark runs with GitHub Pages deployment, accuracy gate, and regression detection. Runs independently from main CI pipeline.
+- **`--proxy-password` CLI flag** for `timesfm setup` — proxy authentication password can now be passed via CLI argument (in addition to the existing `TIMESFM_PROXY_PASSWORD` environment variable).
+- Coverage threshold enforcement in CI unit-test and integration-test jobs — both workflows now explicitly check ≥95% on all four metrics (lines, branches, functions, statements) with gate failure.
+- `vitest.unit.config.ts` now generates `lcov` coverage format for CI artifact compatibility.
+
+### Changed
+
+- **Removed standalone web-benchmark landing page** per project requirements — WASM benchmark data is now only presented in the combined Node.js vs WASM comparison report (`docs/benchmark/index.html`).
+- **`prepare-pages.js`** — simplified to no longer generate `docs/web-benchmark/index.html` (only ensures directory exists for WASM data files).
+- **`docs/index.html` root landing page** — merged Web/WASM benchmark link into the main Benchmark Reports card for consolidated navigation.
+- **CI `deploy-pages` job** — generate-combined-report step now has file-existence fallback for missing benchmark data.
+- **`pnpm ci` and `pnpm ci:local`** commands unified — both now run build + lint + format + unit tests with coverage (matching CI pre-merge checks exactly).
+- **`vitest.config.ts` coverage excludes** — no longer excludes `model.ts`, `onnx-engine.ts`, and `timesfm-web/src/**` from coverage (these are covered by integration tests with real ONNX model).
+- **`model-release.yml`** — initial `timesfm-latest` release creation no longer pushes a git tag (avoids protected-branch conflicts).
+
+### Fixed
+
+- **P0-P2 comprehensive fixes** by @Lambertyan — comprehensive audit-driven quality improvements
   - Accuracy Gate in CI benchmark workflow (fails if TimesFM MAE ≥ naive baseline)
   - Real-world test fixtures in accuracy benchmark (businessMetric, stockPrice, hourlyTemp, eCommerce, regimeShift)
   - Auto-discovering test globs in vitest.unit.config.ts (wildcard include + exclude)

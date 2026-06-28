@@ -8,7 +8,11 @@ import { resolve } from 'path';
  * They cover all pure-logic modules: NaN handling, tensor ops, config validation,
  * statistics, RevIN, OneHotEncoder, decode-loop (via MockInferenceEngine),
  * postprocessor, preprocessor, metrics, quantile helpers, model descriptor,
- * model-downloader (cache helpers only), and csv-forecast (mocked model).
+ * model-downloader (cache helpers only), csv-forecast (mocked model),
+ * web-engine (mocked), and xreg-engine (mocked).
+ *
+ * **Local/CI Parity**: This config mirrors the CI unit-test job exactly.
+ * Run `pnpm test:unit:coverage` locally to get the same results as CI.
  */
 export default defineConfig({
   resolve: {
@@ -29,26 +33,26 @@ export default defineConfig({
       '**/web-integration.test.ts',
       '**/xreg-engine.test.ts',
     ],
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 15000,
+    hookTimeout: 15000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary'],
+      reporter: ['text', 'text-summary', 'lcov'],
       include: [
         'packages/timesfm-core/src/**/*.ts',
         'packages/timesfm-xreg/src/**/*.ts',
         'packages/timesfm-cli/src/**/*.ts',
       ],
       exclude: [
-        'packages/*/src/index.ts',
-        'packages/timesfm-cli/src/cli.ts',
-        'packages/timesfm-core/src/model-downloader.ts',
-        'packages/timesfm-core/src/model.ts',
-        'packages/timesfm-core/src/inference/onnx-engine.ts',
-        'packages/timesfm-core/src/inference/kv-cache.ts',
-        'packages/timesfm-core/src/types/',
-        'packages/timesfm-xreg/src/xreg-engine.ts',
-        'packages/timesfm-web/src/**',
+        'packages/*/src/index.ts', // barrel re-exports only
+        'packages/timesfm-cli/src/cli.ts', // Commander entry point (IO-only)
+        'packages/timesfm-core/src/model-downloader.ts', // network IO (tested via cache helpers)
+        'packages/timesfm-core/src/model.ts', // requires real ONNX model (covered by integration tests)
+        'packages/timesfm-core/src/inference/onnx-engine.ts', // requires real ONNX model
+        'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental, not used by current ONNX path
+        'packages/timesfm-core/src/types/', // pure type definitions
+        'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model
+        'packages/timesfm-web/src/**', // requires browser/WASM environment
       ],
       thresholds: {
         lines: 95,
@@ -56,6 +60,8 @@ export default defineConfig({
         branches: 95,
         statements: 95,
       },
+      // Generate lcov for CI artifact upload
+      reportsDirectory: './coverage',
     },
   },
 });

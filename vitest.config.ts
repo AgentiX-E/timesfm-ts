@@ -50,7 +50,8 @@ export default defineConfig({
     // Longer timeout: real model takes ~2s to load + inference time
     testTimeout: 120000,
     hookTimeout: 120000,
-    // Coverage: target 100% across all metrics on logical code
+    // Coverage: target ≥95% across all metrics on all logical code
+    // Files excluded here are covered by unit tests with their own thresholds
     coverage: {
       provider: 'v8',
       include: [
@@ -62,7 +63,8 @@ export default defineConfig({
         'packages/*/src/index.ts', // barrel re-exports only
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (IO-only)
         'packages/timesfm-core/src/model-downloader.ts', // network IO (tested via cache helpers)
-        'packages/timesfm-web/src/**', // requires browser/WASM environment for full coverage
+        'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental, not used by current ONNX path
+        'packages/timesfm-core/src/types/', // pure type definitions
       ],
       reporter: ['text', 'json', 'html', 'lcov'],
       thresholds: {
@@ -71,6 +73,7 @@ export default defineConfig({
         branches: 95,
         statements: 95,
       },
+      reportsDirectory: './coverage',
     },
   },
 });
