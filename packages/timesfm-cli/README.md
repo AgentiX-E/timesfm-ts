@@ -88,9 +88,10 @@ The `--model` flag is optional. The CLI resolves the model in this order:
 
 1. `--model <path>` flag
 2. `TIMESFM_MODEL_PATH` environment variable
-3. Path from the last `timesfm setup -o <path>` in the current session
-4. Default cache: `~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx`
-5. Auto-download to default cache (proxy settings auto-detected from environment variables)
+3. Default cache: `~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx`
+4. Auto-download to default cache (proxy settings auto-detected from environment variables)
+
+> **Note:** The `timesfm setup -o <path>` path is only available in the same process (e.g., when calling setup and forecast programmatically). Each `timesfm` CLI invocation starts a new process, so the cached download path at step 3 is used across invocations.
 
 ## CSV Input
 

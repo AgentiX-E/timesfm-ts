@@ -133,7 +133,7 @@ program
  * Resolve the model path with this priority:
  *   1. Explicit `--model` flag
  *   2. `TIMESFM_MODEL_PATH` environment variable
- *   3. Path from the last `timesfm setup -o <path>` in this session
+ *   3. Path from `timesfm setup -o <path>` in the same process (programmatic use only)
  *   4. Default cache path (~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)
  *   5. Auto-download to default cache path
  */

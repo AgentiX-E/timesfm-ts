@@ -112,7 +112,7 @@ describe('descriptorToModelConfig', () => {
       quantiles: [0.25, 0.5, 0.75],
     };
     const config = descriptorToModelConfig(desc);
-    expect(config.numQuantiles).toBe(4); // mean + fQuantileArray, fixQuantileCrossing, clipMin
+    expect(config.numQuantiles).toBe(4); // 1 mean + 3 quantiles (q25, q50, q75)
     expect(config.quantiles).toEqual([0.25, 0.5, 0.75]);
   });
 

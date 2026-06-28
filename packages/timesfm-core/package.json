@@ -1,6 +1,7 @@
 {
   "name": "@agentix-e/timesfm-core",
   "version": "0.3.1",
+  "type": "module",
   "description": "Core inference engine for TimesFM — zero-shot time series forecasting",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

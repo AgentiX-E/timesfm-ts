@@ -46,7 +46,7 @@
 ### Audit Methodology
 
 - Full source code review of all 4 packages (core, xreg, cli, web)
-- CI workflow analysis (ci.yml, benchmark.yml, release.yml, nightly.yml, model-release.yml)
+- CI workflow analysis (ci.yml, release.yml, nightly.yml, model-release.yml)
 - Test suite examination (vitest configs, test fixtures, coverage thresholds)
 - Documentation cross-referencing (README, ARCHITECTURE.md, CONTRIBUTING.md)
 - NPM ecosystem verification (dependencies, peer deps, exports)
@@ -349,13 +349,12 @@ The project uses **10 realistic fixture generators** with deterministic seed=42:
 
 ### 7.1 Workflow Matrix
 
-| Workflow            | Trigger           | Purpose                                                                   |
-| ------------------- | ----------------- | ------------------------------------------------------------------------- |
-| `ci.yml`            | PR/push to main   | Lint → build → unit tests → integration tests → benchmarks → deploy pages |
-| `benchmark.yml`     | Weekly + manual   | Independent Node.js + WASM benchmarks → deploy pages                      |
-| `release.yml`       | Tag `v*` + manual | Quality gates → benchmarks → npm publish (OIDC) → deploy pages            |
-| `nightly.yml`       | Daily 2 AM        | Check HF for new model version → auto-trigger model-release               |
-| `model-release.yml` | Auto/manual       | Export ONNX → validate → GitHub Release → PR descriptor update            |
+| Workflow            | Trigger                 | Purpose                                                                               |
+| ------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
+| `ci.yml`            | PR/push to main, weekly | Lint → build → unit tests → integration tests → benchmarks (Node+WASM) → deploy pages |
+| `release.yml`       | Tag `v*` + manual       | Quality gates → benchmarks → npm publish (OIDC) → deploy pages                        |
+| `nightly.yml`       | Daily 2 AM              | Check HF for new model version → auto-trigger model-release                           |
+| `model-release.yml` | Auto/manual             | Export ONNX → validate → GitHub Release → PR descriptor update                        |
 
 ### 7.2 Issues Found & Fixed
 
@@ -495,7 +494,7 @@ The `vitest.config.ts` (integration) mirrors the CI `integration-test` job.
 + ensureWebBenchmarkDir();
 ```
 
-**Impact**: Without this fix, the GitHub Pages deployment step in both `ci.yml` and `benchmark.yml` would crash with a `ReferenceError`. This is a dead code path that would only trigger in CI's `deploy-pages` steps.
+**Impact**: Without this fix, the GitHub Pages deployment step in `ci.yml` would crash with a `ReferenceError`.
 
 ### Fix 2: `typedoc.json` — Missing CLI Entry Point
 

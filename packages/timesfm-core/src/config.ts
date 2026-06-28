@@ -13,6 +13,7 @@ import {
   type ModelConfig,
 } from './types';
 import { ConfigValidationError } from './errors';
+import { createRequire } from 'node:module';
 
 /**
  * Validate and normalise a ForecastConfig against a ModelConfig.
@@ -136,15 +137,12 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
   const PER_BATCH_GB = 0.2;
 
   if (freeMemoryGB === undefined) {
-    try {
-      // Dynamic require avoids bundling `os` in browser contexts
-      // that use a subset of the config module.
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-      const os: typeof import('node:os') = require('node:os');
-      freeMemoryGB = os.freemem() / 1024 ** 3;
-    } catch {
-      return 1; // Conservative default when os module unavailable
-    }
+    // Dynamic require via createRequire — Node.js always provides 'node:os'.
+    // Non-Node runtimes must pass freeMemoryGB as a parameter.
+    const _require = createRequire(import.meta.url);
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    const os: typeof import('node:os') = _require('node:os');
+    freeMemoryGB = os.freemem() / 1024 ** 3;
   }
 
   const usableGB = freeMemoryGB * memoryFraction - MODEL_OVERHEAD_GB;

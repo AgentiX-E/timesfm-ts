@@ -18,6 +18,4 @@ declare module 'undici' {
   export class ProxyAgent {
     constructor(options: ProxyAgentOptions);
   }
-
-  export function ProxyAgent(options: ProxyAgentOptions): ProxyAgent;
 }

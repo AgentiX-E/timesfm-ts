@@ -23,16 +23,16 @@
 
 **✅ PASS**
 
-| 检查项                                         | 状态                          |
-| ---------------------------------------------- | ----------------------------- |
-| 并发翻转不变性 (`Promise.all` 并行)            | ✅                            |
-| 并发批量推理 (`Promise.all` per batch element) | ✅                            |
-| ONNX Runtime 预热 (消除 JIT 冷启动)            | ✅                            |
-| 流式模型下载 (无需 885 MB 堆缓冲)              | ✅                            |
-| 独立 Benchmark CI (`benchmark.yml`)            | ✅                            |
-| CI 中 benchmark 执行成功                       | ✅ PASS (1m5s)                |
-| 基准测试结果发布到 GitHub Pages                | ✅ deploy-benchmark-pages job |
-| 项目 README 有 Benchmark 链接                  | ✅ `github.io/.../benchmark/` |
+| 检查项                                                    | 状态                          |
+| --------------------------------------------------------- | ----------------------------- |
+| 并发翻转不变性 (`Promise.all` 并行)                       | ✅                            |
+| 并发批量推理 (`Promise.all` per batch element)            | ✅                            |
+| ONNX Runtime 预热 (消除 JIT 冷启动)                       | ✅                            |
+| 流式模型下载 (无需 885 MB 堆缓冲)                         | ✅                            |
+| 集成 Benchmark CI (ci.yml benchmark + web-benchmark jobs) | ✅                            |
+| CI 中 benchmark 执行成功                                  | ✅ PASS (1m5s)                |
+| 基准测试结果发布到 GitHub Pages                           | ✅ deploy-benchmark-pages job |
+| 项目 README 有 Benchmark 链接                             | ✅ `github.io/.../benchmark/` |
 
 ---
 
@@ -178,12 +178,11 @@ pnpm test:unit:coverage  # = pnpm build && vitest run --config vitest.unit.confi
 
 **✅ PASS**
 
-Web-benchmark 作为 job 嵌入在以下工作流中:
+Web-benchmark 作为 job 嵌入在 `ci.yml` 工作流中:
 
-- `ci.yml` → `web-benchmark` job (PR/push 触发)
-- `benchmark.yml` → `wasm-benchmark` job (每周调度)
+- `ci.yml` → `web-benchmark` job (PR/push/每周触发)
 
-无单独的 `web-benchmark.yml` 文件。`benchmark.yml` 包含 Node.js + WASM 双后端基准测试，是统一的 benchmark 工作流。
+无单独的 web-benchmark workflow 文件。`ci.yml` 包含 Node.js + WASM 双后端基准测试，是统一的 CI 工作流。
 
 ---
 
