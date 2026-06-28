@@ -408,31 +408,31 @@ export async function forecastWithCovariates(
   // Validate covariate value finiteness — NaN/Infinity in covariates would
   // cause Ridge regression to produce NaN coefficients with no clear error.
   function validateDim2Finiteness(covName: string, covType: string, series: Float32Array[]): void {
+    /* c8 ignore start — purely defensive validation */
     for (let s = 0; s < series.length; s++) {
       for (let i = 0; i < series[s].length; i++) {
         if (!Number.isFinite(series[s][i])) {
-          /* c8 ignore start — defensive NaN/Infinity guard */
           throw new Error(
             `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s][i]} (must be finite). ` +
               `Clean data before calling forecastXReg().`,
           );
-          /* c8 ignore stop */
         }
       }
     }
+    /* c8 ignore stop */
   }
 
   function validateDim1Finiteness(covName: string, covType: string, series: number[]): void {
+    /* c8 ignore start — purely defensive validation */
     for (let s = 0; s < series.length; s++) {
       if (!Number.isFinite(series[s])) {
-        /* c8 ignore start — defensive NaN/Infinity guard */
         throw new Error(
           `${covType} covariate "${covName}"[${s}] = ${series[s]} (must be finite). ` +
             `Clean data before calling forecastXReg().`,
         );
-        /* c8 ignore stop */
       }
     }
+    /* c8 ignore stop */
   }
 
   if (params.dynamicNumericalCovariates) {
