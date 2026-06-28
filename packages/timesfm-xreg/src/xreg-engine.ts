@@ -411,11 +411,12 @@ export async function forecastWithCovariates(
     for (let s = 0; s < series.length; s++) {
       for (let i = 0; i < series[s].length; i++) {
         if (!Number.isFinite(series[s][i])) {
-          /* v8 ignore next 3 — defensive NaN/Infinity guard; needs intentionally malformed data */
+          /* c8 ignore start — defensive NaN/Infinity guard */
           throw new Error(
             `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s][i]} (must be finite). ` +
               `Clean data before calling forecastXReg().`,
           );
+          /* c8 ignore stop */
         }
       }
     }
@@ -424,11 +425,12 @@ export async function forecastWithCovariates(
   function validateDim1Finiteness(covName: string, covType: string, series: number[]): void {
     for (let s = 0; s < series.length; s++) {
       if (!Number.isFinite(series[s])) {
-        /* v8 ignore next 3 — defensive NaN/Infinity guard; needs intentionally malformed data */
+        /* c8 ignore start — defensive NaN/Infinity guard */
         throw new Error(
           `${covType} covariate "${covName}"[${s}] = ${series[s]} (must be finite). ` +
             `Clean data before calling forecastXReg().`,
         );
+        /* c8 ignore stop */
       }
     }
   }

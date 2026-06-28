@@ -137,18 +137,12 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
   const PER_BATCH_GB = 0.2;
 
   if (freeMemoryGB === undefined) {
-    try {
-      // Dynamic require via createRequire avoids ERR_REQUIRE_ESM in pure-ESM environments
-      // while keeping os out of browser/web bundles (browser contexts won't call this).
-      const _require = createRequire(import.meta.url);
-      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-      const os: typeof import('node:os') = _require('node:os');
-      freeMemoryGB = os.freemem() / 1024 ** 3;
-    } catch {
-      /* v8 ignore next 2 — os module always available in Node.js; this is a
-       * browser/edge-runtime safety net that cannot be triggered in CI. */
-      return 1; // Conservative default when os module unavailable
-    }
+    // Dynamic require via createRequire — Node.js always provides 'node:os'.
+    // Non-Node runtimes must pass freeMemoryGB as a parameter.
+    const _require = createRequire(import.meta.url);
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    const os: typeof import('node:os') = _require('node:os');
+    freeMemoryGB = os.freemem() / 1024 ** 3;
   }
 
   const usableGB = freeMemoryGB * memoryFraction - MODEL_OVERHEAD_GB;
