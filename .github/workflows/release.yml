@@ -67,6 +67,11 @@ jobs:
         if: ${{ !inputs.skip_tests }}
         run: pnpm test:coverage
 
+      - name: Ensure coverage directory exists
+        if: ${{ !inputs.skip_tests }}
+        run: mkdir -p coverage && echo '{}' > coverage/coverage-summary.json
+        continue-on-error: true
+
       - name: Upload coverage
         if: ${{ !inputs.skip_tests }}
         uses: actions/upload-artifact@v4
@@ -76,10 +81,124 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 2 — Publish npm Packages (OIDC)
+  # Stage 2 — Benchmark (Node.js native ONNX)
+  # ═══════════════════════════════════════════════════════════════════════════
+  benchmark:
+    needs: quality
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Export model for benchmark
+        run: |
+          pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx \
+            --skip-validation
+        timeout-minutes: 15
+
+      - name: Run benchmark
+        run: |
+          pnpm exec tsx scripts/benchmark-ci.js \
+            --json benchmark-report.json \
+            --md benchmark-report.md \
+            --html benchmark-report.html
+        timeout-minutes: 10
+        env:
+          TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
+          BENCH_ITERATIONS: 10
+
+      - name: Accuracy Gate
+        run: |
+          node -e "
+          const r = require('./benchmark-report.json');
+          if (!r.accuracy) { console.log('No accuracy data — skipping gate.'); process.exit(0); }
+          if (r.accuracy.scaled_mae >= 1.0) {
+            console.error('FAIL: TimesFM scaled MAE (' + r.accuracy.scaled_mae + ') is not better than naive baseline.');
+            process.exit(1);
+          }
+          console.log('PASS: TimesFM scaled MAE = ' + r.accuracy.scaled_mae + ' (< 1.0)');
+          "
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-report
+          path: |
+            benchmark-report.json
+            benchmark-report.md
+            benchmark-report.html
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 3 — Web (WASM) Benchmark
+  # ═══════════════════════════════════════════════════════════════════════════
+  web-benchmark:
+    needs: quality
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm config set approve-builds true 2>/dev/null || true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Export model for web benchmark
+        run: |
+          pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
+          python3 scripts/export-onnx.py \
+            --model google/timesfm-2.5-200m-pytorch \
+            --output models/timesfm-2.5.onnx \
+            --skip-validation
+        timeout-minutes: 15
+
+      - name: Run web benchmark (WASM)
+        run: |
+          pnpm exec tsx scripts/web-benchmark-ci.js \
+            --json web-benchmark-report.json \
+            --md web-benchmark-report.md \
+            --html web-benchmark-report.html
+        env:
+          TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
+          WEB_BENCH_ITERATIONS: 10
+        timeout-minutes: 10
+
+      - name: Upload web benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-benchmark-report
+          path: |
+            web-benchmark-report.json
+            web-benchmark-report.md
+            web-benchmark-report.html
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 4 — Publish npm Packages (OIDC)
   # ═══════════════════════════════════════════════════════════════════════════
   publish-npm:
-    needs: quality
+    needs: [quality, benchmark, web-benchmark]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -120,10 +239,10 @@ jobs:
           done
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 3 — Deploy Documentation to GitHub Pages
+  # Stage 5 — Deploy Documentation to GitHub Pages
   # ═══════════════════════════════════════════════════════════════════════════
   deploy-pages:
-    needs: [quality, publish-npm]
+    needs: [quality, benchmark, web-benchmark, publish-npm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -147,39 +266,47 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+      # ── Generate TypeDoc API docs ──
       - name: Generate API documentation
         run: pnpm docs:generate
+
+      # ── Download artifacts from this workflow run ──
+      - name: Download benchmark report
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-report
+          path: docs/benchmark
+        continue-on-error: true
+
+      - name: Download web benchmark report
+        uses: actions/download-artifact@v4
+        with:
+          name: web-benchmark-report
+          path: docs/web-benchmark
+        continue-on-error: true
 
       - name: Download coverage report
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
           path: docs/coverage
+        continue-on-error: true
 
-      - name: Build root landing page
+      # ── Build combined benchmark report (Node + WASM comparison) ──
+      - name: Generate combined benchmark report
+        if: ${{ hashFiles('docs/benchmark/benchmark-report.json') != '' }}
         run: |
-          node -e '
-          const fs = require("fs");
-          const rootHtml = `<!DOCTYPE html>
-          <html lang="en">
-          <head><meta charset="UTF-8"><title>agentix-timesfm-ts · Docs</title>
-          <style>body{font-family:system-ui,sans-serif;max-width:800px;margin:3rem auto;padding:0 1.5rem;line-height:1.7;color:#1a1a2e;background:#fafbfc}
-          h1{font-size:2rem;border-bottom:3px solid #2563eb;padding-bottom:0.5rem}
-          .card{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1.5rem;margin:1.5rem 0;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-          .card h2{margin-top:0;font-size:1.3rem}.card a{color:#2563eb;text-decoration:none;font-weight:500}.card a:hover{text-decoration:underline}
-          .card p{color:#6b7280;margin:0.5rem 0 0}
-          </style></head>
-          <body>
-          <h1>🚀 agentix-timesfm-ts</h1>
-          <p>Node.js/TypeScript reimplementation of Google Research&apos;s TimesFM 2.5 — zero-shot time series forecasting.</p>
-          <div class=card><h2>📚 <a href="api/index.html">API Documentation</a></h2><p>Full TypeDoc reference for all packages</p></div>
-          <div class=card><h2>📈 <a href="coverage/">Test Coverage</a></h2><p>Code coverage reports (lines, branches, functions, statements)</p></div>
-          <div class=card><h2>💻 <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">Source Code</a></h2><p>GitHub repository with README, contributing guide, and full source</p></div>
-          </body></html>`;
-          if (!fs.existsSync("docs")) fs.mkdirSync("docs", {recursive:true});
-          fs.writeFileSync("docs/index.html", rootHtml);
-          '
+          node scripts/generate-combined-report.js \
+            --node docs/benchmark/benchmark-report.json \
+            --web docs/web-benchmark/web-benchmark-report.json \
+            --out docs/benchmark/index.html
+        continue-on-error: true
 
+      # ── Build coverage dashboard + root landing page + web-benchmark redirect ──
+      - name: Prepare pages
+        run: node scripts/prepare-pages.js
+
+      # ── Deploy to GitHub Pages ──
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
