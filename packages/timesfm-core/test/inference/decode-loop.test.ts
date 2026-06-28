@@ -478,11 +478,10 @@ describe('decode (with MockInferenceEngine)', () => {
         MC,
       );
 
-      if (secondCallMasks.length > 0) {
-        for (const mask of secondCallMasks) {
-          for (let i = 0; i < mask.length; i++) {
-            expect(mask[i]).toBe(0); // AR inputs have no padding
-          }
+      expect(secondCallMasks.length).toBeGreaterThan(0);
+      for (const mask of secondCallMasks) {
+        for (let i = 0; i < mask.length; i++) {
+          expect(mask[i]).toBe(0); // AR inputs have no padding
         }
       }
     });

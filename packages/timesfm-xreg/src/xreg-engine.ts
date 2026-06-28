@@ -280,8 +280,14 @@ function ridgeRegression(
     for (let i = 0; i < p; i++) result[i] = beta.get(i, 0);
     return result;
   } catch {
-    // Singular matrix fallback: increase ridge penalty
-    return ridgeRegression(x, y, ridge + 0.01, 0);
+    // Singular matrix fallback: increase ridge penalty with recursion guard
+    if (ridge >= 100) {
+      throw new Error(
+        `Ridge regression failed: matrix remains singular after increasing ridge to ${ridge}. ` +
+          `Check for multicollinear or constant covariates.`,
+      );
+    }
+    return ridgeRegression(x, y, ridge + 0.01, maxRowsPerCol);
   }
 }
 
@@ -396,6 +402,43 @@ export async function forecastWithCovariates(
           `Static categorical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
       }
+    }
+  }
+
+  // Validate covariate value finiteness — NaN/Infinity in covariates would
+  // cause Ridge regression to produce NaN coefficients with no clear error.
+  function validateDim2Finiteness(covName: string, covType: string, series: Float32Array[]): void {
+    for (let s = 0; s < series.length; s++) {
+      for (let i = 0; i < series[s].length; i++) {
+        if (!Number.isFinite(series[s][i])) {
+          throw new Error(
+            `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s][i]} (must be finite). ` +
+              `Clean data before calling forecastXReg().`,
+          );
+        }
+      }
+    }
+  }
+
+  function validateDim1Finiteness(covName: string, covType: string, series: number[]): void {
+    for (let s = 0; s < series.length; s++) {
+      if (!Number.isFinite(series[s])) {
+        throw new Error(
+          `${covType} covariate "${covName}"[${s}] = ${series[s]} (must be finite). ` +
+            `Clean data before calling forecastXReg().`,
+        );
+      }
+    }
+  }
+
+  if (params.dynamicNumericalCovariates) {
+    for (const [name, covs] of Object.entries(params.dynamicNumericalCovariates)) {
+      validateDim2Finiteness(name, 'Dynamic numerical', covs);
+    }
+  }
+  if (params.staticNumericalCovariates) {
+    for (const [name, covs] of Object.entries(params.staticNumericalCovariates)) {
+      validateDim1Finiteness(name, 'Static numerical', covs);
     }
   }
 

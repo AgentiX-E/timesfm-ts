@@ -132,7 +132,7 @@ agentix-timesfm-ts/
 │   │   │       ├── stats.ts        # Welford running statistics
 │   │   │       ├── revin.ts        # RevIN normalization
 │   │   │       └── tensor-utils.ts # Low-level tensor ops
-│   │   └── test/               # 237 tests (unit) + 26 integration tests
+│   │   └── test/               # Unit + integration test suites
 │   ├── timesfm-xreg/           # Covariate regression
 │   │   ├── src/
 │   │   │   ├── index.ts
@@ -258,7 +258,7 @@ timesfm forecast --horizon 24 data.csv                     # Auto: cache → dow
 timesfm forecast -m ./custom.onnx --horizon 24 data.csv    # Explicit path
 TIMESFM_MODEL_PATH=./prod.onnx timesfm forecast --horizon 24 data.csv  # Environment variable
 
-# Model path resolution priority: ① --model ② $TIMESFM_MODEL_PATH ③ setup session ④ default cache ⑤ auto download
+# Model path resolution priority: ① --model ② $TIMESFM_MODEL_PATH ③ default cache ④ auto download
 ```
 
 ## License

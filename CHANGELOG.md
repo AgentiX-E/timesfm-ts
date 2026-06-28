@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Standalone `benchmark.yml` GitHub Actions workflow** — weekly benchmark runs with GitHub Pages deployment, accuracy gate, and regression detection. Runs independently from main CI pipeline.
+- **Integrated benchmark jobs in `ci.yml`** — Node.js and WASM benchmarks run as part of the main CI pipeline with GitHub Pages deployment, accuracy gate, and regression detection. All benchmark functionality is consolidated in `ci.yml` (no standalone benchmark workflow needed).
 - **`--proxy-password` CLI flag** for `timesfm setup` — proxy authentication password can now be passed via CLI argument (in addition to the existing `TIMESFM_PROXY_PASSWORD` environment variable).
 - Coverage threshold enforcement in CI unit-test and integration-test jobs — both workflows now explicitly check ≥95% on all four metrics (lines, branches, functions, statements) with gate failure.
 - `vitest.unit.config.ts` now generates `lcov` coverage format for CI artifact compatibility.

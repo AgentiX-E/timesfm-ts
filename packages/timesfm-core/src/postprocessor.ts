@@ -2,12 +2,14 @@
  * Output post-processing pipeline for TimesFM.
  *
  * Applies all ForecastConfig flags to the raw decode output:
- *   1. Flip invariance enforcement
- *   2. Continuous quantile head calibration
- *   3. Quantile crossing fix
- *   4. Input z-score normalization / denormalization
- *   5. Positive-value clamping
- *   6. Return backcast
+ *   1. Assemble full forecast (last output patch + AR outputs, truncate to horizon)
+ *   2. Flip invariance enforcement
+ *   3. Continuous quantile head calibration
+ *   4. Return backcast (if requested)
+ *   5. Quantile crossing fix
+ *   6. Input z-score normalization / denormalization reversal
+ *   7. Positive-value clamping
+ *   8. Split into point and quantile output arrays
  *
  * Mirrors the logic in `compile()` / `_compiled_decode()` in
  * timesfm_2p5_torch.py.

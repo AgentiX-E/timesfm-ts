@@ -71,7 +71,12 @@ const engine = new TimesFMWebInferenceEngine(config, ['wasm']); // force WASM
 
 ### `checkModelAvailability(url)`
 
-HEAD request to check if a model exists at a URL. Returns `{ available: boolean, sizeBytes?: number, contentType?: string }`.
+HEAD request to check if a model exists at a URL. Returns the Content-Length in bytes, or `null` if inaccessible.
+
+```typescript
+const sizeBytes = await checkModelAvailability('https://cdn.example.com/model.onnx');
+if (sizeBytes !== null) console.log(`Model is ${(sizeBytes / 1e6).toFixed(0)} MB`);
+```
 
 ### `TimesFMWebInferenceEngine`
 
@@ -91,10 +96,6 @@ Downloads a model from a URL with progress tracking and cancellation.
 - `options.onProgress?: (received: number, total: number) => void`
 - `options.signal?: AbortSignal`
 - Returns `Promise<{ buffer: ArrayBuffer, sizeBytes: number, contentType: string }>`
-
-### `checkModelAvailability(url)`
-
-HEAD request to check if a model exists at a URL.
 
 ## Bundle Size
 

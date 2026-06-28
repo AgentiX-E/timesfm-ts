@@ -13,6 +13,7 @@ import {
   type ModelConfig,
 } from './types';
 import { ConfigValidationError } from './errors';
+import { createRequire } from 'node:module';
 
 /**
  * Validate and normalise a ForecastConfig against a ModelConfig.
@@ -137,10 +138,11 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
 
   if (freeMemoryGB === undefined) {
     try {
-      // Dynamic require avoids bundling `os` in browser contexts
-      // that use a subset of the config module.
+      // Dynamic require via createRequire avoids ERR_REQUIRE_ESM in pure-ESM environments
+      // while keeping os out of browser/web bundles (browser contexts won't call this).
+      const _require = createRequire(import.meta.url);
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-      const os: typeof import('node:os') = require('node:os');
+      const os: typeof import('node:os') = _require('node:os');
       freeMemoryGB = os.freemem() / 1024 ** 3;
     } catch {
       return 1; // Conservative default when os module unavailable

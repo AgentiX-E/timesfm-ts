@@ -145,8 +145,18 @@ export async function loadModelDescriptor(path: string): Promise<ModelDescriptor
       const content = await readJsonFile(candidate);
       const desc = JSON.parse(content) as ModelDescriptor;
       return validateDescriptor(desc) ? desc : null;
-    } catch {
-      // File doesn't exist or can't parse — try next candidate
+    } catch (err) {
+      // Distinguish "file not found" from "parse error" — the latter may
+      // indicate a corrupt descriptor that warrants a warning.
+      if (
+        err instanceof Error &&
+        err.message.includes('ENOENT') === false &&
+        err.message.includes('no such file') === false
+      ) {
+        console.warn(
+          `[timesfm-core] Failed to parse model descriptor at ${candidate}: ${(err as Error).message}`,
+        );
+      }
       continue;
     }
   }
