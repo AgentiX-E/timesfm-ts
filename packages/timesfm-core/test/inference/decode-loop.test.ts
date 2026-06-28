@@ -274,8 +274,9 @@ describe('decode (with MockInferenceEngine)', () => {
       expect(result.arOutputs).not.toBeNull();
       // arOutputs is now [batch] — one entry per batch element
       expect(result.arOutputs!.length).toBe(1); // batchSize=1
-      // Each batch entry contains all 4 AR steps concatenated
-      expect(result.arOutputs![0].length).toBe(4 * MC.outputPatchLen);
+      // Each batch entry contains all 4 AR steps concatenated,
+      // each step produces outputPatchLen * numQuantiles floats (full quantile channels).
+      expect(result.arOutputs![0].length).toBe(4 * MC.outputPatchLen * MC.numQuantiles);
     });
 
     it('each arOutputs[b] concatenates numDecodeSteps × outputPatchLen floats', async () => {
@@ -298,8 +299,8 @@ describe('decode (with MockInferenceEngine)', () => {
       );
 
       for (const ar of result.arOutputs!) {
-        // Total = numDecodeSteps × outputPatchLen (batchSize=1)
-        expect(ar.length).toBe(numDecodeSteps * MC.outputPatchLen);
+        // Total = numDecodeSteps × outputPatchLen × numQuantiles (batchSize=1)
+        expect(ar.length).toBe(numDecodeSteps * MC.outputPatchLen * MC.numQuantiles);
       }
     });
   });
@@ -513,8 +514,8 @@ describe('decode (with MockInferenceEngine)', () => {
       expect(result.arOutputs).not.toBeNull();
       // arOutputs is [batch] — batchSize=1, contains all 31 AR steps concatenated
       expect(result.arOutputs!.length).toBe(1);
-      // Total: 31 steps × 128 outputPatchLen = 3968 floats
-      expect(result.arOutputs![0].length).toBe(31 * MC.outputPatchLen);
+      // Total: 31 steps × 128 outputPatchLen × 10 quantiles = 39680 floats
+      expect(result.arOutputs![0].length).toBe(31 * MC.outputPatchLen * MC.numQuantiles);
     });
 
     it('handles maxContext=1024 with many patches', async () => {
@@ -571,9 +572,9 @@ describe('decode (with MockInferenceEngine)', () => {
       expect(result.arOutputs).not.toBeNull();
       // batchSize=1, so arOutputs has length 1
       expect(result.arOutputs!.length).toBe(1);
-      // Each entry is numDecodeSteps × outputPatchLen = 2 × 128 = 256
+      // Each entry is numDecodeSteps × outputPatchLen × numQuantiles = 2 × 128 × 10 = 2560
       for (const ar of result.arOutputs!) {
-        expect(ar.length).toBe(2 * MC.outputPatchLen);
+        expect(ar.length).toBe(2 * MC.outputPatchLen * MC.numQuantiles);
       }
     });
 
@@ -601,9 +602,10 @@ describe('decode (with MockInferenceEngine)', () => {
       );
 
       expect(result.arOutputs).not.toBeNull();
-      // arOutputs is [batch] — batchSize=1, contains 2 AR steps concatenated
+      // arOutputs is [batch] — batchSize=1, contains 2 AR steps concatenated,
+      // each step produces outputPatchLen * numQuantiles floats.
       expect(result.arOutputs!.length).toBe(1);
-      expect(result.arOutputs![0].length).toBe(2 * MC.outputPatchLen);
+      expect(result.arOutputs![0].length).toBe(2 * MC.outputPatchLen * MC.numQuantiles);
     });
   });
 

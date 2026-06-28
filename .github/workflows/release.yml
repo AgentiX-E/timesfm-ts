@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 1 — Quality Gates
+  # Stage 1 — Quality Gates (lint + unit + integration + model export)
   # ═══════════════════════════════════════════════════════════════════════════
   quality:
     runs-on: ubuntu-latest
@@ -53,8 +53,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Export model for testing
+      - name: Cache ONNX model (restore)
         if: ${{ !inputs.skip_tests }}
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-release-v1
+
+      - name: Export model for testing
+        if: ${{ !inputs.skip_tests && steps.cache-model.outputs.cache-hit != 'true' }}
         run: |
           pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
           python3 scripts/export-onnx.py \
@@ -106,7 +114,7 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 2 — Benchmark (Node.js native ONNX)
+  # Stage 2 — Benchmark (Node.js native ONNX) — reuses cached model
   # ═══════════════════════════════════════════════════════════════════════════
   benchmark:
     needs: quality
@@ -126,14 +134,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Export model for benchmark
-        run: |
-          pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
-          python3 scripts/export-onnx.py \
-            --model google/timesfm-2.5-200m-pytorch \
-            --output models/timesfm-2.5.onnx \
-            --skip-validation
-        timeout-minutes: 15
+      - name: Restore cached ONNX model
+        uses: actions/cache/restore@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-release-v1
+          fail-on-cache-miss: true
 
       - name: Run benchmark
         run: |
@@ -169,7 +175,7 @@ jobs:
           retention-days: 7
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Stage 3 — Web (WASM) Benchmark
+  # Stage 3 — Web (WASM) Benchmark — reuses cached model
   # ═══════════════════════════════════════════════════════════════════════════
   web-benchmark:
     needs: quality
@@ -189,14 +195,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Export model for web benchmark
-        run: |
-          pip install "timesfm[torch]" onnx onnxruntime onnxscript torch
-          python3 scripts/export-onnx.py \
-            --model google/timesfm-2.5-200m-pytorch \
-            --output models/timesfm-2.5.onnx \
-            --skip-validation
-        timeout-minutes: 15
+      - name: Restore cached ONNX model
+        uses: actions/cache/restore@v4
+        with:
+          path: models/timesfm-2.5.onnx
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-release-v1
+          fail-on-cache-miss: true
 
       - name: Run web benchmark (WASM)
         run: |
