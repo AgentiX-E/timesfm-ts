@@ -9,10 +9,15 @@ import { resolve } from 'path';
  * statistics, RevIN, OneHotEncoder, decode-loop (via MockInferenceEngine),
  * postprocessor, preprocessor, metrics, quantile helpers, model descriptor,
  * model-downloader (cache helpers only), csv-forecast (mocked model),
- * web-engine (mocked), and xreg-engine (mocked).
+ * web-engine (mocked), reconciliation (pure logic), and summing-matrix.
  *
  * **Local/CI Parity**: This config mirrors the CI unit-test job exactly.
  * Run `pnpm test:unit:coverage` locally to get the same results as CI.
+ *
+ * ─── Model-dependent tests (require 885 MB ONNX model) ───────────────────
+ * Excluded from unit test tier but covered by integration tests with
+ * the real TimesFM model via `vitest.config.ts` (run: `pnpm test:coverage`).
+ * Both configs target ≥95% on all four coverage metrics.
  */
 export default defineConfig({
   resolve: {
@@ -31,7 +36,7 @@ export default defineConfig({
     environment: 'node',
     include: ['packages/*/test/**/*.test.ts'],
     exclude: [
-      // These tests require the 885 MB ONNX model (use pnpm test or pnpm test:coverage)
+      // These tests require the 885 MB ONNX model — covered by integration tier (vitest.config.ts)
       '**/model.test.ts',
       '**/engine.test.ts',
       '**/web-integration.test.ts',
@@ -41,6 +46,13 @@ export default defineConfig({
     ],
     testTimeout: 15000,
     hookTimeout: 15000,
+    // ─── Unit-tier coverage ──────────────────────────────────────────────
+    //
+    // Same thresholds as integration tier (≥95% across all metrics).
+    // Exclusions are broader here because unit tests cannot load:
+    //   • The 885 MB ONNX model (model.ts, onnx-engine.ts)
+    //   • Web environment (timesfm-web/src/**)
+    //   • Real-model-dependent modules (xreg-engine.ts, hierarchical.ts)
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'json-summary', 'lcov', 'html'],
@@ -51,17 +63,17 @@ export default defineConfig({
         'packages/timesfm-hierarchical/src/**/*.ts',
       ],
       exclude: [
-        'packages/*/src/index.ts', // barrel re-exports only
+        'packages/*/src/index.ts', // barrel re-exports — no runtime logic
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (IO-only)
-        'packages/timesfm-core/src/model-downloader.ts', // network IO (tested via cache helpers)
+        'packages/timesfm-core/src/model-downloader.ts', // network IO; cache helpers tested
         'packages/timesfm-core/src/model.ts', // requires real ONNX model (covered by integration tests)
-        'packages/timesfm-core/src/inference/onnx-engine.ts', // requires real ONNX model
+        'packages/timesfm-core/src/inference/onnx-engine.ts', // requires real ONNX model (covered by integration tests)
         'packages/timesfm-core/src/inference/kv-cache.ts', // @experimental, not used by current ONNX path
-        'packages/timesfm-core/src/types/', // pure type definitions
-        'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model
+        'packages/timesfm-core/src/types/', // pure type definitions — no runtime code
+        'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model (covered by integration tests)
         'packages/timesfm-web/src/**', // requires browser/WASM environment
-        'packages/timesfm-hierarchical/src/hierarchical.ts', // requires real TimesFM model
-        'packages/timesfm-hierarchical/src/types.ts', // pure type definitions
+        'packages/timesfm-hierarchical/src/hierarchical.ts', // requires real TimesFM model (covered by integration tests)
+        'packages/timesfm-hierarchical/src/types.ts', // pure type definitions — no runtime code
       ],
       thresholds: {
         lines: 95,

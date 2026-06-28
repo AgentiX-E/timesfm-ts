@@ -125,10 +125,10 @@ importers:
       '@agentix-e/timesfm-core':
         specifier: workspace:*
         version: link:../timesfm-core
+    devDependencies:
       onnxruntime-web:
         specifier: ^1.22.0
         version: 1.27.0
-    devDependencies:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

@@ -215,12 +215,26 @@ function resolveProxyConfig(options?: DownloadOptions): ProxyConfig | null {
  * Fallback: apply proxy configuration via environment variables.
  *
  * Used when undici ProxyAgent is not available (older Node.js or
- * bundled environments where `require('undici')` fails).
+ * bundled environments where `import('undici')` fails).
  *
- * ⚠️ Mutates process.env globally — callers must ensure no concurrent
- * downloads that rely on different proxy configs.
+ * Returns a restore function that undoes the mutation — callers MUST
+ * invoke it after the download completes to avoid leaking proxy
+ * settings into subsequent fetch() calls within the same process.
+ *
+ * ⚠️ This is a legacy fallback path. Node.js ≥ 20 bundles undici
+ * internally and should always use the ProxyAgent dispatcher path.
+ * The env-based path is retained for environments where dynamic
+ * import of undici fails (e.g., some bundlers, very old Node.js).
+ *
+ * @returns A zero-argument function that restores the original proxy
+ *          environment variables.
  */
-function applyProxyEnv(proxy: ProxyConfig): void {
+function applyProxyEnv(proxy: ProxyConfig): () => void {
+  const saved: Record<string, string | undefined> = {
+    HTTPS_PROXY: process.env.HTTPS_PROXY,
+    https_proxy: process.env.https_proxy,
+  };
+
   let proxyUrl = proxy.url;
   if (proxy.username || proxy.password) {
     try {
@@ -234,6 +248,19 @@ function applyProxyEnv(proxy: ProxyConfig): void {
   }
   process.env.HTTPS_PROXY = proxyUrl;
   process.env.https_proxy = proxyUrl;
+
+  return () => {
+    if (saved.HTTPS_PROXY !== undefined) {
+      process.env.HTTPS_PROXY = saved.HTTPS_PROXY;
+    } else {
+      delete process.env.HTTPS_PROXY;
+    }
+    if (saved.https_proxy !== undefined) {
+      process.env.https_proxy = saved.https_proxy;
+    } else {
+      delete process.env.https_proxy;
+    }
+  };
 }
 
 /**
@@ -246,8 +273,8 @@ function applyProxyEnv(proxy: ProxyConfig): void {
  */
 async function applyProxyToFetch(
   proxy: ProxyConfig | null,
-): Promise<Pick<RequestInit, 'dispatcher'>> {
-  if (!proxy) return {};
+): Promise<{ fetchOptions: Pick<RequestInit, 'dispatcher'>; restoreEnv?: () => void }> {
+  if (!proxy) return { fetchOptions: {} };
 
   try {
     // Node.js ≥ 20 bundles undici internally. Use dynamic import for ESM compatibility.
@@ -272,14 +299,16 @@ async function applyProxyToFetch(
       keepAliveMaxTimeout: 30_000,
     });
 
-    return { dispatcher: dispatcher as RequestInit['dispatcher'] };
+    return { fetchOptions: { dispatcher: dispatcher as RequestInit['dispatcher'] } };
   } catch {
     // Fallback: undici ProxyAgent not available (e.g., bundled environment).
     // Use environment variables — Node ≥ 20 undici respects HTTPS_PROXY.
+    // Returns a restore function so the caller can undo the env mutation after download.
     if (proxy) {
-      applyProxyEnv(proxy);
+      const restoreEnv = applyProxyEnv(proxy);
+      return { fetchOptions: {}, restoreEnv };
     }
-    return {};
+    return { fetchOptions: {} };
   }
 }
 
@@ -325,13 +354,15 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   const proxyConfig = resolveProxyConfig(options);
 
   // Apply proxy to fetch via undici dispatcher (preferred) or env vars (fallback)
-  const proxyFetchOptions = await applyProxyToFetch(proxyConfig ? proxyConfig : null);
+  const { fetchOptions: proxyFetchOpts, restoreEnv } = await applyProxyToFetch(
+    proxyConfig ? proxyConfig : null,
+  );
 
   // Stream download zip
   const fetchOptions: RequestInit = {
     redirect: 'follow',
     headers: { Accept: 'application/octet-stream' },
-    ...proxyFetchOptions,
+    ...proxyFetchOpts,
   };
 
   let response: Response;
@@ -339,6 +370,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     response = await fetch(url, fetchOptions);
   } catch (err) {
     // Provide a more helpful error for proxy-related failures
+    restoreEnv?.();
     const message = (err as Error).message || String(err);
     if (
       proxyConfig &&
@@ -367,6 +399,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
 
   if (!response.ok) {
     // Detect proxy authentication failures (HTTP 407) and throw the specific error type
+    restoreEnv?.();
     if (response.status === 407) {
       const proxyHint = proxyConfig
         ? `\nProxy: ${proxyConfig.url}` +
@@ -483,6 +516,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       const actualSha256 = await sha256File(dest);
       if (actualSha256 !== expectedSha256) {
         cleanupPartial(cacheDir, profile);
+        restoreEnv?.();
         throw new ChecksumMismatchError(
           `Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${actualSha256}`,
         );
@@ -500,8 +534,10 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     log(
       `  Downloaded & extracted ${(zipSize / 1024 / 1024).toFixed(0)} MB in ${elapsed}s → ${dest}`,
     );
+    restoreEnv?.();
     return dest;
   } catch (err) {
+    restoreEnv?.();
     try {
       fs.unlinkSync(tmpZip);
     } catch {

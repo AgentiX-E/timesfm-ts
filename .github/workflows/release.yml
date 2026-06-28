@@ -246,7 +246,7 @@ jobs:
 
       - name: Publish to npm (OIDC)
         run: |
-          for pkg in timesfm-core timesfm-xreg timesfm-cli timesfm-web; do
+          for pkg in timesfm-core timesfm-xreg timesfm-cli timesfm-web timesfm-hierarchical; do
             cd "packages/${pkg}"
             npm publish --access public --provenance
             cd ../..
@@ -257,7 +257,7 @@ jobs:
           echo "### 📦 npm Packages Published" >> $GITHUB_STEP_SUMMARY
           echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
-          for pkg in packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web; do
+          for pkg in packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web packages/timesfm-hierarchical; do
             name=$(node -p "require('./${pkg}/package.json').name")
             version=$(node -p "require('./${pkg}/package.json').version")
             echo "| \`${name}\` | ${version} |" >> $GITHUB_STEP_SUMMARY
