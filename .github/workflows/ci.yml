@@ -112,6 +112,10 @@ jobs:
       - name: Run tests with coverage
         run: pnpm test:coverage
 
+      - name: Ensure coverage directory exists
+        if: always()
+        run: mkdir -p coverage && echo '{}' > coverage/coverage-summary.json
+
       - name: Upload coverage artifact
         if: always()
         uses: actions/upload-artifact@v4
