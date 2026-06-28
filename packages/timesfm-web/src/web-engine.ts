@@ -117,7 +117,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
    *
    * @param modelPath  URL to the ONNX model file, **or** an ArrayBuffer.
    */
-  async load(modelPath: string | ArrayBuffer): Promise<void> {
+  async load(modelPath: string | ArrayBuffer, _options?: { skipWarmup?: boolean }): Promise<void> {
     const ort = await import('onnxruntime-web');
     this._ortModule = ort;
 

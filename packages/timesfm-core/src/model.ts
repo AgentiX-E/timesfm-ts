@@ -117,7 +117,7 @@ export class TimesFMModel implements ITimesFMModel {
 
     // Only load if the engine is not already loaded (external engine injection)
     if (!engine.isLoaded()) {
-      await engine.load(options.modelPath);
+      await engine.load(options.modelPath, { skipWarmup: options.skipWarmup });
     }
 
     return new TimesFMModel(engine, mc);

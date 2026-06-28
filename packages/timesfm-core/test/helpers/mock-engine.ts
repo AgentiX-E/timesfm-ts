@@ -40,7 +40,7 @@ export class MockInferenceEngine implements IInferenceEngine {
     this._outputShape = { patches, perPatch };
   }
 
-  async load(_modelPath: string): Promise<void> {
+  async load(_modelPath: string, _options?: { skipWarmup?: boolean }): Promise<void> {
     this._loaded = true;
   }
 

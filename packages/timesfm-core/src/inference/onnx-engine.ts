@@ -42,7 +42,17 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
       PROVIDER_MAP[options.executionProvider ?? 'cpu'] ?? 'CPUExecutionProvider';
   }
 
-  async load(modelPath: string): Promise<void> {
+  /**
+   * Load the ONNX model from disk and create an inference session.
+   *
+   * @param modelPath   Filesystem path to the `.onnx` model file.
+   * @param options     Load-time flags:
+   *   - `skipWarmup`:  When `true`, the dummy warmup inference is skipped.
+   *     This is intended for **benchmarking** where the caller wants to
+   *     measure the true first-inference (cold-start) latency separately.
+   *     Production callers should leave this at the default (`false`).
+   */
+  async load(modelPath: string, options?: { skipWarmup?: boolean }): Promise<void> {
     this._ortModule = await import('onnxruntime-node');
     try {
       this._session = await this._ortModule.InferenceSession.create(modelPath, {
@@ -60,15 +70,17 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
     // First inference on ONNX Runtime is 2-5× slower due to lazy JIT
     // compilation.  Running a warmup call here eliminates "cold start"
     // variance from the first user-facing forecast() call.
-    try {
-      await this._warmup();
-    } catch (err) {
-      // Warmup failure is non-fatal, but log a warning since it may indicate
-      // a model compatibility issue that will surface on first forecast().
-      console.warn(
-        `[TimesFM] Warmup inference failed: ${(err as Error).message}. ` +
-          `First forecast() may be slower or fail.`,
-      );
+    if (!options?.skipWarmup) {
+      try {
+        await this._warmup();
+      } catch (err) {
+        // Warmup failure is non-fatal, but log a warning since it may indicate
+        // a model compatibility issue that will surface on first forecast().
+        console.warn(
+          `[TimesFM] Warmup inference failed: ${(err as Error).message}. ` +
+            `First forecast() may be slower or fail.`,
+        );
+      }
     }
     this._loaded = true;
   }

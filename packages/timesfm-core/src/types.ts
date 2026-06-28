@@ -249,6 +249,15 @@ export interface ModelLoadOptions {
     username?: string;
     password?: string;
   };
+  /**
+   * When `true`, the warmup inference (triggered during `load()`) is skipped.
+   *
+   * This is intended for **benchmarking** where the caller wants to measure
+   * the true cold-start (first-inference) latency separately. Production
+   * callers should leave this at the default (`false`) so that the first
+   * user-facing `forecast()` call benefits from JIT-compiled execution plans.
+   */
+  skipWarmup?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -352,8 +361,8 @@ export interface ITimesFMModel {
  *   - `TimesFMInferenceEngine` — ONNX Runtime backend (onnxruntime-node)
  */
 export interface IInferenceEngine {
-  /** Load the model weights. */
-  load(modelPath: string): Promise<void>;
+  /** Load the model weights. When `options.skipWarmup` is true, the dummy warmup inference is skipped. */
+  load(modelPath: string, options?: { skipWarmup?: boolean }): Promise<void>;
 
   /**
    * Run a single forward pass through the model.
