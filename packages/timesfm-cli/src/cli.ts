@@ -30,6 +30,57 @@ program
   .description('Zero-shot time series forecasting with TimesFM (Node.js)')
   .version('0.3.1');
 
+// ─── info — model metadata ─────────────────────────────────────────────────
+
+program
+  .command('info')
+  .description('Show model metadata and system information')
+  .option('-m, --model <path>', 'Path to TimesFM ONNX model')
+  .action(async (options: Record<string, unknown>) => {
+    try {
+      const core = await import('@agentix-e/timesfm-core');
+      const modelPath =
+        (options.model as string) || process.env.TIMESFM_MODEL_PATH || core.defaultModelPath();
+
+      console.log('TimesFM CLI  —  @agentix-e/timesfm-cli  v0.3.1');
+      console.log(`Model path:  ${modelPath}`);
+      if (existsSync(modelPath)) {
+        const { resolveModelConfig } = core;
+        const { config, descriptor } = await resolveModelConfig(modelPath);
+        console.log(
+          `Architecture: TimesFM v${descriptor?.model.version ?? '?'}-${descriptor?.model.variant ?? '?'}`,
+        );
+        console.log(`HF revision: ${descriptor?.model.hf_revision ?? 'unknown'}`);
+        console.log(
+          `Parameters:  ${config.numLayers} layers × ${config.numHeads} heads × ${config.modelDims} dims`,
+        );
+        console.log(`Context limit: ${config.contextLimit}`);
+        console.log(
+          `Input patch:  ${config.inputPatchLen}  |  Output patch: ${config.outputPatchLen}`,
+        );
+        console.log(`Quantiles:    ${config.quantiles.join(', ')}`);
+        if (descriptor?.onnx.size_bytes) {
+          console.log(`ONNX size:    ${(descriptor.onnx.size_bytes / 1024 ** 2).toFixed(0)} MB`);
+        }
+        // System info
+        const os = await import('node:os');
+        console.log(`\nSystem:`);
+        console.log(`  Platform: ${os.platform()} / ${os.arch()}`);
+        console.log(`  Node.js:  ${process.version}`);
+        console.log(`  CPU:      ${os.cpus()[0]?.model ?? 'unknown'} × ${os.cpus().length}`);
+        console.log(`  RAM:      ${(os.totalmem() / 1024 ** 3).toFixed(1)} GB total`);
+        console.log(`  Free RAM: ${(os.freemem() / 1024 ** 3).toFixed(1)} GB`);
+        const bs = core.suggestBatchSize();
+        console.log(`  Suggested batch size: ${bs}`);
+      } else {
+        console.log('Model not found. Run "timesfm setup" to download.');
+      }
+    } catch (err) {
+      console.error('Error:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
+    }
+  });
+
 // ─── setup — download model ────────────────────────────────────────────────
 
 let _lastSetupPath: string | null = null;

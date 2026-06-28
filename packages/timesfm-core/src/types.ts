@@ -237,6 +237,21 @@ export interface ModelLoadOptions {
   /**
    * Proxy configuration for model download in restricted network environments.
    *
+   * **IMPORTANT**: This field is forwarded to {@link downloadModel} **only when
+   * called explicitly**.  `fromPretrained()` itself does **not** download
+   * models — it requires an existing `modelPath`.  If you use the separate
+   * `downloadModel()` function to obtain the model before calling
+   * `fromPretrained()`, pass your proxy config directly to `downloadModel()`.
+   *
+   * ```typescript
+   * import { downloadModel, TimesFMModel } from '@agentix-e/timesfm-core';
+   *
+   * const modelPath = await downloadModel({
+   *   proxy: { url: 'http://proxy:8080', username: 'user', password: 'pass' },
+   * });
+   * const model = await TimesFMModel.fromPretrained({ modelPath });
+   * ```
+   *
    * Priority: this option → TIMESFM_PROXY_URL env var → HTTPS_PROXY env var.
    *
    * For security, prefer passing the password via the TIMESFM_PROXY_PASSWORD

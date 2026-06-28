@@ -4,7 +4,7 @@
 
 Runs the Google Research TimesFM 2.5 200M model directly in the browser using [onnxruntime-web](https://www.npmjs.com/package/onnxruntime-web). Supports **WebGPU** (fastest), **WASM** (universal), and **WebGL** (legacy) backends.
 
-📚 [API Documentation](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm_web.html) · 💻 [Source](https://github.com/AgentiX-E/agentix-timesfm-ts)
+📚 [API Documentation](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm_web.html) · 📊 [Benchmark](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/) · 📈 [Coverage](https://agentix-e.github.io/agentix-timesfm-ts/coverage/) · 💻 [Source](https://github.com/AgentiX-E/agentix-timesfm-ts)
 
 ## Installation
 

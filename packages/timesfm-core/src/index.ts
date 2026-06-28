@@ -30,7 +30,12 @@ export {
 export type { DownloadOptions, ProxyConfig } from './model-downloader';
 
 // ---- Configuration ----
-export { createForecastConfig, validateAndNormalizeConfig, configsEqual } from './config';
+export {
+  createForecastConfig,
+  validateAndNormalizeConfig,
+  configsEqual,
+  suggestBatchSize,
+} from './config';
 
 // ---- Model Descriptor ----
 export {

@@ -45,6 +45,40 @@
 import type { ModelConfig, IInferenceEngine, RawModelOutput } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
+// Logger interface
+// ---------------------------------------------------------------------------
+
+/**
+ * Structured logger for Web engine diagnostics.
+ *
+ * Inject a custom implementation to capture provider selection events
+ * for observability pipelines (OpenTelemetry, Datadog, etc.).
+ */
+export interface WebEngineLogger {
+  /** Provider load attempt started. */
+  info(msg: string, ctx?: Record<string, unknown>): void;
+  /** Provider load attempt failed — will try next. */
+  warn(msg: string, ctx?: Record<string, unknown>): void;
+  /** All providers failed. */
+  error(msg: string, ctx?: Record<string, unknown>): void;
+}
+
+const defaultLogger: WebEngineLogger = {
+  info(msg) {
+    // Default logger writes diagnostic messages to console.log
+    // (ESLint allows console.error/warn; we use log for informational output).
+    // eslint-disable-next-line no-console
+    console.log(msg);
+  },
+  warn(msg) {
+    console.warn(msg);
+  },
+  error(msg) {
+    console.error(msg);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Engine
 // ---------------------------------------------------------------------------
 
@@ -71,21 +105,29 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
   /** Custom CDN version for the browser WASM fallback. */
   private _cdnVersion: string;
 
+  /** Optional structured logger for diagnostics. When omitted, falls back to `console`. */
+  private _logger: WebEngineLogger;
+
   /**
    * @param config          Model architecture configuration.
    * @param executionProviders  Execution providers to try, in order.
    *                            Default: `['webgpu', 'wasm']`
    * @param cdnVersion      onnxruntime-web CDN version for browser WASM fallback.
    *                        Default: matches the package's peerDependency version.
+   * @param logger          Optional structured logger for diagnostics.
+   *                        When omitted, provider selection messages are silenced
+   *                        (only the final loaded provider is logged).
    */
   constructor(
     config: ModelConfig,
     executionProviders: Array<'webgpu' | 'wasm' | 'webgl'> = ['webgpu', 'wasm'],
     cdnVersion: string = '1.22.0',
+    logger?: WebEngineLogger,
   ) {
     this._config = config;
     this._providers = executionProviders;
     this._cdnVersion = cdnVersion;
+    this._logger = logger ?? defaultLogger;
   }
 
   /**
@@ -169,22 +211,25 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
           this._session = await ort.InferenceSession.create(modelPath, sessionOptions);
         }
 
-        // eslint-disable-next-line no-console
-        console.log(`[TimesFM Web] Loaded model with ${provider} provider`);
+        this._logger.info(`[TimesFM Web] Loaded model with ${provider} provider`, { provider });
         this._loaded = true;
         return;
       } catch (err) {
-        console.warn(
-          `[TimesFM Web] ${provider} provider failed: ${(err as Error).message}. Trying next...`,
-        );
+        this._logger.warn(`[TimesFM Web] ${provider} provider failed — trying next`, {
+          provider,
+          error: (err as Error).message,
+        });
         lastError = err as Error;
         // Continue to next provider
       }
     }
 
-    throw new Error(
-      `[TimesFM Web] All execution providers failed. Last error: ${lastError?.message}`,
-    );
+    const errorMsg = `[TimesFM Web] All execution providers failed. Last error: ${lastError?.message}`;
+    this._logger.error(errorMsg, {
+      providers: this._providers,
+      lastError: lastError?.message,
+    });
+    throw new Error(errorMsg);
   }
 
   // -----------------------------------------------------------------------
