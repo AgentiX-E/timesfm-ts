@@ -186,17 +186,22 @@ function flattenParam(param: Float32Array | Float32Array[], len: number): Float3
   if (param instanceof Float32Array) {
     return broadcast1D(param, len);
   }
-  // Array of scalars
+  // Array of scalars — each element is a Float32Array([scalar])
   const flat = new Float32Array(len);
   if (param.length === len) {
     for (let i = 0; i < len; i++) flat[i] = param[i][0];
   } else {
-    // Assume it's per-patch sized — repeat
+    // Assume it's per-patch sized — repeat values evenly.
+    // Handle the remainder to avoid dropping trailing elements.
     const ratio = Math.floor(len / param.length);
+    const remainder = len % param.length;
+    let cursor = 0;
     for (let i = 0; i < param.length; i++) {
-      for (let j = 0; j < ratio; j++) {
-        flat[i * ratio + j] = param[i][0];
+      const repeatCount = ratio + (i < remainder ? 1 : 0);
+      for (let j = 0; j < repeatCount; j++) {
+        flat[cursor + j] = param[i][0];
       }
+      cursor += repeatCount;
     }
   }
   return flat;

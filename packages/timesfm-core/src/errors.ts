@@ -92,3 +92,18 @@ export class ChecksumMismatchError extends TimesFMError {
     this.name = 'ChecksumMismatchError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Inference
+// ---------------------------------------------------------------------------
+
+/** ONNX Runtime inference failure. */
+export class InferenceError extends TimesFMError {
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+  ) {
+    super(message);
+    this.name = 'InferenceError';
+  }
+}

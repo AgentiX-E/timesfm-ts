@@ -5,12 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  createRunningStats,
-  updateRunningStats,
-  updateRunningStatsBatch,
-  computeStats,
-} from '../../src/utils/stats.ts';
+import { createRunningStats, updateRunningStats, computeStats } from '../../src/utils/stats.ts';
 import { revin, revinBatch, revinBatch4D } from '../../src/utils/revin.ts';
 
 // ---------------------------------------------------------------------------
@@ -115,23 +110,6 @@ describe('updateRunningStats', () => {
     expect(result.n).toBe(0);
     expect(result.mu).toBe(0);
     expect(result.sigma).toBe(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// updateRunningStatsBatch
-// ---------------------------------------------------------------------------
-
-describe('updateRunningStatsBatch', () => {
-  it('batch independence: no cross-contamination between samples', () => {
-    const statsArr = [createRunningStats(), createRunningStats()];
-    const values = [[new Float32Array([1, 2, 3])], [new Float32Array([100, 200, 300])]];
-    const masks = [[new Uint8Array(3)], [new Uint8Array(3)]];
-
-    const result = updateRunningStatsBatch(statsArr, values, masks);
-
-    expect(result[0].mu).toBeCloseTo(2, 5);
-    expect(result[1].mu).toBeCloseTo(200, 5);
   });
 });
 

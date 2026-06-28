@@ -37,9 +37,11 @@ export interface DecodeResult {
   quantileSpreads: Float32Array[];
   /**
    * Denormalised AR outputs: [batch] — each entry is the concatenated
-   * flat quantile array of median seeds from all autoregressive decode steps.
+   * flat quantile array from all autoregressive decode steps.
    * Indexing: arOutputs[b] contains all AR steps for batch element b,
-   * each step produces outputPatchLen * numQuantiles floats.
+   * each step produces outputPatchLen * numQuantiles floats in the same
+   * interleaved (time × quantile) layout as the prefill output, allowing
+   * uniform post-processing across all forecast steps.
    */
   arOutputs: Float32Array[] | null;
 }
@@ -233,7 +235,8 @@ export async function decode(
       mc.numQuantiles,
     );
 
-    // Take the LAST output sub-patch's median as the next seed.
+    // Take the LAST output sub-patch's full quantile output as the forecast
+    // for this AR step, and its median as the seed for the next step.
     // The denormalised array has m filled patches followed by padding zeros
     // (since revinBatch4D allocates the full exportedPatches-sized array).
     // We must index by (m - 1), NOT by array.length, to avoid reading from
@@ -242,17 +245,29 @@ export async function decode(
     const perSubPatch = mc.outputPatchLen * mc.numQuantiles;
     const lastSubPatchStart = (m - 1) * perSubPatch;
     for (let b = 0; b < batchSize; b++) {
+      // Extract median seed for the next AR decode step
       const seed = new Float32Array(mc.outputPatchLen);
       for (let o = 0; o < mc.outputPatchLen; o++) {
         const idx = lastSubPatchStart + o * mc.numQuantiles + mc.decodeIndex;
         seed[o] = arDenormed[b][idx];
       }
       nextSeeds.push(seed);
-    }
 
-    // Accumulate per-batch: each batch element's seed for this step
-    for (let b = 0; b < batchSize; b++) {
-      arOutputsByBatch[b].push(nextSeeds[b]);
+      // Extract the full quantile forecast for this AR step
+      // (outputPatchLen time steps × numQuantiles quantiles).
+      // This preserves the same interleaved layout as the prefill output,
+      // allowing the postprocessor to apply flip invariance, continuous
+      // quantile head, and quantile crossing fix uniformly across all
+      // forecast steps — both prefill and autoregressive.
+      const arStepForecast = new Float32Array(mc.outputPatchLen * mc.numQuantiles);
+      for (let o = 0; o < mc.outputPatchLen; o++) {
+        const srcBase = lastSubPatchStart + o * mc.numQuantiles;
+        const dstBase = o * mc.numQuantiles;
+        for (let q = 0; q < mc.numQuantiles; q++) {
+          arStepForecast[dstBase + q] = arDenormed[b][srcBase + q];
+        }
+      }
+      arOutputsByBatch[b].push(arStepForecast);
     }
 
     arSeeds = nextSeeds;

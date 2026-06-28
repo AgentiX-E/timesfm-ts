@@ -92,16 +92,18 @@ export function createForecastConfig(
  * don't affect the compiled decode function).
  */
 export function configsEqual(a: ForecastConfig, b: ForecastConfig): boolean {
-  return (
-    a.maxContext === b.maxContext &&
-    a.maxHorizon === b.maxHorizon &&
-    a.normalizeInputs === b.normalizeInputs &&
-    a.useContinuousQuantileHead === b.useContinuousQuantileHead &&
-    a.forceFlipInvariance === b.forceFlipInvariance &&
-    a.inferIsPositive === b.inferIsPositive &&
-    a.fixQuantileCrossing === b.fixQuantileCrossing &&
-    a.returnBackcast === b.returnBackcast
-  );
+  const keys: Array<keyof ForecastConfig> = [
+    'maxContext',
+    'maxHorizon',
+    'normalizeInputs',
+    'useContinuousQuantileHead',
+    'forceFlipInvariance',
+    'inferIsPositive',
+    'fixQuantileCrossing',
+    'returnBackcast',
+    'perCoreBatchSize',
+  ];
+  return keys.every((k) => a[k] === b[k]);
 }
 
 // ---------------------------------------------------------------------------

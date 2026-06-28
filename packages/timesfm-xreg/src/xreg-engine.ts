@@ -556,7 +556,7 @@ export async function forecastWithCovariates(
 
     // Combine: forecast + xreg
     return {
-      pointForecast: tsResult.pointForecast.map((pf, i) => {
+      pointForecast: tsResult.pointForecast.map((pf: Float32Array, i: number) => {
         const result = new Float32Array(Math.min(pf.length, testLens[i]));
         for (let t = 0; t < result.length; t++) {
           /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
@@ -564,8 +564,8 @@ export async function forecastWithCovariates(
         }
         return result;
       }),
-      quantileForecast: tsResult.quantileForecast.map((qf, i) => {
-        return qf.map((q) => {
+      quantileForecast: tsResult.quantileForecast.map((qf: Float32Array[], i: number) => {
+        return qf.map((q: Float32Array) => {
           const result = new Float32Array(Math.min(q.length, testLens[i]));
           for (let t = 0; t < result.length; t++) {
             /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
@@ -642,7 +642,7 @@ export async function forecastWithCovariates(
     }
 
     return {
-      pointForecast: tsResult.pointForecast.map((pf, i) => {
+      pointForecast: tsResult.pointForecast.map((pf: Float32Array, i: number) => {
         const result = new Float32Array(Math.min(pf.length, testLens[i]));
         for (let t = 0; t < result.length; t++) {
           /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */
@@ -650,8 +650,8 @@ export async function forecastWithCovariates(
         }
         return result;
       }),
-      quantileForecast: tsResult.quantileForecast.map((qf, i) => {
-        return qf.map((q) => {
+      quantileForecast: tsResult.quantileForecast.map((qf: Float32Array[], i: number) => {
+        return qf.map((q: Float32Array) => {
           const result = new Float32Array(Math.min(q.length, testLens[i]));
           for (let t = 0; t < result.length; t++) {
             /* v8 ignore next — xregOutputs[i][t] is always a number from linear regression */

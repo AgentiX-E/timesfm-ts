@@ -150,5 +150,5 @@ export async function reconcileForecast(
     quantileForecast: rawOutput.quantileForecast,
     backcast: rawOutput.backcast,
     reconciled,
-  };
+  } satisfies HierarchicalForecastOutput;
 }

@@ -31,6 +31,20 @@ export interface SummingMatrixResult {
 // Validation helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Look up a value in a Map, throwing a descriptive error when the key
+ * is missing instead of using a non-null assertion.  All call-sites in
+ * this module are guaranteed to succeed because keys are validated
+ * beforehand, but this keeps the type-checker and linter happy.
+ */
+function mustGet<K, V>(map: Map<K, V>, key: K, label: string): V {
+  const val = map.get(key);
+  if (val === undefined) {
+    throw new Error(`Internal error: ${label} "${String(key)}" not found in map.`);
+  }
+  return val;
+}
+
 interface ValidationNode {
   id: string;
   parentId: string | null;
@@ -78,7 +92,7 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
             `All parent ids must exist in the hierarchy.`,
         );
       }
-      const parent = map.get(n.parentId)!;
+      const parent = mustGet(map, n.parentId, 'parent node');
       parent.children.push(n.id);
     }
   }
@@ -97,12 +111,12 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
   const queue = [roots[0]];
 
   while (queue.length > 0) {
-    const id = queue.shift()!;
+    const id = queue.shift() as string;
     if (visited.has(id)) {
       throw new Error(`Cycle detected in hierarchy — node "${id}" reached via multiple paths.`);
     }
     visited.add(id);
-    const vn = map.get(id)!;
+    const vn = mustGet(map, id, 'node');
     for (const child of vn.children) {
       queue.push(child);
     }
@@ -118,13 +132,13 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
 
   // Compute depths via BFS (topological order)
   const root = roots[0];
-  map.get(root)!.depth = 0;
+  mustGet(map, root, 'root node').depth = 0;
   const bfsQueue = [root];
   while (bfsQueue.length > 0) {
-    const id = bfsQueue.shift()!;
-    const vn = map.get(id)!;
+    const id = bfsQueue.shift() as string;
+    const vn = mustGet(map, id, 'node');
     for (const child of vn.children) {
-      map.get(child)!.depth = vn.depth + 1;
+      mustGet(map, child, 'child node').depth = vn.depth + 1;
       bfsQueue.push(child);
     }
   }
@@ -180,8 +194,8 @@ export function buildSummingMatrix(hierarchy: HierarchyDefinition): SummingMatri
   const descendantSet = new Map<string, Set<string>>();
 
   function collectDescendants(id: string): Set<string> {
-    if (descendantSet.has(id)) return descendantSet.get(id)!;
-    const vn = adj.get(id)!;
+    if (descendantSet.has(id)) return mustGet(descendantSet, id, 'descendant');
+    const vn = mustGet(adj, id, 'node');
     const set = new Set<string>();
 
     if (vn.children.length === 0) {
@@ -198,14 +212,17 @@ export function buildSummingMatrix(hierarchy: HierarchyDefinition): SummingMatri
     return set;
   }
 
-  collectDescendants(adj.values().next().value!.id); // start from root
+  // Start traversal from root — validated earlier so at least one value exists
+  const first = adj.values().next();
+  if (first.done) throw new Error('Internal error: adjacency map is empty after validation.');
+  collectDescendants(first.value.id);
 
   // Build S matrix
   const S: number[][] = [];
   for (let i = 0; i < m; i++) {
     const row: number[] = [];
     const nodeId = allNodeIds[i];
-    const desc = descendantSet.get(nodeId)!;
+    const desc = mustGet(descendantSet, nodeId, 'descendant');
 
     for (let j = 0; j < n; j++) {
       row.push(desc.has(bottomNodeIds[j]) ? 1 : 0);

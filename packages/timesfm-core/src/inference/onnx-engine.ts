@@ -13,12 +13,15 @@ import {
   type ModelConfig,
   type ModelLoadOptions,
 } from '../types';
+import { InferenceError } from '../errors';
 
 const PROVIDER_MAP: Record<string, string> = {
   cpu: 'CPUExecutionProvider',
   cuda: 'CUDAExecutionProvider',
   dml: 'DmlExecutionProvider',
 };
+
+const CPU = PROVIDER_MAP['cpu'];
 
 // ---------------------------------------------------------------------------
 // TimesFMInferenceEngine
@@ -39,7 +42,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
   ) {
     this._config = config;
     this._executionProvider =
-      PROVIDER_MAP[options.executionProvider ?? 'cpu'] ?? 'CPUExecutionProvider';
+      PROVIDER_MAP[options.executionProvider ?? 'cpu'] ?? PROVIDER_MAP['cpu'];
   }
 
   /**
@@ -54,15 +57,24 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
    */
   async load(modelPath: string, options?: { skipWarmup?: boolean }): Promise<void> {
     this._ortModule = await import('onnxruntime-node');
-    try {
+
+    // Build the provider list. ONNX Runtime's executionProviders is
+    // priority-ordered with built-in auto-fallback: if a higher-priority
+    // provider is unavailable, the next one is tried automatically.
+    //
+    // We always include CPU as the final element so that even when CUDA/DML
+    // is requested but unavailable, the session creation succeeds without
+    // a try/catch retry loop.
+    //
+    // When only CPU is requested we omit the array entirely — ONNX Runtime
+    // then selects the best available backend automatically, which is more
+    // robust across environments where the explicit 'CPUExecutionProvider'
+    // string may not be recognised (e.g. some CI runners).
+    if (this._executionProvider !== CPU) {
       this._session = await this._ortModule.InferenceSession.create(modelPath, {
-        executionProviders: [this._executionProvider],
+        executionProviders: [this._executionProvider, CPU],
       });
-    } catch (err) {
-      console.error(
-        `[TimesFM] ${this._executionProvider} failed: ${(err as Error).message}. ` +
-          `Falling back to default execution provider.`,
-      );
+    } else {
       this._session = await this._ortModule.InferenceSession.create(modelPath);
     }
 
@@ -143,8 +155,29 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
       throw new Error('ONNX engine not loaded. Call load() first.');
     }
 
+    // Narrowed locally — TypeScript flow analysis cannot propagate
+    // non-nullness into private method calls, so we destructure here.
     const ort = this._ortModule;
     const session = this._session;
+
+    try {
+      return await this._forwardUnsafe(ort, session, inputs, masks);
+    } catch (err) {
+      throw new InferenceError(
+        `ONNX Runtime inference failed: ${(err as Error).message}`,
+        err instanceof Error ? err : undefined,
+      );
+    }
+  }
+
+  private async _forwardUnsafe(
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    ort: typeof import('onnxruntime-node'),
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    session: import('onnxruntime-node').InferenceSession,
+    inputs: Float32Array[],
+    masks: Uint8Array[],
+  ): Promise<RawModelOutput> {
     const batchSize = inputs.length;
     const inputPatchLen = this._config.inputPatchLen;
     const tokenizerLen = this._config.tokenizerInputDims;

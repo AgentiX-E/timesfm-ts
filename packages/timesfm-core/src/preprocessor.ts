@@ -44,7 +44,8 @@ export interface PreprocessedData {
   batchSize: number;
   /** The cleaned raw inputs (for post-processing reference). */
   cleanedInputs: Float32Array[];
-  /** The truncated inputs (after truncation to maxContext, before padding). */
+  /** The truncated inputs (after truncation to maxContext, before padding).
+   *  @internal Reserved for future iterative refinement APIs. */
   truncatedInputs: Float32Array[];
 }
 

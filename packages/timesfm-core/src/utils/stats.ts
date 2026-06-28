@@ -106,41 +106,6 @@ export function updateRunningStats(
 }
 
 // ---------------------------------------------------------------------------
-// Batch updates
-// ---------------------------------------------------------------------------
-
-/**
- * Update running statistics across a batch of time series, where each
- * series has multiple patches.
- *
- * This is the batch-equivalent of the Python per-patch statistic accumulation.
- *
- * @param statsArr  One RunningStats entry per batch element (mutated in-place).
- * @param patchedValues  [batch][patch][patchLen] — values for each patch.
- * @param patchedMasks   [batch][patch][patchLen] — masks.
- */
-export function updateRunningStatsBatch(
-  statsArr: RunningStats[],
-  patchedValues: Float32Array[][],
-  patchedMasks: Uint8Array[][],
-): RunningStats[] {
-  const batchSize = statsArr.length;
-
-  for (let b = 0; b < batchSize; b++) {
-    const patches = patchedValues[b];
-    const masks = patchedMasks[b];
-    const numPatches = patches.length;
-
-    for (let p = 0; p < numPatches; p++) {
-      const [updated] = updateRunningStats(statsArr[b], patches[p], masks[p]);
-      statsArr[b] = updated;
-    }
-  }
-
-  return statsArr;
-}
-
-// ---------------------------------------------------------------------------
 // Convenience: compute stats for a whole array at once
 // ---------------------------------------------------------------------------
 

@@ -46,6 +46,13 @@ import { decode } from './inference/decode-loop';
 import { postProcess } from './postprocessor';
 import { resolveModelConfig } from './model-descriptor';
 import { computeStats } from './utils/stats';
+
+// Cached dynamic import for optional @agentix-e/timesfm-xreg peer dependency.
+// Cached at module level so repeated calls to forecastWithCovariates()
+// resolve instantly after the first invocation.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type XRegModule = typeof import('@agentix-e/timesfm-xreg');
+let _xregModule: XRegModule | null = null;
 import { allNonNegative } from './utils/tensor-utils';
 
 // ---------------------------------------------------------------------------
@@ -373,20 +380,28 @@ export class TimesFMModel implements ITimesFMModel {
     };
   }
 
+  /**
+   * Forecast with exogenous covariates via {@link @agentix-e/timesfm-xreg}.
+   *
+   * Internally caches the dynamic import of the optional peer dependency
+   * so that repeated calls avoid re-resolution overhead.
+   */
   async forecastWithCovariates(params: CovariateForecastParams): Promise<CovariateForecastOutput> {
     // Dynamic import: @agentix-e/timesfm-xreg is an optional peer dependency.
-    // A type declaration at src/types/timesfm-xreg.d.ts provides compile-time
-    // safety so that no @ts-ignore escape hatch is needed.
-    try {
-      const mod = await import('@agentix-e/timesfm-xreg');
-      return await mod.forecastWithCovariates(this, params);
-    } catch (err) {
-      throw new Error(
-        'forecastWithCovariates requires @agentix-e/timesfm-xreg.\n' +
-          'Install it: npm install @agentix-e/timesfm-xreg\n\n' +
-          `Original error: ${(err as Error).message}`,
-      );
+    // The import result is cached at module level so repeated calls to
+    // forecastWithCovariates() resolve instantly after the first invocation.
+    if (!_xregModule) {
+      try {
+        _xregModule = await import('@agentix-e/timesfm-xreg');
+      } catch (err) {
+        throw new Error(
+          'forecastWithCovariates requires @agentix-e/timesfm-xreg.\n' +
+            'Install it: npm install @agentix-e/timesfm-xreg\n\n' +
+            `Original error: ${(err as Error).message}`,
+        );
+      }
     }
+    return await _xregModule.forecastWithCovariates(this, params);
   }
 
   async dispose(): Promise<void> {

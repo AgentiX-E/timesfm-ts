@@ -44,6 +44,12 @@
 │  Ridge regression + OneHotEncoder for exogenous covariates   │
 │  Modes: "xreg + timesfm" | "timesfm + xreg"                 │
 └─────────────────────────────────────────────────────────────┘
+                           │ uses (optional)
+┌──────────────────────────▼──────────────────────────────────┐
+│              @agentix-e/timesfm-hierarchical                   │
+│  Hierarchical reconciliation: bottom-up, top-down, MinT     │
+│  Components: reconciliation, summing-matrix, orchestration  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -155,6 +161,19 @@ Browser-compatible inference via onnxruntime-web:
 - **Model loading**: Accepts URL strings (fetched) or pre-loaded ArrayBuffers
 - **Implements `IInferenceEngine`**: Can be injected into `TimesFMModel.fromPretrained()` for browser use
 - **CDN WASM**: Falls back to jsdelivr CDN when onnxruntime-web WASM binary is not locally resolvable
+
+### 9. Hierarchical Reconciliation Engine
+
+**Package**: `@agentix-e/timesfm-hierarchical`
+
+Hierarchical time series reconciliation with multiple strategies:
+
+| File                | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `reconciliation.ts` | Optimal reconciliation (bottom-up, top-down, MinT)        |
+| `summing-matrix.ts` | S matrix construction for hierarchy definition            |
+| `hierarchical.ts`   | Orchestration engine managing the reconciliation pipeline |
+| `types.ts`          | Type definitions for hierarchical structures              |
 
 ---
 
