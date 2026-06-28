@@ -130,7 +130,6 @@ Implements `IInferenceEngine`:
 - **Streaming download**: Uses Node.js `fetch` reader → file `writeStream` (no 885 MB heap buffer)
 - **Proxy support**: Environment variables (`TIMESFM_PROXY_URL/USERNAME/PASSWORD`, `HTTPS_PROXY`) or programmatic `DownloadOptions.proxy` with username/password. Uses undici `ProxyAgent` for clean proxy handling without global environment mutations
 - **SHA-256 integrity**: Hashes the extracted ONNX file after download for verification
-- **Atomic writes**: Downloads to `.tmp` then renames
 - **Cache management**: Platform-aware cache directory (`XDG_CACHE_HOME`)
 - **Cross-platform extraction**: Tries `unzip`, `7z`, and PowerShell `Expand-Archive` backends
 - **Error hierarchy**: `ProxyAuthError` (HTTP 407), `DownloadError`, `ChecksumMismatchError`
@@ -144,6 +143,18 @@ Exogenous covariate support with Ridge regression:
 - **"xreg + timesfm"**: Fit covariates → forecast residuals with TimesFM → combine
 - **"timesfm + xreg"**: Forecast with TimesFM → fit covariates on residuals (using backcast) → combine
 - **OneHotEncoder**: Pure-TypeScript scikit-learn compatible encoder
+
+### 8. Web Inference Engine
+
+**File**: `packages/timesfm-web/src/web-engine.ts`
+
+Browser-compatible inference via onnxruntime-web:
+
+- **Pluggable backends**: WebGPU (fastest), WASM (universal), WebGL (legacy)
+- **Automatic fallback**: Tries providers in order until one succeeds
+- **Model loading**: Accepts URL strings (fetched) or pre-loaded ArrayBuffers
+- **Implements `IInferenceEngine`**: Can be injected into `TimesFMModel.fromPretrained()` for browser use
+- **CDN WASM**: Falls back to jsdelivr CDN when onnxruntime-web WASM binary is not locally resolvable
 
 ---
 
@@ -207,10 +218,11 @@ IInferenceEngine — pluggable backend (ONNX)
 
 ## Package Sizes
 
-| Package                   | Code Size | Dependencies                              |
-| ------------------------- | --------- | ----------------------------------------- |
-| `@agentix-e/timesfm-core` | ~100 KB   | `onnxruntime-node` (dynamic)              |
-| `@agentix-e/timesfm-xreg` | ~30 KB    | `ml-matrix`                               |
-| `@agentix-e/timesfm-cli`  | ~15 KB    | `commander`, `csv-parse`, `csv-stringify` |
+| Package                   | Code Size | Dependencies                                        |
+| ------------------------- | --------- | --------------------------------------------------- |
+| `@agentix-e/timesfm-core` | ~100 KB   | `onnxruntime-node` (dynamic)                        |
+| `@agentix-e/timesfm-xreg` | ~30 KB    | `ml-matrix`                                         |
+| `@agentix-e/timesfm-cli`  | ~15 KB    | `commander`, `csv-parse`, `csv-stringify`           |
+| `@agentix-e/timesfm-web`  | ~10 KB    | `@agentix-e/timesfm-core`, `onnxruntime-web` (peer) |
 
 Model weights (885 MB) are downloaded separately from GitHub Releases.

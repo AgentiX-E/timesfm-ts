@@ -229,8 +229,14 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
   async dispose(): Promise<void> {
     if (this._session) {
       try {
-        // Release native ONNX Runtime resources
-        await (this._session as { release?: () => Promise<void> }).release?.();
+        // Release native ONNX Runtime resources.
+        // InferenceSession.release() is available in onnxruntime-node ≥ 1.17.
+        // Using a runtime typeof guard instead of a brittle type assertion
+        // keeps this safe across ONNX Runtime version upgrades.
+        const s = this._session as unknown as Record<string, unknown>;
+        if (typeof s.release === 'function') {
+          await (s.release as () => Promise<void>)();
+        }
       } catch {
         // Best-effort cleanup
       }
