@@ -3,7 +3,6 @@
 > Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting.
 
 [![CI](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml)
-[![Benchmark](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/benchmark.yml/badge.svg)](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/benchmark.yml)
 [![Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/)
 [![Benchmark Report](https://img.shields.io/badge/benchmark-latest-blue)](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)
 [![Coverage](https://img.shields.io/badge/coverage-report-blue)](https://agentix-e.github.io/agentix-timesfm-ts/coverage/)
@@ -155,7 +154,7 @@ agentix-timesfm-ts/
 │   └── export-onnx.py           # PyTorch → ONNX exporter
 ├── .github/
 │   └── workflows/               # CI/CD automation
-│       ├── ci.yml               # PR checks + integration tests
+│       ├── ci.yml               # PR checks + integration tests + benchmark + deploy
 │       ├── release.yml          # npm publish + model GitHub Release
 │       └── nightly.yml          # Daily model version monitoring
 ├── models/                      # ONNX models (gitignored)

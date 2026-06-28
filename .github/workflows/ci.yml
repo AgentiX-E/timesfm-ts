@@ -6,6 +6,8 @@ on:
   push:
     branches: [master, main]
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # Weekly benchmark on Monday at 6 AM UTC
 
 permissions:
   contents: read
@@ -138,13 +140,13 @@ jobs:
           node -e "
           const fs = require('fs');
           if (!fs.existsSync('coverage/coverage-summary.json')) {
-            console.log('No coverage summary — skipping threshold check (likely model not loaded).');
-            process.exit(0);
+            console.error('FAIL: coverage-summary.json not found. Integration tests may have failed silently.');
+            process.exit(1);
           }
           const s = require('./coverage/coverage-summary.json').total;
-          if (!s) {
-            console.log('No total coverage data — skipping threshold check.');
-            process.exit(0);
+          if (!s || !s.lines || s.lines.pct === 0) {
+            console.error('FAIL: No meaningful coverage data. All metrics are 0%.');
+            process.exit(1);
           }
           const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
           let failed = false;
@@ -159,7 +161,11 @@ jobs:
 
       - name: Ensure coverage directory exists
         if: always()
-        run: mkdir -p coverage && echo '{}' > coverage/coverage-summary.json
+        run: |
+          mkdir -p coverage
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo '{"total":{"lines":{"pct":0},"branches":{"pct":0},"functions":{"pct":0},"statements":{"pct":0}}}' > coverage/coverage-summary.json
+          fi
 
       - name: Upload coverage artifact
         if: always()

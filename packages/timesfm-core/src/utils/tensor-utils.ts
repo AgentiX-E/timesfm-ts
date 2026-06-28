@@ -179,9 +179,14 @@ export function clipMax(values: Float32Array, maxVal: number): Float32Array {
 
 /**
  * Element-wise mean of two arrays.
+ *
+ * @throws {RangeError} if the arrays have different lengths.
  */
 export function elementwiseMean(a: Float32Array, b: Float32Array): Float32Array {
-  const len = Math.min(a.length, b.length);
+  if (a.length !== b.length) {
+    throw new RangeError(`Length mismatch: a.length=${a.length}, b.length=${b.length}`);
+  }
+  const len = a.length;
   const result = new Float32Array(len);
   for (let i = 0; i < len; i++) {
     result[i] = (a[i] + b[i]) / 2;
@@ -191,9 +196,14 @@ export function elementwiseMean(a: Float32Array, b: Float32Array): Float32Array 
 
 /**
  * Element-wise difference: a[i] - b[i].
+ *
+ * @throws {RangeError} if the arrays have different lengths.
  */
 export function elementwiseDiff(a: Float32Array, b: Float32Array): Float32Array {
-  const len = Math.min(a.length, b.length);
+  if (a.length !== b.length) {
+    throw new RangeError(`Length mismatch: a.length=${a.length}, b.length=${b.length}`);
+  }
+  const len = a.length;
   const result = new Float32Array(len);
   for (let i = 0; i < len; i++) {
     result[i] = a[i] - b[i];

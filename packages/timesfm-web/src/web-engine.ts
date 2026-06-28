@@ -236,50 +236,75 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
   // IInferenceEngine — forward
   // -----------------------------------------------------------------------
 
+  /**
+   * Run inference for a batch of patched time series.
+   *
+   * Aligned with {@link TimesFMInferenceEngine.forward}: each batch
+   * element is processed sequentially via the ONNX session and results
+   * are returned as per-element arrays in the {@link RawModelOutput}.
+   *
+   * The `_masks` parameter is intentionally unused — the mask information
+   * is embedded in the second half of each 64-dim tokenizer input pair
+   * (value=0 → visible, value=1 → masked), matching the ONNX export format.
+   */
   async forward(inputs: Float32Array[], _masks: Uint8Array[]): Promise<RawModelOutput> {
     if (!this._session || !this._ortModule) {
       throw new Error('[TimesFM Web] Engine not loaded. Call load() first.');
     }
 
     const ort = this._ortModule;
+    const session = this._session;
+    const batchSize = inputs.length;
 
-    // Build combined input: [1, exportedPatches, tokenizerInputDims]
-    // The mask info is embedded in the second half of each 64-dim patch pair
-    // (value=0 → visible, value=1 → masked). Single input name: "inputs".
-    const totalLen = this._config.exportedPatches * this._config.tokenizerInputDims;
-    const flatInputs = new Float32Array(totalLen);
+    // Read input name dynamically from session metadata to support
+    // models with non-standard naming conventions (aligned with ONNX engine).
+    const inputName = session.inputNames[0] || 'inputs';
 
-    let offset = 0;
-    for (const arr of inputs) {
-      const copyLen = Math.min(arr.length, totalLen - offset);
-      flatInputs.set(arr.subarray(0, copyLen), offset);
-      offset += copyLen;
-      if (offset >= totalLen) break;
+    // Run each batch element sequentially through the ONNX session.
+    // onnxruntime-web's WASM backend is single-threaded, so Promise.all
+    // wouldn't provide parallelism — sequential is both correct and optimal.
+    const inputEmbs: Float32Array[] = [];
+    const outputEmbs: Float32Array[] = [];
+    const outputTSs: Float32Array[] = [];
+    const outputQSs: Float32Array[] = [];
+
+    for (let b = 0; b < batchSize; b++) {
+      const input = inputs[b];
+
+      // Build padded input to match exported model shape
+      const totalLen = this._config.exportedPatches * this._config.tokenizerInputDims;
+      const flatInputs = new Float32Array(totalLen);
+      const copyLen = Math.min(input.length, totalLen);
+      flatInputs.set(input.subarray(0, copyLen), 0);
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+      const feeds: Record<string, import('onnxruntime-web').Tensor> = {
+        [inputName]: new ort.Tensor('float32', flatInputs, [
+          1,
+          this._config.exportedPatches,
+          this._config.tokenizerInputDims,
+        ]),
+      };
+
+      const results = await session.run(feeds);
+
+      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+      const extract = (t: import('onnxruntime-web').Tensor | undefined): Float32Array => {
+        if (!t || !t.data) return new Float32Array(0);
+        return new Float32Array(t.data as Float32Array);
+      };
+
+      inputEmbs.push(extract(results['input_emb']));
+      outputEmbs.push(extract(results['output_emb']));
+      outputTSs.push(extract(results['output_ts']));
+      outputQSs.push(extract(results['output_qs']));
     }
 
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    const feeds: Record<string, import('onnxruntime-web').Tensor> = {
-      inputs: new ort.Tensor('float32', flatInputs, [
-        1,
-        this._config.exportedPatches,
-        this._config.tokenizerInputDims,
-      ]),
-    };
-
-    const results = await this._session.run(feeds);
-
-    // Output names match ONNX export: input_emb, output_emb, output_ts, output_qs
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    const extract = (t: import('onnxruntime-web').Tensor | undefined): Float32Array => {
-      if (!t || !t.data) return new Float32Array(0);
-      return new Float32Array(t.data as Float32Array);
-    };
-
     return {
-      inputEmbeddings: [extract(results['input_emb'])],
-      outputEmbeddings: [extract(results['output_emb'])],
-      outputTimeSeries: [extract(results['output_ts'])],
-      outputQuantileSpread: [extract(results['output_qs'])],
+      inputEmbeddings: inputEmbs,
+      outputEmbeddings: outputEmbs,
+      outputTimeSeries: outputTSs,
+      outputQuantileSpread: outputQSs,
     };
   }
 

@@ -51,6 +51,12 @@ export interface DecodeResult {
 /**
  * Run the full decode loop.
  *
+ * **Concurrency safety**: This function is pure with respect to the engine
+ * — it reads from the engine but never mutates shared state.  Multiple
+ * `decode()` calls can run concurrently (e.g., main path + flip path in
+ * `Promise.all`) without races, provided the engine supports concurrent
+ * `forward()` calls.  ONNX Runtime sessions are safe for concurrent use.
+ *
  * @param engine    Inference backend (ONNX Runtime).
  * @param normedInputs   Pre-normalised patched inputs [batch][numPatches * inputPatchLen].
  * @param patchedMasks   Patch masks [batch][numPatches * inputPatchLen].
@@ -60,6 +66,7 @@ export interface DecodeResult {
  * @param horizon        Forecast horizon.
  * @param fc             Forecast config.
  * @param mc             Model config.
+ * @param signal         Optional AbortSignal for cancellation.
  */
 export async function decode(
   engine: IInferenceEngine,

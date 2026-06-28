@@ -52,8 +52,9 @@ timesfm setup
 # Option B: Explicit proxy with authentication
 timesfm setup --proxy-url http://proxy.company.com:8080
 timesfm setup --proxy-url http://proxy.company.com:8080 --proxy-username user
-# Password is always read from environment variable (never in CLI args):
+# Password via CLI (convenience) or environment variable (recommended for security):
 TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
+timesfm setup --proxy-url http://proxy:8080 --proxy-username user --proxy-password pass
 
 # Option C: TIMESFM-specific environment variables
 TIMESFM_PROXY_URL=http://proxy:8080 TIMESFM_PROXY_USERNAME=user TIMESFM_PROXY_PASSWORD=pass timesfm setup
@@ -140,13 +141,13 @@ timesfm forecast -H 24 -o forecast.json --output-format json sales.csv
 
 ## Environment Variables
 
-| Variable                 | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `TIMESFM_MODEL_PATH`     | Path to the ONNX model file                  |
-| `TIMESFM_PROXY_URL`      | Proxy URL for model download                 |
-| `TIMESFM_PROXY_USERNAME` | Proxy authentication username                |
-| `TIMESFM_PROXY_PASSWORD` | Proxy authentication password (never in CLI) |
-| `HTTPS_PROXY`            | Standard proxy (auto-detected as fallback)   |
+| Variable                 | Description                                         |
+| ------------------------ | --------------------------------------------------- |
+| `TIMESFM_MODEL_PATH`     | Path to the ONNX model file                         |
+| `TIMESFM_PROXY_URL`      | Proxy URL for model download                        |
+| `TIMESFM_PROXY_USERNAME` | Proxy authentication username                       |
+| `TIMESFM_PROXY_PASSWORD` | Proxy authentication password (env var recommended) |
+| `HTTPS_PROXY`            | Standard proxy (auto-detected as fallback)          |
 
 ## License
 

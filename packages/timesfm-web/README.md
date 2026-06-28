@@ -17,7 +17,7 @@ npm install @agentix-e/timesfm-core @agentix-e/timesfm-web onnxruntime-web
 ## Quick Start
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
+import { TimesFMModel, createForecastConfig, TIMESFM_25_CONFIG } from '@agentix-e/timesfm-core';
 import { TimesFMWebInferenceEngine, loadModelFromUrl } from '@agentix-e/timesfm-web';
 
 // 1. Download model with progress tracking
@@ -29,7 +29,7 @@ const { buffer } = await loadModelFromUrl('/models/timesfm-2.5.onnx', {
 });
 
 // 2. Create web engine (auto-detects best backend: WebGPU → WASM)
-const engine = new TimesFMWebInferenceEngine(config);
+const engine = new TimesFMWebInferenceEngine(TIMESFM_25_CONFIG);
 await engine.load(buffer);
 
 // 3. Create model with the web engine injected
@@ -68,6 +68,10 @@ const engine = new TimesFMWebInferenceEngine(config, ['wasm']); // force WASM
 ```
 
 ## API
+
+### `checkModelAvailability(url)`
+
+HEAD request to check if a model exists at a URL. Returns `{ available: boolean, sizeBytes?: number, contentType?: string }`.
 
 ### `TimesFMWebInferenceEngine`
 
