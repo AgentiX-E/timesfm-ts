@@ -20,6 +20,12 @@ import { TIMESFM_25_CONFIG, type ModelConfig } from './types';
 /** Schema version the current engine supports. */
 export const ENGINE_SUPPORTED_SCHEMA = 1;
 
+/** Model weight precision. */
+export type ModelPrecision = 'fp32' | 'int8';
+
+/** Default precision when a descriptor omits the field (backward compat). */
+export const PRECISION_DEFAULT: ModelPrecision = 'fp32';
+
 /** ONNX graph shape information extracted from the exported model. */
 export interface OnnxDescriptor {
   readonly input_name: string;
@@ -28,6 +34,12 @@ export interface OnnxDescriptor {
   readonly opset: number;
   readonly sha256: string;
   readonly size_bytes: number;
+  /**
+   * Weight precision of the exported ONNX graph.
+   * Optional for backward compatibility with schema-1 descriptors
+   * produced before INT8 support. Defaults to 'fp32' when absent.
+   */
+  readonly precision?: ModelPrecision;
 }
 
 /** TimesFM architecture parameters extracted from the PyTorch model. */
@@ -144,6 +156,10 @@ export async function loadModelDescriptor(path: string): Promise<ModelDescriptor
     try {
       const content = await readJsonFile(candidate);
       const desc = JSON.parse(content) as ModelDescriptor;
+      // Normalise missing precision to default for downstream consumers.
+      if (desc.onnx && !desc.onnx.precision) {
+        (desc as { onnx: { precision?: string } }).onnx.precision = PRECISION_DEFAULT;
+      }
       return validateDescriptor(desc) ? desc : null;
     } catch (err) {
       // Distinguish "file not found" from "parse error" — the latter may

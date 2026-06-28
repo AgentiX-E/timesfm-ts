@@ -55,16 +55,51 @@ import { DownloadError, ChecksumMismatchError, ProxyAuthError } from './errors';
 // ─── Configuration ──────────────────────────────────────────────────────────
 
 const REPO = 'AgentiX-E/agentix-timesfm-ts';
-const MODEL_CHANNEL = 'timesfm-latest';
-const ZIP_FILENAME = 'timesfm-onnx-2.5.zip';
-const ONNX_FILENAME = 'timesfm-2.5.onnx';
 const DESCRIPTOR_FILENAME = 'model-descriptor.json';
-/** Expected zip size in bytes (~885 MB). */
-const EXPECTED_ZIP_SIZE = 885 * 1024 * 1024;
-/** Minimum size for a valid cached model (800 MB — generous tolerance). */
-const MIN_CACHED_SIZE = 800 * 1024 * 1024;
 
-const GITHUB_RELEASE_URL = `https://github.com/${REPO}/releases/download/${MODEL_CHANNEL}/${ZIP_FILENAME}`;
+/** Precision-specific download profile. */
+interface PrecisionProfile {
+  /** Suffix appended to ONNX filename, e.g. '' for fp32, '-int8' for int8. */
+  readonly suffix: string;
+  /** Zip filename for the given precision. */
+  readonly zipFilename: string;
+  /** ONNX filename for the given precision. */
+  readonly onnxFilename: string;
+  /** Expected zip size in bytes. */
+  readonly expectedZipSize: number;
+  /** Minimum size for a valid cached model. */
+  readonly minCachedSize: number;
+}
+
+const PRECISION_PROFILES: Readonly<Record<string, PrecisionProfile>> = Object.freeze({
+  fp32: {
+    suffix: '',
+    zipFilename: 'timesfm-onnx-2.5.zip',
+    onnxFilename: 'timesfm-2.5.onnx',
+    expectedZipSize: 885 * 1024 * 1024,
+    minCachedSize: 800 * 1024 * 1024,
+  },
+  int8: {
+    suffix: '-int8',
+    zipFilename: 'timesfm-onnx-2.5-int8.zip',
+    onnxFilename: 'timesfm-2.5-int8.onnx',
+    expectedZipSize: 230 * 1024 * 1024,
+    minCachedSize: 200 * 1024 * 1024,
+  },
+});
+
+/** Default precision for download when none specified. */
+const DOWNLOAD_DEFAULT_PRECISION = 'fp32';
+
+function precisionProfile(precision: string = DOWNLOAD_DEFAULT_PRECISION): PrecisionProfile {
+  return PRECISION_PROFILES[precision] ?? PRECISION_PROFILES[DOWNLOAD_DEFAULT_PRECISION];
+}
+
+function releaseUrl(precision: string): string {
+  const profile = precisionProfile(precision);
+  const channel = precision === 'fp32' ? 'timesfm-latest' : `timesfm-latest-${precision}`;
+  return `https://github.com/${REPO}/releases/download/${channel}/${profile.zipFilename}`;
+}
 
 /** Default cache directory (platform-aware). */
 function defaultCacheDir(): string {
@@ -73,8 +108,17 @@ function defaultCacheDir(): string {
 }
 
 /** Default model path. */
-export function defaultModelPath(): string {
-  return path.join(defaultCacheDir(), ONNX_FILENAME);
+export function defaultModelPath(precision?: string): string {
+  return path.join(defaultCacheDir(), precisionProfile(precision).onnxFilename);
+}
+
+/** Backward-compatible: check both FP32 and INT8 cache. */
+export function getCachedModelPath(): string | null {
+  for (const prec of ['fp32', 'int8'] as const) {
+    const p = defaultModelPath(prec);
+    if (isModelCachedAtPath(p, precisionProfile(prec).minCachedSize)) return p;
+  }
+  return null;
 }
 
 // ─── Proxy Configuration ────────────────────────────────────────────────────
@@ -111,6 +155,8 @@ export interface DownloadOptions {
   logger?: (msg: string) => void;
   /** Proxy configuration for restricted network environments */
   proxy?: ProxyConfig;
+  /** Precision variant to download. Default 'fp32'. 'int8' for quantized models. */
+  precision?: string;
 }
 
 // ─── Proxy Resolution ───────────────────────────────────────────────────────
@@ -251,23 +297,27 @@ async function applyProxyToFetch(
  * the zip deleted.
  */
 export async function downloadModel(options: DownloadOptions = {}): Promise<string> {
-  const dest = path.resolve(options.dest ?? defaultModelPath());
+  const prec = options.precision ?? DOWNLOAD_DEFAULT_PRECISION;
+  const profile = precisionProfile(prec);
+  const dest = path.resolve(options.dest ?? defaultModelPath(prec));
   const force = options.force ?? false;
   const log = options.logger ?? ((msg: string) => console.error(msg));
 
   // Already have a valid cached model?
-  if (!force && isModelCachedAtPath(dest)) {
+  if (!force && isModelCachedAtPath(dest, profile.minCachedSize)) {
     return dest;
   }
 
   const cacheDir = path.dirname(dest);
   fs.mkdirSync(cacheDir, { recursive: true });
 
-  const url = options.url ?? GITHUB_RELEASE_URL;
-  const zipDest = path.join(cacheDir, ZIP_FILENAME);
+  const url = options.url ?? releaseUrl(prec);
+  const zipDest = path.join(cacheDir, profile.zipFilename);
   const tmpZip = zipDest + '.tmp';
 
-  log(`Downloading TimesFM 2.5 200M model (${(EXPECTED_ZIP_SIZE / 1024 / 1024).toFixed(0)} MB)...`);
+  log(
+    `Downloading TimesFM 2.5 200M model (${(profile.expectedZipSize / 1024 / 1024).toFixed(0)} MB)...`,
+  );
   log(`  From: ${url}`);
   log(`  To:   ${dest}`);
 
@@ -346,8 +396,8 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   }
 
   const total = parseInt(response.headers.get('content-length') || '0', 10);
-  const totalMB = total > 0 ? total / 1024 / 1024 : EXPECTED_ZIP_SIZE / 1024 / 1024;
-  const totalBytes = total > 0 ? total : EXPECTED_ZIP_SIZE;
+  const totalMB = total > 0 ? total / 1024 / 1024 : profile.expectedZipSize / 1024 / 1024;
+  const totalBytes = total > 0 ? total : profile.expectedZipSize;
 
   const fileStream = createWriteStream(tmpZip);
   const reader = response.body?.getReader();
@@ -432,7 +482,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
     if (expectedSha256) {
       const actualSha256 = await sha256File(dest);
       if (actualSha256 !== expectedSha256) {
-        cleanupPartial(cacheDir);
+        cleanupPartial(cacheDir, profile);
         throw new ChecksumMismatchError(
           `Checksum mismatch!\n  Expected: ${expectedSha256}\n  Got:      ${actualSha256}`,
         );
@@ -591,8 +641,8 @@ function sha256FileSync(filePath: string): string {
 }
 
 /** Clean up partial extraction artifacts. */
-function cleanupPartial(cacheDir: string): void {
-  for (const f of [ONNX_FILENAME, DESCRIPTOR_FILENAME]) {
+function cleanupPartial(cacheDir: string, profile: PrecisionProfile): void {
+  for (const f of [profile.onnxFilename, DESCRIPTOR_FILENAME]) {
     try {
       fs.unlinkSync(path.join(cacheDir, f));
     } catch {
@@ -608,10 +658,10 @@ function cleanupPartial(cacheDir: string): void {
  * Uses the expected model size (885 MB ± tolerance) rather than
  * a loose 100 MB heuristic.
  */
-function isModelCachedAtPath(p: string): boolean {
+function isModelCachedAtPath(p: string, minSize?: number): boolean {
   if (!existsSync(p)) return false;
   try {
-    return fs.statSync(p).size >= MIN_CACHED_SIZE;
+    return fs.statSync(p).size >= (minSize ?? 800 * 1024 * 1024);
   } catch {
     return false;
   }
@@ -621,13 +671,6 @@ function isModelCachedAtPath(p: string): boolean {
  * Check if the default model is already cached.
  */
 export function isModelCached(): boolean {
-  return isModelCachedAtPath(defaultModelPath());
-}
-
-/**
- * Get the path to a cached model, or null.
- */
-export function getCachedModelPath(): string | null {
-  const p = defaultModelPath();
-  return isModelCachedAtPath(p) ? p : null;
+  const cached = getCachedModelPath();
+  return cached !== null;
 }

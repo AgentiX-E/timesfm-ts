@@ -62,6 +62,8 @@ program
         if (descriptor?.onnx.size_bytes) {
           console.log(`ONNX size:    ${(descriptor.onnx.size_bytes / 1024 ** 2).toFixed(0)} MB`);
         }
+        const prec = descriptor?.onnx.precision ?? 'fp32';
+        console.log(`Precision:    ${prec}`);
         // System info
         const os = await import('node:os');
         console.log(`\nSystem:`);
@@ -96,6 +98,7 @@ program
   .option('--proxy-url <url>', 'Proxy URL for downloading through corporate firewall')
   .option('--proxy-username <user>', 'Proxy authentication username')
   .option('--proxy-password <pass>', 'Proxy authentication password (prefer env variable)')
+  .option('--precision <fp32|int8>', 'Model precision variant (default: fp32)')
   .action(async (options: Record<string, unknown>) => {
     try {
       const core = await import('@agentix-e/timesfm-core');
@@ -117,9 +120,14 @@ program
         force: options.force === true,
         dest: options.output as string | undefined,
         proxy: proxyConfig,
+        precision: (options.precision as string) || process.env.TIMESFM_PRECISION || 'fp32',
       });
       _lastSetupPath = dest;
       console.log(`\nModel ready: ${dest}`);
+      const prec = (options.precision as string) || process.env.TIMESFM_PRECISION;
+      if (prec && prec !== 'fp32') {
+        console.log(`Precision:   ${prec}`);
+      }
       console.log(`   Run: timesfm forecast --horizon 24 your-data.csv`);
     } catch (err) {
       console.error('Error:', err instanceof Error ? err.message : String(err));
