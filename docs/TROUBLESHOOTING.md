@@ -11,6 +11,7 @@ Error: Failed to download model: ETIMEDOUT
 ```
 
 **解决方案**：
+
 1. 检查网络连接
 2. 配置代理（见下文）
 3. 手动下载模型文件放到 `~/.cache/agentix-timesfm-ts/`
@@ -40,6 +41,7 @@ ProxyAuthError: Proxy authentication required. Received HTTP 407
 ```
 
 **解决方案**：
+
 - 确认用户名/密码正确
 - 检查代理 URL 格式：`http://host:port`（不支持 SOCKS）
 - 如果使用 NTLM/Kerberos 认证，请先通过代理隧道转发
@@ -63,6 +65,7 @@ FATAL ERROR: Reached heap limit Allocation failed — JavaScript heap out of mem
 TimesFM ONNX 模型约 885 MB (fp32)。推理时还需要 ~1-2 GB 额外内存。
 
 **解决方案**：
+
 1. 增加 Node.js 内存限制：
    ```bash
    NODE_OPTIONS="--max-old-space-size=4096" npx timesfm forecast --data input.csv
@@ -86,6 +89,7 @@ ModelNotCompiledError: Model has not been compiled. Call model.compile() before 
 ```
 
 **解决方案**：
+
 ```typescript
 const model = await TimesFMModel.fromPretrained({ modelPath: 'auto' });
 model.compile(createForecastConfig({ maxContext: 512, maxHorizon: 128 }));
@@ -95,11 +99,13 @@ const result = await model.forecast(24, inputs); // ✅
 ### 预测结果为 NaN
 
 **可能原因**：
+
 1. 输入包含 NaN 或 Infinity
 2. 输入长度 < 1
 3. 输入全为零（RevIN 无法归一化）
 
 **解决方案**：
+
 ```typescript
 // 预处理器会自动清理 NaN（线性插值），但全零序列可能出问题
 // 确保输入至少有非零值
@@ -112,6 +118,7 @@ Error: onnxruntime-node not found. Install with: npm install onnxruntime-node
 ```
 
 **解决方案**：
+
 ```bash
 npm install onnxruntime-node
 ```
@@ -127,6 +134,7 @@ Error: Cannot find module '@agentix-e/timesfm-xreg'
 ```
 
 **解决方案**：
+
 ```bash
 npm install @agentix-e/timesfm-xreg
 ```
@@ -142,6 +150,7 @@ Error: WASM binary not found
 ```
 
 **解决方案**：
+
 1. 确认 WASM 文件在正确路径：
    ```typescript
    import { TimesFMWebInferenceEngine } from '@agentix-e/timesfm-web';
@@ -159,6 +168,7 @@ Error: WASM binary not found
 ### WebGPU 不可用 → 回退到 WASM
 
 这是正常行为。WebGPU 在以下情况不可用：
+
 - 大多数桌面浏览器（Chrome 113+, Edge 113+）
 - 移动浏览器通常不支持
 

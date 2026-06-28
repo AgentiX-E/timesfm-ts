@@ -4,16 +4,16 @@
 
 ## 快速对比
 
-| 操作 | Python API | TypeScript API |
-|------|-----------|---------------|
-| 安装 | `pip install timesfm` | `npm install @agentix-e/timesfm-core` |
-| 导入 | `import timesfm` | `import { TimesFMModel } from '@agentix-e/timesfm-core'` |
-| 加载模型 | `tf = timesfm.TimesFm(...)` | `const model = await TimesFMModel.fromPretrained({ modelPath })` |
-| 编译 | 加载时自动 | `model.compile(config)` |
-| 预测 | `tf.forecast(inputs, horizon)` | `await model.forecast(horizon, inputs)` |
-| 分位数 | `forecast_output.quantiles` | `result.quantileForecast` |
-| 协变量 | `timesfm.TimeSeriesFMWithCovariates` | `import { forecastWithCovariates } from '@agentix-e/timesfm-xreg'` |
-| CLI | 无 | `npx timesfm forecast --data input.csv` |
+| 操作     | Python API                           | TypeScript API                                                     |
+| -------- | ------------------------------------ | ------------------------------------------------------------------ |
+| 安装     | `pip install timesfm`                | `npm install @agentix-e/timesfm-core`                              |
+| 导入     | `import timesfm`                     | `import { TimesFMModel } from '@agentix-e/timesfm-core'`           |
+| 加载模型 | `tf = timesfm.TimesFm(...)`          | `const model = await TimesFMModel.fromPretrained({ modelPath })`   |
+| 编译     | 加载时自动                           | `model.compile(config)`                                            |
+| 预测     | `tf.forecast(inputs, horizon)`       | `await model.forecast(horizon, inputs)`                            |
+| 分位数   | `forecast_output.quantiles`          | `result.quantileForecast`                                          |
+| 协变量   | `timesfm.TimeSeriesFMWithCovariates` | `import { forecastWithCovariates } from '@agentix-e/timesfm-xreg'` |
+| CLI      | 无                                   | `npx timesfm forecast --data input.csv`                            |
 
 ## 逐步迁移
 
@@ -144,11 +144,11 @@ TypeScript API: `model.forecast(horizon, inputs)`
 
 ### 数据类型
 
-| Python | TypeScript |
-|--------|-----------|
+| Python                       | TypeScript     |
+| ---------------------------- | -------------- |
 | `np.float32` 或 `np.ndarray` | `Float32Array` |
-| `torch.Tensor` | `Float32Array` |
-| `list[float]` | `Float32Array` |
+| `torch.Tensor`               | `Float32Array` |
+| `list[float]`                | `Float32Array` |
 
 ### 资源管理
 

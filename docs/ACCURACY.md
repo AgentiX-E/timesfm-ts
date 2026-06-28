@@ -6,14 +6,14 @@
 
 ### 运行时环境
 
-| 维度 | Google TimesFM (Python) | Agentix TimesFM (TypeScript) |
-|------|------------------------|------------------------------|
+| 维度     | Google TimesFM (Python)           | Agentix TimesFM (TypeScript)                |
+| -------- | --------------------------------- | ------------------------------------------- |
 | 模型权重 | `google/timesfm-2.5-200m-pytorch` | 相同权重，通过 `export-onnx.py` 导出为 ONNX |
-| 推理后端 | PyTorch (eager mode) | ONNX Runtime (CPU) |
-| 数值精度 | float32 | float32 |
-| 推理管线 | `timesfm.TimesFM.forecast()` | `TimesFMModel.forecast()` |
-| 预处理 | RevIN (PyTorch) | RevIN (纯 TypeScript) |
-| 后处理 | Quantile head (PyTorch) | Quantile head (纯 TypeScript) |
+| 推理后端 | PyTorch (eager mode)              | ONNX Runtime (CPU)                          |
+| 数值精度 | float32                           | float32                                     |
+| 推理管线 | `timesfm.TimesFM.forecast()`      | `TimesFMModel.forecast()`                   |
+| 预处理   | RevIN (PyTorch)                   | RevIN (纯 TypeScript)                       |
+| 后处理   | Quantile head (PyTorch)           | Quantile head (纯 TypeScript)               |
 
 ### 数据集
 
@@ -27,14 +27,14 @@
 
 ### 评估指标
 
-| 指标 | 公式 | 说明 |
-|------|------|------|
-| **MAE** | Σ\|ŷᵢ - yᵢ\| / n | 平均绝对误差 |
-| **RMSE** | √(Σ(ŷᵢ - yᵢ)² / n) | 均方根误差 |
-| **SMAPE** | 200/n × Σ\|ŷᵢ - yᵢ\| / (\|ŷᵢ\| + \|yᵢ\|) | 对称平均绝对百分比误差 (0-200 范围) |
-| **Scaled MAE** | MAE_model / MAE_naive | 相对于朴素基线的缩放 MAE (< 1.0 = 优于朴素) |
-| **PIC Coverage** | CI中包含真实值的比例 | 预测区间覆盖 (< 目标置信度 → 校准不足) |
-| **PI Width** | 上界 - 下界的均值 | 预测区间宽度 (越小越好，给定覆盖) |
+| 指标             | 公式                                     | 说明                                        |
+| ---------------- | ---------------------------------------- | ------------------------------------------- |
+| **MAE**          | Σ\|ŷᵢ - yᵢ\| / n                         | 平均绝对误差                                |
+| **RMSE**         | √(Σ(ŷᵢ - yᵢ)² / n)                       | 均方根误差                                  |
+| **SMAPE**        | 200/n × Σ\|ŷᵢ - yᵢ\| / (\|ŷᵢ\| + \|yᵢ\|) | 对称平均绝对百分比误差 (0-200 范围)         |
+| **Scaled MAE**   | MAE_model / MAE_naive                    | 相对于朴素基线的缩放 MAE (< 1.0 = 优于朴素) |
+| **PIC Coverage** | CI中包含真实值的比例                     | 预测区间覆盖 (< 目标置信度 → 校准不足)      |
+| **PI Width**     | 上界 - 下界的均值                        | 预测区间宽度 (越小越好，给定覆盖)           |
 
 ### 朴素基线
 
@@ -90,11 +90,11 @@ pnpm exec tsx scripts/compare-accuracy.ts \
 
 由于 ONNX 导出和不同后端的浮点实现差异，轻微数值差异是可预期的：
 
-| 组件 | 预期容忍度 | 说明 |
-|------|-----------|------|
-| 点预测 | ±0.5% 相对差异 | 由于 ONNX 算子融合和内存布局差异 |
-| 分位数带 | ±1.0% 相对差异 | 分位数头对数值更敏感 |
-| MAE 差异 | ≤5% 绝对差异 | 聚合指标应在紧密范围内 |
+| 组件     | 预期容忍度     | 说明                             |
+| -------- | -------------- | -------------------------------- |
+| 点预测   | ±0.5% 相对差异 | 由于 ONNX 算子融合和内存布局差异 |
+| 分位数带 | ±1.0% 相对差异 | 分位数头对数值更敏感             |
+| MAE 差异 | ≤5% 绝对差异   | 聚合指标应在紧密范围内           |
 
 ## CI 精度闸门
 
@@ -119,4 +119,4 @@ pnpm exec tsx scripts/compare-accuracy.ts \
 
 ---
 
-*最后更新: 2026-06-28*
+_最后更新: 2026-06-28_
