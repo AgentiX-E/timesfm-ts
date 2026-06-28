@@ -32,6 +32,7 @@ export default defineConfig({
       '**/engine.test.ts',
       '**/web-integration.test.ts',
       '**/xreg-engine.test.ts',
+      '**/concurrency.test.ts',
     ],
     testTimeout: 15000,
     hookTimeout: 15000,

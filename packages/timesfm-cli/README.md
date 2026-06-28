@@ -23,6 +23,15 @@ timesfm forecast --horizon 24 sales.csv
 
 ## Commands
 
+### `timesfm info`
+
+Show model metadata and system information.
+
+```bash
+timesfm info                    # Auto-detect model location
+timesfm info -m ./model.onnx    # Explicit model path
+```
+
 ### `timesfm setup`
 
 Download the TimesFM 2.5 ONNX model. Subsequent runs use the cached copy.

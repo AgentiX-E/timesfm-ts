@@ -152,7 +152,7 @@ function writeRootLandingPage() {
 
 // ── Main ─────────────────────────────────────────────────────────────────
 
-writeWebBenchmarkDir();
+ensureWebBenchmarkDir();
 writeCoverageIndex();
 writeRootLandingPage();
 console.log('[prepare-pages] All pages generated successfully.');

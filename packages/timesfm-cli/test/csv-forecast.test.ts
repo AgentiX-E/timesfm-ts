@@ -527,4 +527,45 @@ describe('csvForecast', () => {
     expect(Array.from(inputs[0])).toEqual([1, 2]);
     expect(Array.from(inputs[1])).toEqual([10, 20]);
   });
+
+  it('uses custom logger when provided', async () => {
+    const inPath = writeTempCsv('date,value\n2024-01-01,10\n2024-01-02,20\n');
+
+    const logCalls: Array<{ level: string; msg: string }> = [];
+    const customLogger = {
+      info: (msg: string) => logCalls.push({ level: 'info', msg }),
+      error: (msg: string) => logCalls.push({ level: 'error', msg }),
+    };
+
+    await csvForecast(
+      makeOptions({
+        inputPath: inPath,
+        outputFormat: 'csv',
+        horizon: 2,
+        logger: customLogger,
+      }),
+    );
+
+    expect(logCalls.length).toBeGreaterThan(0);
+    expect(logCalls[0].level).toBe('info');
+    expect(logCalls[0].msg).toContain('Loaded');
+  });
+
+  it('uses default logger when no custom logger provided', async () => {
+    const inPath = writeTempCsv('date,value\n2024-01-01,10\n2024-01-02,20\n');
+
+    // defaultLogger writes to console.error — ensure it works without errors
+    await expect(
+      csvForecast(
+        makeOptions({
+          inputPath: inPath,
+          outputFormat: 'csv',
+          horizon: 2,
+        }),
+      ),
+    ).resolves.toBeUndefined();
+
+    // console.error spy should have been called by the default logger
+    expect(console.error).toHaveBeenCalled();
+  });
 });

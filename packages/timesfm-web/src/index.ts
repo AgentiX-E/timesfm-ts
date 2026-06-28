@@ -31,5 +31,6 @@
  */
 
 export { TimesFMWebInferenceEngine } from './web-engine';
+export type { WebEngineLogger } from './web-engine';
 export { loadModelFromUrl, checkModelAvailability } from './model-loader';
 export type { ModelLoaderOptions, ModelLoadResult } from './model-loader';

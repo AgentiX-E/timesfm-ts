@@ -11,6 +11,31 @@ import { stringify } from 'csv-stringify/sync';
 import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
+// Logger interface
+// ---------------------------------------------------------------------------
+
+/**
+ * Progress logger for CSV forecasting operations.
+ *
+ * Inject a custom implementation to capture progress events
+ * for logging pipelines or to suppress output in quiet mode.
+ * Defaults to `console.error` when omitted.
+ */
+export interface CSVForecastLogger {
+  info(msg: string): void;
+  error(msg: string): void;
+}
+
+const defaultLogger: CSVForecastLogger = {
+  info(msg: string) {
+    console.error(msg);
+  },
+  error(msg: string) {
+    console.error(msg);
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -28,6 +53,8 @@ export interface CSVForecastOptions {
   inferIsPositive: boolean;
   fixQuantileCrossing: boolean;
   useContinuousQuantileHead: boolean;
+  /** Optional progress logger (defaults to console.error). */
+  logger?: CSVForecastLogger;
 }
 
 interface ParsedCSV {
@@ -83,10 +110,12 @@ export function removeTrailingNaN(arr: Float32Array): Float32Array {
 // ---------------------------------------------------------------------------
 
 export async function csvForecast(options: CSVForecastOptions): Promise<void> {
+  const log = options.logger ?? defaultLogger;
+
   // Parse input
   const { series } = parseCSVData(options.inputPath, options.dateCol, options.valueCols);
 
-  console.error(`Loaded ${series.size} series from ${options.inputPath}`);
+  log.info(`Loaded ${series.size} series from ${options.inputPath}`);
 
   // Create model
   const model = await TimesFMModel.fromPretrained({
@@ -105,7 +134,7 @@ export async function csvForecast(options: CSVForecastOptions): Promise<void> {
   });
 
   model.compile(fc);
-  console.error(`Compiled model with maxContext=${fc.maxContext}, maxHorizon=${fc.maxHorizon}`);
+  log.info(`Compiled model with maxContext=${fc.maxContext}, maxHorizon=${fc.maxHorizon}`);
 
   // Forecast
   const inputList: Float32Array[] = [];
@@ -116,18 +145,18 @@ export async function csvForecast(options: CSVForecastOptions): Promise<void> {
     seriesNames.push(name);
   }
 
-  console.error(`Forecasting ${inputList.length} series for ${options.horizon} steps...`);
+  log.info(`Forecasting ${inputList.length} series for ${options.horizon} steps...`);
   const result = await model.forecast(options.horizon, inputList);
 
   // Output
   if (options.outputFormat === 'json') {
-    outputJSON(result, seriesNames, options);
+    outputJSON(result, seriesNames, options, log);
   } else {
-    outputCSV(result, seriesNames, options);
+    outputCSV(result, seriesNames, options, log);
   }
 
   await model.dispose();
-  console.error('Done.');
+  log.info('Done.');
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +167,9 @@ export function outputCSV(
   result: { pointForecast: Float32Array[]; quantileForecast: Float32Array[][] },
   seriesNames: string[],
   options: CSVForecastOptions,
+  log?: CSVForecastLogger,
 ): void {
+  const logFn = log ?? defaultLogger;
   const rows: Record<string, string | number>[] = [];
 
   for (let s = 0; s < result.pointForecast.length; s++) {
@@ -161,7 +192,7 @@ export function outputCSV(
 
   if (options.outputPath) {
     fs.writeFileSync(options.outputPath, csv);
-    console.error(`Wrote ${rows.length} rows to ${options.outputPath}`);
+    logFn.info(`Wrote ${rows.length} rows to ${options.outputPath}`);
   } else {
     process.stdout.write(csv);
   }
@@ -171,7 +202,9 @@ export function outputJSON(
   result: { pointForecast: Float32Array[]; quantileForecast: Float32Array[][] },
   seriesNames: string[],
   options: CSVForecastOptions,
+  log?: CSVForecastLogger,
 ): void {
+  const logFn = log ?? defaultLogger;
   const output: Record<string, unknown> = {
     model: 'timesfm-2.5',
     horizon: options.horizon,
@@ -202,7 +235,7 @@ export function outputJSON(
 
   if (options.outputPath) {
     fs.writeFileSync(options.outputPath, json);
-    console.error(`Wrote JSON to ${options.outputPath}`);
+    logFn.info(`Wrote JSON to ${options.outputPath}`);
   } else {
     process.stdout.write(json);
   }

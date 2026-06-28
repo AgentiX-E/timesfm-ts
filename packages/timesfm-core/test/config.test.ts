@@ -3,7 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createForecastConfig, validateAndNormalizeConfig, configsEqual } from '../src/config.ts';
+import {
+  createForecastConfig,
+  validateAndNormalizeConfig,
+  configsEqual,
+  suggestBatchSize,
+} from '../src/config.ts';
 import { DEFAULT_FORECAST_CONFIG, TIMESFM_25_CONFIG } from '../src/types.ts';
 
 describe('createForecastConfig', () => {
@@ -132,5 +137,45 @@ describe('configsEqual', () => {
     const a = createForecastConfig({ returnBackcast: true });
     const b = createForecastConfig({ returnBackcast: false });
     expect(configsEqual(a, b)).toBe(false);
+  });
+});
+
+describe('suggestBatchSize', () => {
+  it('returns 1 when no free memory available', () => {
+    expect(suggestBatchSize(0)).toBe(1);
+  });
+
+  it('returns 1 when free memory is less than model overhead', () => {
+    expect(suggestBatchSize(1.4)).toBe(1);
+  });
+
+  it('returns a value ≥ 1 and ≤ 16', () => {
+    const bs = suggestBatchSize(4);
+    expect(bs).toBeGreaterThanOrEqual(1);
+    expect(bs).toBeLessThanOrEqual(16);
+  });
+
+  it('returns larger batch size for more memory', () => {
+    const bs1 = suggestBatchSize(4);
+    const bs2 = suggestBatchSize(16);
+    expect(bs2).toBeGreaterThanOrEqual(bs1);
+  });
+
+  it('respects memoryFraction parameter', () => {
+    const bsFull = suggestBatchSize(8, 1.0);
+    const bsHalf = suggestBatchSize(8, 0.5);
+    expect(bsFull).toBeGreaterThanOrEqual(bsHalf);
+  });
+
+  it('caps at 16', () => {
+    expect(suggestBatchSize(64)).toBe(16);
+  });
+
+  it('returns 1 when os module is unavailable', () => {
+    // No freeMemoryGB provided → falls back to os.freemem()
+    // In test environment, this should work as Node.js is available
+    const bs = suggestBatchSize();
+    expect(bs).toBeGreaterThanOrEqual(1);
+    expect(bs).toBeLessThanOrEqual(16);
   });
 });

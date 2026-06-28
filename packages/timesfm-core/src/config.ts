@@ -102,3 +102,52 @@ export function configsEqual(a: ForecastConfig, b: ForecastConfig): boolean {
     a.returnBackcast === b.returnBackcast
   );
 }
+
+// ---------------------------------------------------------------------------
+// Batch-size suggestion
+// ---------------------------------------------------------------------------
+
+/**
+ * Suggest a `perCoreBatchSize` based on available system memory.
+ *
+ * TimesFM 2.5 200M loads ~1.5 GB into RAM (model weights + activations).
+ * Each additional batch element adds ~200 MB for intermediate tensors.
+ * This function computes a safe batch size that fits within a configurable
+ * fraction of free memory (default: 50 %).
+ *
+ * The result is clamped to [1, 16] — the model processes elements
+ * concurrently via `Promise.all`, so diminishing returns apply beyond 8.
+ *
+ * ```typescript
+ * import { suggestBatchSize, createForecastConfig } from '@agentix-e/timesfm-core';
+ *
+ * const bs = suggestBatchSize();
+ * const fc = createForecastConfig({ perCoreBatchSize: bs });
+ * ```
+ *
+ * @param freeMemoryGB   Available RAM in GB (auto-detected via `os.freemem()`).
+ * @param memoryFraction   Fraction of free RAM to use (0–1, default 0.5).
+ * @returns Suggested batch size (1–16).
+ */
+export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number = 0.5): number {
+  // ~1.5 GB for model + ONNX Runtime overhead
+  const MODEL_OVERHEAD_GB = 1.5;
+  // ~0.2 GB per additional batch element (intermediate tensors)
+  const PER_BATCH_GB = 0.2;
+
+  if (freeMemoryGB === undefined) {
+    try {
+      // Dynamic require avoids bundling `os` in browser contexts
+      // that use a subset of the config module.
+      // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+      const os: typeof import('node:os') = require('node:os');
+      freeMemoryGB = os.freemem() / 1024 ** 3;
+    } catch {
+      return 1; // Conservative default when os module unavailable
+    }
+  }
+
+  const usableGB = freeMemoryGB * memoryFraction - MODEL_OVERHEAD_GB;
+  if (usableGB <= 0) return 1;
+  return Math.max(1, Math.min(16, Math.floor(usableGB / PER_BATCH_GB)));
+}
