@@ -7,14 +7,16 @@
     "packages/timesfm-core",
     "packages/timesfm-xreg",
     "packages/timesfm-cli",
-    "packages/timesfm-web"
+    "packages/timesfm-web",
+    "packages/timesfm-hierarchical"
   ],
   "scripts": {
-    "build": "tsc -b packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web",
+    "build": "tsc -b packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web packages/timesfm-hierarchical",
     "build:core": "tsc -b packages/timesfm-core",
     "build:xreg": "tsc -b packages/timesfm-xreg",
     "build:cli": "tsc -b packages/timesfm-cli",
     "build:web": "tsc -b packages/timesfm-web",
+    "build:hierarchical": "tsc -b packages/timesfm-hierarchical",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "pnpm build && vitest run --config vitest.unit.config.ts",

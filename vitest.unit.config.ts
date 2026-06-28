@@ -20,6 +20,10 @@ export default defineConfig({
       '@agentix-e/timesfm-core': resolve(__dirname, 'packages/timesfm-core/src/index.ts'),
       '@agentix-e/timesfm-xreg': resolve(__dirname, 'packages/timesfm-xreg/src/index.ts'),
       '@agentix-e/timesfm-web': resolve(__dirname, 'packages/timesfm-web/src/index.ts'),
+      '@agentix-e/timesfm-hierarchical': resolve(
+        __dirname,
+        'packages/timesfm-hierarchical/src/index.ts',
+      ),
     },
   },
   test: {
@@ -33,6 +37,7 @@ export default defineConfig({
       '**/web-integration.test.ts',
       '**/xreg-engine.test.ts',
       '**/concurrency.test.ts',
+      '**/hierarchical-engine.test.ts',
     ],
     testTimeout: 15000,
     hookTimeout: 15000,
@@ -43,6 +48,7 @@ export default defineConfig({
         'packages/timesfm-core/src/**/*.ts',
         'packages/timesfm-xreg/src/**/*.ts',
         'packages/timesfm-cli/src/**/*.ts',
+        'packages/timesfm-hierarchical/src/**/*.ts',
       ],
       exclude: [
         'packages/*/src/index.ts', // barrel re-exports only
@@ -54,6 +60,8 @@ export default defineConfig({
         'packages/timesfm-core/src/types/', // pure type definitions
         'packages/timesfm-xreg/src/xreg-engine.ts', // requires real TimesFM model
         'packages/timesfm-web/src/**', // requires browser/WASM environment
+        'packages/timesfm-hierarchical/src/hierarchical.ts', // requires real TimesFM model
+        'packages/timesfm-hierarchical/src/types.ts', // pure type definitions
       ],
       thresholds: {
         lines: 95,
