@@ -19,14 +19,7 @@ import { TimesFMModel } from '../src/model';
 import { createForecastConfig } from '../src/config';
 import { getTestModelPath } from './helpers';
 import { mae, smape } from '../src/helpers/metrics';
-import {
-  AIR_PASSENGERS,
-  SUNSPOTS,
-  ELECTRICITY_PRODUCTION,
-  MELBOURNE_TEMPS,
-  GAS_PRODUCTION,
-  getRealWorldTrainTest,
-} from './test-fixtures-real';
+import { getRealWorldTrainTest } from './test-fixtures-real';
 
 const MODEL_PATH = getTestModelPath();
 
@@ -48,8 +41,8 @@ describe('TimesFM with real-world datasets', () => {
   describe('Air Passengers (monthly, strong seasonality + trend)', () => {
     it('produces finite forecasts', async () => {
       const contextLen = 120; // 10 years of training
-      const horizon = 24;     // 2 years forecast
-      const { train, test } = getRealWorldTrainTest('air_passengers', contextLen, horizon);
+      const horizon = 24; // 2 years forecast
+      const { train } = getRealWorldTrainTest('air_passengers', contextLen, horizon);
 
       model.compile(createForecastConfig({ maxContext: contextLen, maxHorizon: horizon }));
       const result = await model.forecast(horizon, [train]);

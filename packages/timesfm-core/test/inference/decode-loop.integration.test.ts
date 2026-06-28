@@ -21,7 +21,7 @@ import { TimesFMInferenceEngine } from '../../src/inference/onnx-engine';
 import { decode } from '../../src/inference/decode-loop';
 import { preprocess } from '../../src/preprocessor';
 import { createForecastConfig } from '../../src/config';
-import { TIMESFM_25_CONFIG, type ForecastConfig, type ModelConfig } from '../../src/types';
+import { TIMESFM_25_CONFIG, type ModelConfig } from '../../src/types';
 import { getTestModelPath } from '../helpers';
 import {
   businessMetric,
@@ -51,15 +51,18 @@ function assertAllFinite(arr: Float32Array, label: string): void {
   for (let i = 0; i < arr.length; i++) {
     if (!Number.isFinite(arr[i])) {
       // Report first violation for debugging
-      throw new Error(
-        `${label}[${i}] is ${arr[i]} (expected finite)`,
-      );
+      throw new Error(`${label}[${i}] is ${arr[i]} (expected finite)`);
     }
   }
 }
 
 /** Check that two Float32Arrays are element-wise close within tolerance. */
-function assertAllClose(actual: Float32Array, expected: Float32Array, tolerance: number = 1e-5, label: string = ''): void {
+function assertAllClose(
+  actual: Float32Array,
+  expected: Float32Array,
+  _tolerance: number = 1e-5,
+  label: string = '',
+): void {
   expect(actual.length).toBe(expected.length);
   for (let i = 0; i < actual.length; i++) {
     expect(actual[i]).toBeCloseTo(expected[i], 5, `${label}[${i}] mismatch`);
@@ -116,8 +119,7 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
       );
 
       expect(result.pfOutputs).toHaveLength(1); // batchSize=1
-      const expectedPfLen =
-        MC.exportedPatches * MC.outputPatchLen * MC.numQuantiles;
+      const expectedPfLen = MC.exportedPatches * MC.outputPatchLen * MC.numQuantiles;
       expect(result.pfOutputs[0].length).toBe(expectedPfLen);
     });
 
@@ -159,9 +161,7 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
         MC,
       );
 
-      expect(result.quantileSpreads[0].length).toBe(
-        MC.outputQuantileLen * MC.numQuantiles,
-      );
+      expect(result.quantileSpreads[0].length).toBe(MC.outputQuantileLen * MC.numQuantiles);
     });
   });
 
@@ -281,7 +281,12 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
       );
 
       assertAllClose(result1.pfOutputs[0], result2.pfOutputs[0], 1e-5, 'pfOutputs consistency');
-      assertAllClose(result1.quantileSpreads[0], result2.quantileSpreads[0], 1e-5, 'quantileSpreads consistency');
+      assertAllClose(
+        result1.quantileSpreads[0],
+        result2.quantileSpreads[0],
+        1e-5,
+        'quantileSpreads consistency',
+      );
     });
   });
 
@@ -364,13 +369,31 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
       const pre = preprocess(series, FC_MEDIUM, MC);
 
       const [resultShort, resultLong] = await Promise.all([
-        decode(engine, pre.patchedInputs, pre.patchedMasks, pre.contextMu, pre.contextSigma, pre.lastStats, 130, FC_MEDIUM, MC),
-        decode(engine, pre.patchedInputs, pre.patchedMasks, pre.contextMu, pre.contextSigma, pre.lastStats, 300, FC_MEDIUM, MC),
+        decode(
+          engine,
+          pre.patchedInputs,
+          pre.patchedMasks,
+          pre.contextMu,
+          pre.contextSigma,
+          pre.lastStats,
+          130,
+          FC_MEDIUM,
+          MC,
+        ),
+        decode(
+          engine,
+          pre.patchedInputs,
+          pre.patchedMasks,
+          pre.contextMu,
+          pre.contextSigma,
+          pre.lastStats,
+          300,
+          FC_MEDIUM,
+          MC,
+        ),
       ]);
 
-      expect(resultShort.arOutputs![0].length).toBeLessThan(
-        resultLong.arOutputs![0].length,
-      );
+      expect(resultShort.arOutputs![0].length).toBeLessThan(resultLong.arOutputs![0].length);
     });
   });
 
@@ -378,11 +401,7 @@ describe('decode (with real TimesFM 2.5 ONNX model)', () => {
 
   describe('Multi-series batch processing', () => {
     it('batch of 3 different series produces distinct outputs', async () => {
-      const series = [
-        businessMetric(200),
-        stockPrice(200),
-        hourlyTemp(200),
-      ];
+      const series = [businessMetric(200), stockPrice(200), hourlyTemp(200)];
       const pre = preprocess(series, FC_SMALL, MC);
 
       const result = await decode(
