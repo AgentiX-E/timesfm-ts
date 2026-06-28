@@ -145,6 +145,8 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
       const os: typeof import('node:os') = _require('node:os');
       freeMemoryGB = os.freemem() / 1024 ** 3;
     } catch {
+      /* v8 ignore next 2 — os module always available in Node.js; this is a
+       * browser/edge-runtime safety net that cannot be triggered in CI. */
       return 1; // Conservative default when os module unavailable
     }
   }
