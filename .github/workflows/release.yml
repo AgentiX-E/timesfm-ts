@@ -293,13 +293,19 @@ jobs:
         continue-on-error: true
 
       # ── Build combined benchmark report (Node + WASM comparison) ──
+      #   hashFiles() is evaluated at workflow parse time, before artifacts are
+      #   downloaded — use a shell-level conditional instead of `if:` expression.
       - name: Generate combined benchmark report
-        if: ${{ hashFiles('docs/benchmark/benchmark-report.json') != '' }}
         run: |
-          node scripts/generate-combined-report.js \
-            --node docs/benchmark/benchmark-report.json \
-            --web docs/web-benchmark/web-benchmark-report.json \
-            --out docs/benchmark/index.html
+          if [ -f docs/benchmark/benchmark-report.json ] && [ -f docs/web-benchmark/web-benchmark-report.json ]; then
+            node scripts/generate-combined-report.js \
+              --node docs/benchmark/benchmark-report.json \
+              --web docs/web-benchmark/web-benchmark-report.json \
+              --out docs/benchmark/index.html
+            echo "[deploy-pages] Combined benchmark report generated"
+          else
+            echo "[deploy-pages] Skipping combined benchmark (missing benchmark data)"
+          fi
         continue-on-error: true
 
       # ── Build coverage dashboard + root landing page + web-benchmark redirect ──
