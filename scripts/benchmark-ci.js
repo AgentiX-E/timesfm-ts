@@ -755,6 +755,67 @@ async function main() {
     );
   }
 
+  // ── Stability (Memory Leak Detection) ─────────────────────────────────────
+  // Run repeated inference on the raw ONNX session and monitor heap growth.
+  // A healthy ONNX Runtime session should stabilize within ±5% after warmup.
+  // Must run BEFORE the accuracy section (which releases the session).
+  {
+    console.log('\n  ── Stability (memory leak check) ──');
+
+    const STABILITY_ITERS = parseInt(process.env.BENCH_STABILITY_ITERS || '100', 10);
+    const modelPatches = 16;
+    const dim2 = 64;
+    const input = new Float32Array(1 * modelPatches * dim2);
+    for (let p = 0; p < modelPatches; p++) {
+      const bp = p * dim2;
+      for (let i = 0; i < 32; i++) {
+        input[bp + i] = Math.random();
+        input[bp + 32 + i] = p >= 8 ? 1 : 0; // mask padding patches beyond 8
+      }
+    }
+    const feeds = {
+      inputs: new ort.Tensor('float32', input, [1, modelPatches, dim2]),
+    };
+
+    // 3 warmup iterations
+    for (let i = 0; i < 3; i++) await session.run(feeds);
+
+    if (global.gc) global.gc();
+    const heapBaseline = process.memoryUsage().heapUsed;
+
+    const snapshots = [];
+    for (let i = 0; i < STABILITY_ITERS; i++) {
+      await session.run(feeds);
+      if (i % 25 === 24 || i === 0) {
+        if (global.gc) global.gc();
+        const heap = process.memoryUsage().heapUsed;
+        const deltaMb = +((heap - heapBaseline) / 1024 / 1024).toFixed(2);
+        const pct = +((deltaMb / (heapBaseline / 1024 / 1024)) * 100).toFixed(1);
+        snapshots.push({
+          iter: i + 1,
+          heap_mb: +(heap / 1024 / 1024).toFixed(1),
+          delta_mb: deltaMb,
+          delta_pct: pct,
+        });
+      }
+    }
+
+    const lastDelta = snapshots[snapshots.length - 1].delta_pct;
+    const stable = Math.abs(lastDelta) <= 5;
+    report.stability = {
+      iterations: STABILITY_ITERS,
+      baseline_heap_mb: +(heapBaseline / 1024 / 1024).toFixed(1),
+      final_delta_pct: lastDelta,
+      stable,
+      snapshots,
+    };
+
+    console.log(
+      `  Baseline heap: ${report.stability.baseline_heap_mb} MB · ${STABILITY_ITERS} iters · ` +
+        `Final Δ: ${lastDelta > 0 ? '+' : ''}${lastDelta}% ${stable ? '✅ stable' : '⚠️ growth'}`,
+    );
+  }
+
   // ── Accuracy Benchmark (full TimesFM pipeline) ────────────────────────────
   if (!skipAccuracy) {
     console.log('\n  ── Accuracy (full pipeline) ──');
