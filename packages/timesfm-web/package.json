@@ -28,7 +28,7 @@
   "devDependencies": {
     "onnxruntime-web": "^1.22.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "onnxruntime-web": "^1.22.0"
