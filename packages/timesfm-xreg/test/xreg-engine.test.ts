@@ -453,7 +453,7 @@ describe('forecastWithCovariates', () => {
     await expect(
       forecastWithCovariates(model, {
         inputs: [new Float32Array([1, 2, 3, 4, 5])],
-        staticNumericalCovariates: { bad: [NaN, 1, 2] },
+        staticNumericalCovariates: { bad: [NaN] },
         xregMode: 'xreg + timesfm',
       }),
     ).rejects.toThrow(/must be finite/);
@@ -463,7 +463,7 @@ describe('forecastWithCovariates', () => {
     await expect(
       forecastWithCovariates(model, {
         inputs: [new Float32Array([1, 2, 3, 4, 5])],
-        staticNumericalCovariates: { bad: [1, Infinity] },
+        staticNumericalCovariates: { bad: [Infinity] },
         xregMode: 'xreg + timesfm',
       }),
     ).rejects.toThrow(/must be finite/);
