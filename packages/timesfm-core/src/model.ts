@@ -408,7 +408,7 @@ export class TimesFMModel implements ITimesFMModel {
     // forecastWithCovariates() resolve instantly after the first invocation.
     if (!_xregModule) {
       try {
-        _xregModule = await _xregImportFn('@agentix-e/timesfm-xreg') as XRegModule;
+        _xregModule = (await _xregImportFn('@agentix-e/timesfm-xreg')) as XRegModule;
       } catch (err) {
         throw new Error(
           'forecastWithCovariates requires @agentix-e/timesfm-xreg.\n' +
