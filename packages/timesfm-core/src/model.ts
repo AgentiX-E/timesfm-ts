@@ -46,6 +46,7 @@ import { decode } from './inference/decode-loop';
 import { postProcess } from './postprocessor';
 import { resolveModelConfig } from './model-descriptor';
 import { computeStats } from './utils/stats';
+import { allNonNegative } from './utils/tensor-utils';
 
 // Cached dynamic import for optional @agentix-e/timesfm-xreg peer dependency.
 //
@@ -76,7 +77,6 @@ export function __test_setXregImport(fn: ((spec: string) => Promise<unknown>) | 
   _xregModule = null; // Invalidate cache so next call uses the new fn
   _xregModulePromise = null; // Invalidate pending promise
 }
-import { allNonNegative } from './utils/tensor-utils';
 
 // ---------------------------------------------------------------------------
 // TimesFMModel

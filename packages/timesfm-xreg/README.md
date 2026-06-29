@@ -53,9 +53,9 @@ const result = await model.forecastWithCovariates({
 
 Key exports:
 
-- `forecastWithCovariates` — Main entry point for covariate-aware forecasting
-- `XRegEngine` — Ridge regression engine with design matrix construction
-- `OneHotEncoder` — Scikit-learn-compatible OneHot encoder
+- `forecastWithCovariates` — Main entry point for covariate-aware forecasting (invoked via `model.forecastWithCovariates()`)
+- `OneHotEncoder` — Scikit-learn-compatible OneHot encoder for categorical covariates
+- `CovariateForecastParams` / `CovariateForecastOutput` / `XRegMode` — Type definitions for covariate forecasting
 
 ## License
 
