@@ -201,12 +201,13 @@ describe('TimesFMInferenceEngine', () => {
 
   it('decode-loop: multi-step AR produces finite output', async () => {
     // Use the real decode() function with the pretrained model.
-    // A horizon of 256 with outputPatchLen=128 means 2 AR decode steps.
+    // A horizon of 384 with outputPatchLen=128 means 2 AR decode steps
+    // (numDecodeSteps = floor((384-1)/128) = 2).
     const { decode } = await import('../../src/inference/decode-loop');
     const { preprocess } = await import('../../src/preprocessor');
     const { createForecastConfig } = await import('../../src/config');
 
-    const fc = createForecastConfig({ maxContext: 128, maxHorizon: 256 });
+    const fc = createForecastConfig({ maxContext: 128, maxHorizon: 384 });
     const data = new Float32Array(Array.from({ length: 80 }, (_, i) => i + 1));
 
     const preprocessed = preprocess([data], fc, mc);
