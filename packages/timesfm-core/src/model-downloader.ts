@@ -37,6 +37,8 @@
  *   //   TIMESFM_PROXY_URL=http://proxy:8080
  *   //   TIMESFM_PROXY_USERNAME=user
  *   //   TIMESFM_PROXY_PASSWORD=pass
+ *   //   # or for Docker/K8s secrets:
+ *   //   TIMESFM_PROXY_PASSWORD_FILE=/run/secrets/proxy-password
  *   //   (or standard HTTP_PROXY / HTTPS_PROXY / http_proxy / https_proxy)
  *
  *   // From CLI: npx timesfm setup
@@ -165,6 +167,10 @@ export interface DownloadOptions {
  * Resolve proxy configuration with cascading priority.
  *
  * Priority: options.proxy → TIMESFM_PROXY_* env vars → standard *_proxy env vars
+ *
+ * TIMESFM_PROXY_PASSWORD_FILE can be used instead of TIMESFM_PROXY_PASSWORD
+ * for secret management in Docker/Kubernetes environments. The file is read
+ * synchronously — its contents are trimmed and used as the password.
  */
 function resolveProxyConfig(options?: DownloadOptions): ProxyConfig | null {
   // 1. Explicit proxy parameter
@@ -175,10 +181,22 @@ function resolveProxyConfig(options?: DownloadOptions): ProxyConfig | null {
   // 2. TIMESFM-specific environment variables
   const timesfmProxyUrl = process.env.TIMESFM_PROXY_URL;
   if (timesfmProxyUrl) {
+    // Support TIMESFM_PROXY_PASSWORD_FILE for Docker/Kubernetes secrets
+    let password = process.env.TIMESFM_PROXY_PASSWORD || undefined;
+    if (!password) {
+      const passwordFile = process.env.TIMESFM_PROXY_PASSWORD_FILE;
+      if (passwordFile) {
+        try {
+          password = fs.readFileSync(passwordFile, 'utf-8').trim();
+        } catch {
+          // File not found or unreadable — leave password undefined
+        }
+      }
+    }
     return {
       url: timesfmProxyUrl,
       username: process.env.TIMESFM_PROXY_USERNAME || undefined,
-      password: process.env.TIMESFM_PROXY_PASSWORD || undefined,
+      password,
     };
   }
 
@@ -443,6 +461,7 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   let received = 0;
   const startTime = Date.now();
   let lastLogAt = 0;
+  let lastProgressAt = 0; // throttle onProgress to at most once per 200ms
 
   try {
     while (true) {
@@ -474,7 +493,14 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
         const speed = elapsed > 0 ? receivedMB / elapsed : 0;
 
         if (options.onProgress) {
-          options.onProgress(receivedMB, totalMB, speed);
+          // Throttle: call at most once per 200ms.  Each chunk is ~64KB and
+          // an 885 MB download produces ~14,000 chunks — calling onProgress
+          // on every chunk would flood the event loop with 10,000+ callbacks.
+          const now = Date.now();
+          if (now - lastProgressAt >= 200) {
+            lastProgressAt = now;
+            options.onProgress(receivedMB, totalMB, speed);
+          }
         }
 
         if (Math.floor(receivedMB / 50) > lastLogAt) {
@@ -491,6 +517,13 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       fileStream.end(() => resolve());
       fileStream.once('error', reject);
     });
+
+    // Final progress callback — always fires at 100% regardless of throttle
+    if (options.onProgress) {
+      const finalMB = received / 1024 / 1024;
+      const finalElapsed = (Date.now() - startTime) / 1000;
+      options.onProgress(finalMB, totalMB, finalElapsed > 0 ? finalMB / finalElapsed : 0);
+    }
 
     // Verify zip size
     const zipSize = fs.statSync(tmpZip).size;

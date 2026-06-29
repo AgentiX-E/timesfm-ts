@@ -260,11 +260,13 @@ jobs:
 
   # ═══════════════════════════════════════════════════════════════════════
   # GitHub Pages — publish API docs + coverage on push to master
-  # (Does NOT depend on benchmark — docs/coverage deploy even if benchmark fails)
+  # API docs and coverage deploy on every push regardless of benchmark
+  # status. Benchmark data is included opportunistically if the jobs
+  # completed — otherwise the combined report is simply skipped.
   # ═══════════════════════════════════════════════════════════════════════
   deploy-pages:
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
-    needs: [lint, unit-test, build, integration-test, benchmark, web-benchmark]
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+    needs: [lint, unit-test, build, integration-test]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -295,9 +297,9 @@ jobs:
         run: pnpm docs:generate
 
       # ── Download artifacts from this workflow run ──────────────────────
-      # Benchmark artifacts are guaranteed by the `needs` dependency chain.
-      # continue-on-error is retained as a safety net in case of artifact
-      # upload failures (e.g., race conditions in Actions storage).
+      # Benchmark artifacts are downloaded opportunistically — the jobs
+      # may have been skipped or failed.  continue-on-error ensures
+      # that missing artifacts do not block the docs+coverage deployment.
       - name: Download benchmark report
         uses: actions/download-artifact@v4
         with:

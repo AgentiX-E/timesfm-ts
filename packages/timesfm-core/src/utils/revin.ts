@@ -126,6 +126,12 @@ export function revinBatch(
  *
  * mu/sigma are broadcast from (batch,) or (batch, patches) with
  * two trailing singleton dims added internally.
+ *
+ * **Contract**: The returned array always has exportedPatches-worth of
+ * elements per batch entry.  When the caller only populated m < exportedPatches
+ * sub-patches, the trailing (exportedPatches - m) sub-patches are zero-filled.
+ * Callers MUST index by their known m, not by array.length.  Changing this
+ * memory strategy requires updating all callers (notably decode-loop.ts).
  */
 export function revinBatch4D(
   values: Float32Array[],

@@ -79,6 +79,7 @@ const path = await downloadModel({
 Proxy can also be configured via environment variables:
 
 - `TIMESFM_PROXY_URL` / `TIMESFM_PROXY_USERNAME` / `TIMESFM_PROXY_PASSWORD`
+- `TIMESFM_PROXY_PASSWORD_FILE` — read password from a file (Docker/K8s secrets)
 - Standard `HTTPS_PROXY` / `HTTP_PROXY`
 
 ## License

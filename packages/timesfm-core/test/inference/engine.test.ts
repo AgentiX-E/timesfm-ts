@@ -193,6 +193,78 @@ describe('TimesFMInferenceEngine', () => {
     );
   });
 
+  // ── Decode-loop integration with real model ─────────────────────────
+  // These tests verify the actual pretrained TimesFM model's autoregressive
+  // decode behavior end-to-end — no mocked engine, no synthetic outputs.
+  // They complement the algorithmic unit tests in decode-loop.test.ts
+  // (which use DeterministicInferenceEngine for precise call-count spying).
+
+  it('decode-loop: multi-step AR produces finite output', async () => {
+    // Use the real decode() function with the pretrained model.
+    // A horizon of 384 with outputPatchLen=128 means 2 AR decode steps
+    // (numDecodeSteps = floor((384-1)/128) = 2).
+    const { decode } = await import('../../src/inference/decode-loop');
+    const { preprocess } = await import('../../src/preprocessor');
+    const { createForecastConfig } = await import('../../src/config');
+
+    const fc = createForecastConfig({ maxContext: 128, maxHorizon: 384 });
+    const data = new Float32Array(Array.from({ length: 80 }, (_, i) => i + 1));
+
+    const preprocessed = preprocess([data], fc, mc);
+    const result = await decode(
+      engine,
+      preprocessed.patchedInputs,
+      preprocessed.patchedMasks,
+      preprocessed.contextMu,
+      preprocessed.contextSigma,
+      preprocessed.lastStats,
+      fc.maxHorizon,
+      fc,
+      mc,
+    );
+
+    // AR outputs should exist (2 decode steps → arOutputs populated)
+    expect(result.arOutputs).not.toBeNull();
+    expect(result.arOutputs!.length).toBe(1); // 1 batch element
+    const arFlat = result.arOutputs![0];
+    // Each AR step produces outputPatchLen * numQuantiles = 128 * 10 = 1280 floats
+    expect(arFlat.length).toBe(mc.outputPatchLen * mc.numQuantiles * 2);
+
+    // All values must be finite
+    for (let i = 0; i < arFlat.length; i++) {
+      expect(Number.isFinite(arFlat[i])).toBe(true);
+    }
+  });
+
+  it('decode-loop: zero-step AR (horizon ≤ outputPatchLen) returns null arOutputs', async () => {
+    const { decode } = await import('../../src/inference/decode-loop');
+    const { preprocess } = await import('../../src/preprocessor');
+    const { createForecastConfig } = await import('../../src/config');
+
+    // horizon=128 == outputPatchLen → 0 AR decode steps
+    const fc = createForecastConfig({ maxContext: 128, maxHorizon: 128 });
+    const data = new Float32Array(Array.from({ length: 80 }, (_, i) => i + 1));
+
+    const preprocessed = preprocess([data], fc, mc);
+    const result = await decode(
+      engine,
+      preprocessed.patchedInputs,
+      preprocessed.patchedMasks,
+      preprocessed.contextMu,
+      preprocessed.contextSigma,
+      preprocessed.lastStats,
+      fc.maxHorizon,
+      fc,
+      mc,
+    );
+
+    // 0 decode steps → arOutputs is null
+    expect(result.arOutputs).toBeNull();
+    // pfOutputs should still be valid
+    expect(result.pfOutputs.length).toBe(1);
+    expect(result.pfOutputs[0].length).toBeGreaterThan(0);
+  });
+
   it('reports default execution provider as CPU', () => {
     const eng = new TimesFMInferenceEngine();
     expect(eng.executionProvider).toBe('CPUExecutionProvider');

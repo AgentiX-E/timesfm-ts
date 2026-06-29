@@ -30,7 +30,7 @@ npm install @agentix-e/timesfm-web onnxruntime-web
 ## Quick Start
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
+import { TimesFMModel, createForecastConfig, TIMESFM_25_CONFIG } from '@agentix-e/timesfm-core';
 import { TimesFMWebInferenceEngine, loadModelFromUrl } from '@agentix-e/timesfm-web';
 
 // 1. Download the model via fetch() with progress tracking

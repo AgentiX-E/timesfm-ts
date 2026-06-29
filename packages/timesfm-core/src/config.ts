@@ -13,7 +13,6 @@ import {
   type ModelConfig,
 } from './types';
 import { ConfigValidationError } from './errors';
-import { createRequire } from 'node:module';
 
 /**
  * Validate and normalise a ForecastConfig against a ModelConfig.
@@ -139,11 +138,11 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
   const PER_BATCH_GB = 0.2;
 
   if (freeMemoryGB === undefined) {
-    // Dynamic require via createRequire — Node.js always provides 'node:os'.
-    // Non-Node runtimes must pass freeMemoryGB as a parameter.
-    const _require = createRequire(import.meta.url);
-    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-    const os: typeof import('node:os') = _require('node:os');
+    // Lazy require avoids loading 'node:os' on every config import —
+    // only suggestBatchSize() callers pay the cost.
+    // This is a Node.js-only function; non-Node runtimes must pass
+    // freeMemoryGB as a parameter.
+    const os = require('node:os');
     freeMemoryGB = os.freemem() / 1024 ** 3;
   }
 

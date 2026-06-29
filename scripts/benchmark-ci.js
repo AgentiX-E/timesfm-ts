@@ -774,16 +774,31 @@ async function main() {
     }
   }
 
-  // Compute cold/warm ratio
-  const warmAvgs = report.latency.filter((l) => l.batch_size === 1).map((l) => l.avg_ms);
-  // Compute cold/warm ratio (using first cold start vs average of batch=1 warm)
-  if (firstColdStartMs !== null && warmAvgs.length > 0) {
-    const avgCold = firstColdStartMs;
-    const avgWarm = warmAvgs.reduce((a, b) => a + b, 0) / warmAvgs.length;
-    report.cold_warm_ratio = +(avgCold / avgWarm).toFixed(2);
-    console.log(
-      `\n  Cold/Warm ratio: ${report.cold_warm_ratio}× (cold=${avgCold.toFixed(0)}ms, avg warm=${avgWarm.toFixed(0)}ms)`,
-    );
+  // Compute cold/warm ratio per context (paired comparison — same context, same batch_size=1)
+  // Each context's cold start is compared against its own warm average to produce a
+  // meaningful per-context ratio.  The reported ratio is the geometric mean across
+  // all context configurations (avoids the skew of averaging across contexts with
+  // very different absolute latency ranges).
+  const coldWarmPairs = [];
+  for (const entry of report.latency) {
+    if (entry.batch_size === 1 && entry.cold_start_ms != null && entry.avg_ms > 0) {
+      coldWarmPairs.push({
+        ctx: entry.context,
+        ratio: entry.cold_start_ms / entry.avg_ms,
+      });
+    }
+  }
+  if (coldWarmPairs.length > 0) {
+    const geoMeanLog =
+      coldWarmPairs.reduce((sum, p) => sum + Math.log(p.ratio), 0) / coldWarmPairs.length;
+    report.cold_warm_ratio = +Math.exp(geoMeanLog).toFixed(2);
+    if (coldWarmPairs.length >= 3) {
+      console.log(
+        `\n  Cold/Warm ratio: ${report.cold_warm_ratio}× (per-context: ${coldWarmPairs.map((p) => `ctx=${p.ctx}:${p.ratio.toFixed(2)}×`).join(', ')})`,
+      );
+    } else {
+      console.log(`\n  Cold/Warm ratio: ${report.cold_warm_ratio}×`);
+    }
   }
 
   // ── Stability (Memory Leak Detection) ─────────────────────────────────────

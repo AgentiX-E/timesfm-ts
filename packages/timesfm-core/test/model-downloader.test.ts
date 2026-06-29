@@ -165,6 +165,7 @@ describe('model-downloader', () => {
         'TIMESFM_PROXY_URL',
         'TIMESFM_PROXY_USERNAME',
         'TIMESFM_PROXY_PASSWORD',
+        'TIMESFM_PROXY_PASSWORD_FILE',
         'HTTPS_PROXY',
         'https_proxy',
         'HTTP_PROXY',
@@ -362,6 +363,7 @@ describe('model-downloader', () => {
         'TIMESFM_PROXY_URL',
         'TIMESFM_PROXY_USERNAME',
         'TIMESFM_PROXY_PASSWORD',
+        'TIMESFM_PROXY_PASSWORD_FILE',
         'HTTPS_PROXY',
         'https_proxy',
         'HTTP_PROXY',
@@ -470,6 +472,83 @@ describe('model-downloader', () => {
       expect(proxyAgentCalls[0].uri).toContain('myuser:mypass@');
     });
 
+    it('reads password from TIMESFM_PROXY_PASSWORD_FILE when set', async () => {
+      process.env.TIMESFM_PROXY_URL = 'http://proxy:8080';
+      process.env.TIMESFM_PROXY_USERNAME = 'fileuser';
+      // Write password to a temp file
+      const tmpDir = createTempDir();
+      const passwordFile = path.join(tmpDir, 'proxy-password');
+      try {
+        fs.writeFileSync(passwordFile, 'filepass\n'); // with trailing newline (trimmed)
+        process.env.TIMESFM_PROXY_PASSWORD_FILE = passwordFile;
+
+        try {
+          await downloadModel({ force: true, logger: () => {} });
+        } catch {
+          // Expected
+        }
+
+        expect(proxyAgentCalls.length).toBe(1);
+        expect(proxyAgentCalls[0].uri).toContain('fileuser:filepass@');
+      } finally {
+        delete process.env.TIMESFM_PROXY_PASSWORD_FILE;
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+
+    it('TIMESFM_PROXY_PASSWORD takes priority over PASSWORD_FILE', async () => {
+      process.env.TIMESFM_PROXY_URL = 'http://proxy:8080';
+      process.env.TIMESFM_PROXY_USERNAME = 'envuser';
+      process.env.TIMESFM_PROXY_PASSWORD = 'envpass';
+
+      const tmpDir = createTempDir();
+      const passwordFile = path.join(tmpDir, 'proxy-password');
+      try {
+        fs.writeFileSync(passwordFile, 'filepass');
+        process.env.TIMESFM_PROXY_PASSWORD_FILE = passwordFile;
+
+        try {
+          await downloadModel({ force: true, logger: () => {} });
+        } catch {
+          // Expected
+        }
+
+        // Password env var takes priority over file
+        expect(proxyAgentCalls.length).toBe(1);
+        expect(proxyAgentCalls[0].uri).toContain('envuser:envpass@');
+      } finally {
+        delete process.env.TIMESFM_PROXY_PASSWORD_FILE;
+        try {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+
+    it('gracefully handles missing PASSWORD_FILE', async () => {
+      process.env.TIMESFM_PROXY_URL = 'http://proxy:8080';
+      process.env.TIMESFM_PROXY_USERNAME = 'nofileuser';
+      process.env.TIMESFM_PROXY_PASSWORD_FILE = '/nonexistent/password-file';
+
+      try {
+        await downloadModel({ force: true, logger: () => {} });
+      } catch {
+        // Expected
+      }
+
+      // Should still apply proxy, just without password.
+      // URL format: http://nofileuser@proxy:8080/  (username but no password)
+      expect(proxyAgentCalls.length).toBe(1);
+      expect(proxyAgentCalls[0].uri).toContain('nofileuser@');
+      // No password separator after username
+      expect(proxyAgentCalls[0].uri).not.toContain('nofileuser:');
+    });
+
     it('strips proxy via NO_PROXY when github.com is in the exclusion list', async () => {
       process.env.HTTPS_PROXY = 'http://proxy:3128';
       process.env.NO_PROXY = 'github.com';
@@ -564,6 +643,7 @@ describe('model-downloader', () => {
         'TIMESFM_PROXY_URL',
         'TIMESFM_PROXY_USERNAME',
         'TIMESFM_PROXY_PASSWORD',
+        'TIMESFM_PROXY_PASSWORD_FILE',
         'HTTPS_PROXY',
         'https_proxy',
         'HTTP_PROXY',
@@ -634,6 +714,7 @@ describe('model-downloader', () => {
         'TIMESFM_PROXY_URL',
         'TIMESFM_PROXY_USERNAME',
         'TIMESFM_PROXY_PASSWORD',
+        'TIMESFM_PROXY_PASSWORD_FILE',
         'HTTPS_PROXY',
         'https_proxy',
         'HTTP_PROXY',
@@ -695,6 +776,7 @@ describe('model-downloader', () => {
         'TIMESFM_PROXY_URL',
         'TIMESFM_PROXY_USERNAME',
         'TIMESFM_PROXY_PASSWORD',
+        'TIMESFM_PROXY_PASSWORD_FILE',
         'HTTPS_PROXY',
         'https_proxy',
         'HTTP_PROXY',

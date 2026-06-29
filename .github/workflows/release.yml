@@ -78,7 +78,6 @@ jobs:
       - name: Check coverage thresholds
         if: ${{ !inputs.skip_tests }}
         run: node scripts/ci-coverage-check.js --tier release --verbose
-        continue-on-error: true
 
       - name: Ensure coverage directory exists
         if: ${{ !inputs.skip_tests }}

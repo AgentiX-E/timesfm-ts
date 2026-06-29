@@ -13,6 +13,8 @@
  *   timesfm setup --proxy-url http://proxy:8080 --proxy-username user --proxy-password pass
  *   # Password via environment variable (recommended for security)
  *   TIMESFM_PROXY_PASSWORD=pass timesfm setup --proxy-url http://proxy:8080 --proxy-username user
+ *   # Or via file (Docker/K8s secrets):
+ *   TIMESFM_PROXY_PASSWORD_FILE=/run/secrets/proxy-password timesfm setup --proxy-url http://proxy:8080 --proxy-username user
  *
  *   # Forecast
  *   timesfm forecast --horizon 24 input.csv

@@ -239,10 +239,12 @@ export async function decode(
 
     // Take the LAST output sub-patch's full quantile output as the forecast
     // for this AR step, and its median as the seed for the next step.
-    // The denormalised array has m filled patches followed by padding zeros
-    // (since revinBatch4D allocates the full exportedPatches-sized array).
-    // We must index by (m - 1), NOT by array.length, to avoid reading from
-    // the zero-filled padding region.
+    //
+    // IMPORTANT: revinBatch4D allocates a full exportedPatches-sized result array,
+    // zero-filling positions beyond the actual m sub-patches.  We MUST index by
+    // (m - 1), NOT by array.length, to avoid reading from the zero-filled padding
+    // region.  This contract is part of revinBatch4D's documented behavior — if
+    // revinBatch4D's memory strategy changes, this code must be updated in lockstep.
     const nextSeeds: Float32Array[] = [];
     const perSubPatch = mc.outputPatchLen * mc.numQuantiles;
     const lastSubPatchStart = (m - 1) * perSubPatch;
