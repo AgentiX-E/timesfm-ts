@@ -1,0 +1,7 @@
+{
+  "model": "timesfm-2.5-200m",
+  "precision": "fp32",
+  "created": "2026-06-30T00:00:00Z",
+  "description": "Performance baseline for regression detection. Updated manually or via scheduled CI job.",
+  "latency": []
+}

@@ -41,7 +41,7 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 | `@agentix-e/timesfm-xreg`         | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)                 | Covariate regression extension (Ridge + OneHot)                            |
 | `@agentix-e/timesfm-cli`          | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-cli?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-cli)                   | CLI tool (includes `timesfm setup` auto model download)                    |
 | `@agentix-e/timesfm-web`          | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-web?color=orange)](https://www.npmjs.com/package/@agentix-e/timesfm-web)                 | **Browser** inference engine (onnxruntime-web: WASM / WebGPU / WebGL)      |
-| `@agentix-e/timesfm-hierarchical` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-hierarchical?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-hierarchical) | Hierarchical time series reconciliation engine (bottom-up, top-down, MinT) |
+| `@agentix-e/timesfm-hierarchical` | [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-hierarchical?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-hierarchical) | Hierarchical time series reconciliation engine (bottom-up, OLS, WLS, MinT) |
 
 > **Layered strategy**: npm packages contain only code (~150 KB), models (885 MB zip / ~928 MB ONNX) are downloaded on-demand via GitHub Releases.
 
@@ -133,13 +133,13 @@ agentix-timesfm-ts/
 │   │   │       ├── stats.ts        # Welford running statistics
 │   │   │       ├── revin.ts        # RevIN normalization
 │   │   │       └── tensor-utils.ts # Low-level tensor ops
-│   │   └── test/               # Unit + integration test suites
+│   │   └── test/          # Unit + integration test suites
 │   ├── timesfm-xreg/           # Covariate regression
 │   │   ├── src/
 │   │   │   ├── index.ts
 │   │   │   ├── xreg-engine.ts     # Ridge regression engine
 │   │   │   └── one-hot-encoder.ts # Scikit-learn compatible OHE
-│   │   └── test/               # 18 tests
+│   │   └── test/
 │   └── timesfm-cli/            # CLI tool
 │       ├── src/
 │       │   ├── cli.ts          # Commander-based CLI
@@ -150,6 +150,14 @@ agentix-timesfm-ts/
 │       │   ├── web-engine.ts   # onnxruntime-web engine (WASM/WebGPU)
 │       │   └── model-loader.ts # fetch() model downloader
 │       └── test/
+│   └── timesfm-hierarchical/   # Hierarchical reconciliation engine
+│       ├── src/
+│       │   ├── index.ts
+│       │   ├── hierarchical.ts
+│       │   ├── reconciliation.ts
+│       │   ├── summing-matrix.ts
+│       │   └── types.ts
+│       └── test/
 ├── scripts/
 │   ├── pipeline.js              # Node.js fully automated pipeline
 │   └── export-onnx.py           # PyTorch → ONNX exporter
@@ -157,6 +165,7 @@ agentix-timesfm-ts/
 │   └── workflows/               # CI/CD automation
 │       ├── ci.yml               # PR checks + integration tests + benchmark + deploy
 │       ├── release.yml          # npm publish + model GitHub Release
+│       ├── model-release.yml    # HuggingFace model update checker
 │       └── nightly.yml          # Daily model version monitoring
 ├── models/                      # ONNX models (gitignored)
 └── vitest.config.ts
@@ -238,6 +247,11 @@ pnpm run check:latest
 timesfm setup                              # Default: ~/.cache/agentix-timesfm-ts/
 timesfm setup -o ./models/my-model.onnx    # Custom path
 timesfm setup -f                           # Force re-download
+timesfm setup --precision int8             # Download INT8 quantized model
+
+# Model info
+timesfm info                               # Show model metadata + system info
+timesfm info -m ./custom.onnx              # Custom model path
 
 # Download with proxy (corporate / restricted networks)
 # Option A: Standard environment variables (auto-detected)

@@ -42,8 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CI deploy-pages shell-escaping fix: inline `node -e` replaced with `scripts/prepare-pages.js`
   - Unit test coverage config with 95% thresholds in `vitest.unit.config.ts`, `pnpm test:unit:coverage` command
 - CLI proxy support documentation in `packages/timesfm-cli/README.md`
-- `AUDIT_REPORT.md` — comprehensive codebase audit against 10 quality dimensions
-- `COMPREHENSIVE_IMPROVEMENT_PLAN.md` — full actionable improvement plan with priority matrix
 
 - **xreg-engine.ts**: Normalization uses numerically-stable two-pass variance algorithm (was one-pass E[X²]−E[X]², susceptible to catastrophic cancellation)
 - **onnx-engine.ts**: `load()` now accepts `{ skipWarmup?: boolean }` option for benchmark precision; `IInferenceEngine` interface updated
@@ -71,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Model downloader with proxy support (3-tier cascade: options → env vars → standard vars)
 - SHA-256 checksum verification for downloaded models
 - Welford-style running statistics for numerically stable inference
-- 5-package monorepo: `@agentix-e/timesfm-core`, `@agentix-e/timesfm-xreg`, `@agentix-e/timesfm-cli`, `@agentix-e/timesfm-web`
+- 5-package monorepo: `@agentix-e/timesfm-core`, `@agentix-e/timesfm-xreg`, `@agentix-e/timesfm-cli`, `@agentix-e/timesfm-web`, `@agentix-e/timesfm-hierarchical`
 - Full CI/CD pipeline: lint, unit test (Node 20 + 22), build check, integration test, benchmark, deploy to GitHub Pages
 - Nightly model version monitoring workflow
 - Model release workflow with automated validation

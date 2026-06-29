@@ -16,7 +16,8 @@ import { getTestModelPath } from '../../timesfm-core/test/helpers';
 // Setup
 // ---------------------------------------------------------------------------
 
-const skipTests = process.env.VITEST_SKIP_ONNX_TESTS === 'true';
+const MODEL_PATH = getTestModelPath();
+const skipTests = process.env.VITEST_SKIP_ONNX_TESTS === 'true' || !MODEL_PATH;
 const describeIf = skipTests ? describe.skip : describe;
 
 let model: TimesFMModel | null = null;
@@ -39,8 +40,7 @@ const SERIES_LEN = 128; // enough context for a short forecast
 
 describeIf('reconcileForecast (integration)', () => {
   beforeAll(async () => {
-    const modelPath = getTestModelPath();
-    model = await TimesFMModel.fromPretrained({ modelPath });
+    model = await TimesFMModel.fromPretrained({ modelPath: MODEL_PATH! });
     model.compile(
       createForecastConfig({
         maxContext: 128,

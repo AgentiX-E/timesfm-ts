@@ -25,14 +25,19 @@ const RELATIVE_SEARCH_PATHS = [
 /**
  * Resolve the TimesFM ONNX model path for testing.
  *
- * @throws {Error} if no model file is found.
+ * Returns `null` if no model file is found, so callers can skip ONNX-dependent
+ * tests gracefully instead of crashing at import time. The globalSetup already
+ * warns when the model is missing.
+ *
+ * @returns The absolute path to the ONNX model, or `null` if not found.
  */
-export function getTestModelPath(): string {
+export function getTestModelPath(): string | null {
   // 1. Explicit env var
   const envPath = process.env.TIMESFM_TEST_MODEL;
   if (envPath) {
     if (fs.existsSync(envPath)) return envPath;
-    throw new Error(`TIMESFM_TEST_MODEL is set but file not found: ${envPath}`);
+    console.warn(`[test helpers] TIMESFM_TEST_MODEL is set but file not found: ${envPath}`);
+    return null;
   }
 
   // 2. Directory env var
@@ -52,12 +57,6 @@ export function getTestModelPath(): string {
     }
   }
 
-  // 4. Not found — provide helpful error
-  const searchedPaths = RELATIVE_SEARCH_PATHS.map((p) => `  - ${p}/`).join('\n');
-  throw new Error(
-    `TimesFM ONNX model not found.\n\n` +
-      `Searched:\n${searchedPaths}\n\n` +
-      `Set TIMESFM_TEST_MODEL=/path/to/model.onnx or\n` +
-      `run: pnpm export:model  (to export from HuggingFace)`,
-  );
+  // 4. Not found — return null for graceful skip
+  return null;
 }

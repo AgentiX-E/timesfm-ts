@@ -1,6 +1,6 @@
 # @agentix-e/timesfm-hierarchical
 
-> Hierarchical time series reconciliation engine — bottom-up, top-down, OLS, WLS, and MinT forecast reconciliation.
+> Hierarchical time series reconciliation engine — bottom-up, OLS, WLS, and MinT forecast reconciliation.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-hierarchical?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-hierarchical)
 [![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-hierarchical.html)
@@ -14,7 +14,6 @@
 | Strategy   | Description                                                     |
 | ---------- | --------------------------------------------------------------- |
 | Bottom-Up  | Forecast at bottom level, aggregate up                          |
-| Top-Down   | Forecast at top level, disaggregate down by proportions         |
 | OLS        | Ordinary Least Squares — minimizes $\|\tilde{y} - S\beta\|^2$   |
 | WLS        | Weighted Least Squares — weights by forecast variance           |
 | MinT (Cov) | Minimum Trace — minimizes reconciliation error using covariance |

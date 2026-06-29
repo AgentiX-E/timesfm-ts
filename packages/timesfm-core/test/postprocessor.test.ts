@@ -32,6 +32,7 @@ import {
 
 /** Standard TimesFM 2.5 quantile count (mean + q10..q90). */
 const NUM_Q = TIMESFM_25_CONFIG.numQuantiles; // 10
+const DECODE_IDX = TIMESFM_25_CONFIG.decodeIndex; // 5
 
 /**
  * Build a simple stacked quantile array for one timestep.
@@ -163,13 +164,13 @@ describe('postprocessor — flipQuantileArray', () => {
 describe('postprocessor — fixQuantileCrossing', () => {
   it('preserves already-monotonic quantiles', () => {
     const arr = makeOneStep([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     expect(Array.from(fixed)).toEqual(Array.from(arr));
   });
 
   it('fixes lower-quantile crossing (right-to-left enforcement)', () => {
     const arr = makeOneStep([0, 5, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     // q10 (index 1) should be ≤ q20 (index 2) after fix
     expect(fixed[1]).toBeLessThanOrEqual(fixed[2]);
     // All lower quantiles should be monotonic
@@ -180,7 +181,7 @@ describe('postprocessor — fixQuantileCrossing', () => {
 
   it('fixes upper-quantile crossing', () => {
     const arr = makeOneStep([0, 1, 2, 3, 4, 5, 3, 7, 8, 9]);
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     // q60 (index 6, value 3) should be ≥ q50 (index 5, value 5) after fix
     expect(fixed[6]).toBeGreaterThanOrEqual(fixed[5]);
   });
@@ -193,7 +194,7 @@ describe('postprocessor — fixQuantileCrossing', () => {
     // Step 1: reversed (will have crossing)
     for (let q = 0; q < NUM_Q; q++) arr[NUM_Q + q] = 9 - q;
 
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     // Step 0: still monotonic
     for (let q = 1; q < NUM_Q - 1; q++) {
       expect(fixed[q]).toBeLessThanOrEqual(fixed[q + 1]);
@@ -206,7 +207,7 @@ describe('postprocessor — fixQuantileCrossing', () => {
 
   it('handles all-equal quantiles without error', () => {
     const arr = makeOneStep([3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     // All values should remain 3
     for (let q = 0; q < NUM_Q; q++) {
       expect(fixed[q]).toBe(3);
@@ -215,7 +216,7 @@ describe('postprocessor — fixQuantileCrossing', () => {
 
   it('does not modify mean (index 0) or median (index 5)', () => {
     const arr = makeOneStep([99, 5, 3, 4, 5, 88, 3, 7, 8, 9]);
-    const fixed = fixQuantileCrossing(arr, NUM_Q);
+    const fixed = fixQuantileCrossing(arr, NUM_Q, DECODE_IDX);
     expect(fixed[0]).toBe(99); // mean untouched
     expect(fixed[5]).toBe(88); // median untouched
   });

@@ -28,6 +28,11 @@ import {
 const MODEL_PATH = getTestModelPath();
 
 describe('TimesFMModel (with real TimesFM 2.5 200M)', () => {
+  if (!MODEL_PATH) {
+    it.skip('all model tests require ONNX model — skipping', () => {});
+    return;
+  }
+
   let model: TimesFMModel;
 
   beforeAll(async () => {
