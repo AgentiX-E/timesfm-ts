@@ -48,11 +48,17 @@ import { resolveModelConfig } from './model-descriptor';
 import { computeStats } from './utils/stats';
 
 // Cached dynamic import for optional @agentix-e/timesfm-xreg peer dependency.
-// Cached at module level so repeated calls to forecastWithCovariates()
-// resolve instantly after the first invocation.
+//
+// Uses a Promise-based singleton pattern to handle concurrent calls safely:
+//   • First call initializes the promise (only one import() in flight)
+//   • Subsequent calls wait on the same promise
+//   • On failure, the promise is reset so the next call retries
+//   • After success, _xregModule is set so subsequent calls resolve instantly
+//
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 type XRegModule = typeof import('@agentix-e/timesfm-xreg');
 let _xregModule: XRegModule | null = null;
+let _xregModulePromise: Promise<XRegModule> | null = null;
 let _xregImportFn: (spec: string) => Promise<unknown> = (spec: string) => import(spec);
 
 /**
@@ -68,6 +74,7 @@ let _xregImportFn: (spec: string) => Promise<unknown> = (spec: string) => import
 export function __test_setXregImport(fn: ((spec: string) => Promise<unknown>) | null): void {
   _xregImportFn = fn ?? ((spec: string) => import(spec));
   _xregModule = null; // Invalidate cache so next call uses the new fn
+  _xregModulePromise = null; // Invalidate pending promise
 }
 import { allNonNegative } from './utils/tensor-utils';
 
@@ -407,23 +414,41 @@ export class TimesFMModel implements ITimesFMModel {
    *
    * Internally caches the dynamic import of the optional peer dependency
    * so that repeated calls avoid re-resolution overhead.
+   *
+   * Concurrent safety: uses a Promise-based singleton pattern so that
+   * multiple concurrent first-time calls share a single import() and
+   * import failures are retried on subsequent calls.
    */
   async forecastWithCovariates(params: CovariateForecastParams): Promise<CovariateForecastOutput> {
-    // Dynamic import: @agentix-e/timesfm-xreg is an optional peer dependency.
-    // The import result is cached at module level so repeated calls to
-    // forecastWithCovariates() resolve instantly after the first invocation.
-    if (!_xregModule) {
-      try {
-        _xregModule = (await _xregImportFn('@agentix-e/timesfm-xreg')) as XRegModule;
-      } catch (err) {
-        throw new Error(
-          'forecastWithCovariates requires @agentix-e/timesfm-xreg.\n' +
-            'Install it: npm install @agentix-e/timesfm-xreg\n\n' +
-            `Original error: ${(err as Error).message}`,
-        );
-      }
+    // Fast path: module is already loaded (after first successful import).
+    if (_xregModule) {
+      return await _xregModule.forecastWithCovariates(this, params);
     }
-    return await _xregModule.forecastWithCovariates(this, params);
+
+    // Init path: start (or join) a single inflight import promise.
+    if (!_xregModulePromise) {
+      _xregModulePromise = _xregImportFn('@agentix-e/timesfm-xreg')
+        .then((mod) => {
+          _xregModule = mod as XRegModule;
+          return _xregModule;
+        })
+        .catch((err) => {
+          // Reset promise so the next call retries the import.
+          _xregModulePromise = null;
+          throw err;
+        });
+    }
+
+    try {
+      const mod = await _xregModulePromise;
+      return await mod.forecastWithCovariates(this, params);
+    } catch (err) {
+      throw new Error(
+        'forecastWithCovariates requires @agentix-e/timesfm-xreg.\n' +
+          'Install it: npm install @agentix-e/timesfm-xreg\n\n' +
+          `Original error: ${(err as Error).message}`,
+      );
+    }
   }
 
   async dispose(): Promise<void> {

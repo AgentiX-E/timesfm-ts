@@ -2,14 +2,18 @@
 # Clear NODE_OPTIONS to avoid sandbox shim interference
 unset NODE_OPTIONS
 
-# Lint & format staged files (eslint --fix, prettier --write)
+# Format & lint staged files (eslint --fix, prettier --write)
 pnpm exec lint-staged || exit 1
 
 # Full-project lint gate — zero warnings tolerated.
+# The pnpm lint script now includes --max-warnings=0.
 # Every lint warning must be addressed before commit.
-# This mirrors CI behaviour exactly: if CI sees a warning, the
-# developer should have seen and fixed it locally.
-pnpm lint -- --max-warnings=0 || exit 1
+# This mirrors CI behaviour exactly.
+pnpm lint || exit 1
+
+# Full-project format check — mirrors CI lint job.
+# Ensures no formatting drift between local edits and CI.
+pnpm format:check || exit 1
 
 # Local coverage quality gate — mirrors CI unit-test job.
 # vitest.unit.config.ts enforces ≥95% lines/branches/functions/statements.
