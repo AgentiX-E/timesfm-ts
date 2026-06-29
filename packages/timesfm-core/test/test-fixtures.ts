@@ -24,12 +24,6 @@
  * - Integration tests that validate end-to-end forecast pipeline
  * - The benchmark suite that measures model accuracy
  */
- *   - Pure seasonal (daily/weekly patterns)
- *   - Random walk (stock prices)
- *   - Spike/outlier (anomaly detection)
- *   - Constant / near-constant (degenerate cases)
- *   - Long series (stress test)
- */
 
 // ---------------------------------------------------------------------------
 // Reference sequence generators (deterministic — mulberry32 PRNG, seed=42)
