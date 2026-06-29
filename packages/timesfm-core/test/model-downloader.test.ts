@@ -541,10 +541,12 @@ describe('model-downloader', () => {
         // Expected
       }
 
-      // Should still apply proxy, just without password
+      // Should still apply proxy, just without password.
+      // URL format: http://nofileuser@proxy:8080/  (username but no password)
       expect(proxyAgentCalls.length).toBe(1);
       expect(proxyAgentCalls[0].uri).toContain('nofileuser@');
-      expect(proxyAgentCalls[0].uri).not.toContain(':');
+      // No password separator after username
+      expect(proxyAgentCalls[0].uri).not.toContain('nofileuser:');
     });
 
     it('strips proxy via NO_PROXY when github.com is in the exclusion list', async () => {
