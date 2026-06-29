@@ -264,23 +264,18 @@ export function applyContinuousQuantileHead(
     for (let h = 0; h < Math.min(numSteps, horizon); h++) {
       const base = h * mc.numQuantiles;
 
-      // Mean stays
+      // Mean stays unchanged
       result[base] = ff[base];
 
-      // Lower quantiles: 1-4
-      for (let q = 1; q <= 4; q++) {
-        const qsIdx = h * mc.numQuantiles + q;
-        const spreadVal = qsIdx < qs.length ? qs[qsIdx] : 0;
-        const medianIdx = h * mc.numQuantiles + 5;
-        const medianSpread = medianIdx < qs.length ? qs[medianIdx] : 0;
-        result[base + q] = spreadVal - medianSpread + ff[base + 5];
-      }
-
-      // Median stays
-      result[base + 5] = ff[base + 5];
-
-      // Upper quantiles: 6-9
-      for (let q = 6; q <= 9; q++) {
+      // Apply quantile spread calibration: q_new = spread[q] - spread[median] + forecast[median]
+      // Lower quantiles (1-4) and upper quantiles (6-9) share the same formula.
+      // Median (5) stays unchanged.
+      for (let q = 1; q < mc.numQuantiles; q++) {
+        if (q === 5) {
+          // Median stays unchanged
+          result[base + 5] = ff[base + 5];
+          continue;
+        }
         const qsIdx = h * mc.numQuantiles + q;
         const spreadVal = qsIdx < qs.length ? qs[qsIdx] : 0;
         const medianIdx = h * mc.numQuantiles + 5;
@@ -289,7 +284,7 @@ export function applyContinuousQuantileHead(
       }
     }
 
-    // Copy remaining values
+    // Copy remaining values unchanged (only applicable when numSteps < ff.length / mc.numQuantiles)
     for (let i = numSteps * mc.numQuantiles; i < ff.length; i++) {
       result[i] = ff[i];
     }

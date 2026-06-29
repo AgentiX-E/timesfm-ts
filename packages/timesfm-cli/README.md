@@ -59,9 +59,9 @@ The `forecast` command resolves the model in this order:
 
 Key exports:
 
-- CLI entry point (Commander-based)
+- CLI entry point (Commander-based) — `timesfm setup`, `timesfm forecast`, `timesfm info`
 - `csvForecast` — Programmatic CSV forecasting with full config control
-- `resolveModelPath` — Multi-level model path resolution
+- `CSVForecastOptions` / `CSVForecastLogger` — TypeScript types for programmatic CSV forecasting
 
 ## License
 
