@@ -64,23 +64,7 @@ jobs:
           fi
       - name: Report unit coverage
         if: always()
-        run: |
-          node -e "
-          const s = require('./coverage/coverage-summary.json').total;
-          const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
-          let failed = false;
-          for (const [k, t] of Object.entries(thresholds)) {
-            const pct = s[k].pct;
-            const status = pct >= t ? '✅' : '❌';
-            console.log(status + ' unit ' + k + ': ' + pct.toFixed(1) + '% (threshold: ' + t + '%)');
-            if (pct < t) failed = true;
-          }
-          console.log('(vitest config.thresholds enforces these gates automatically; this is a secondary explicit check)');
-          if (failed) {
-            console.error('FAIL: Unit coverage thresholds not met (≥95% required on all metrics).');
-            process.exit(1);
-          }
-          "
+        run: node scripts/ci-coverage-check.js --tier unit --verbose
 
   # ─── Build check (TypeScript compile) ──────────────────────────────────
   build:
@@ -144,33 +128,8 @@ jobs:
       - name: Run tests with coverage
         run: pnpm test:coverage
 
-      - name: Verify integration coverage data
-        run: |
-          node -e "
-          const fs = require('fs');
-          if (!fs.existsSync('coverage/coverage-summary.json')) {
-            console.error('FAIL: coverage-summary.json not found. Integration tests may have failed silently.');
-            process.exit(1);
-          }
-          const s = require('./coverage/coverage-summary.json').total;
-          if (!s || !s.lines || s.lines.pct === 0) {
-            console.error('FAIL: No meaningful coverage data. All metrics are 0%.');
-            process.exit(1);
-          }
-          const thresholds = { lines: 95, branches: 95, functions: 95, statements: 95 };
-          let failed = false;
-          for (const [k, t] of Object.entries(thresholds)) {
-            const pct = s[k].pct;
-            const status = pct >= t ? '✅' : '❌';
-            console.log(status + ' integration ' + k + ': ' + pct.toFixed(1) + '% (threshold: ' + t + '%)');
-            if (pct < t) failed = true;
-          }
-          if (failed) {
-            console.error('FAIL: Coverage thresholds not met (≥95% required on all metrics).');
-            process.exit(1);
-          }
-          console.log('✅ All integration coverage thresholds met (≥95%).');
-          "
+      - name: Verify integration coverage
+        run: node scripts/ci-coverage-check.js --tier integration --verbose
 
       - name: Ensure coverage directory exists
         if: always()
@@ -232,18 +191,7 @@ jobs:
           node -e "const r=require('./benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+(l.batch_size||1)+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
 
       - name: Accuracy Gate
-        run: |
-          node -e "
-          const r = require('./benchmark-report.json');
-          if (!r.accuracy) { console.log('No accuracy data — skipping gate.'); process.exit(0); }
-          if (r.accuracy.scaled_mae >= 1.0) {
-            console.error('FAIL: TimesFM scaled MAE (' + r.accuracy.scaled_mae + ') is not better than naive baseline.');
-            console.error('  Model MAE: ' + r.accuracy.model_mae + ' vs Naive MAE: ' + r.accuracy.naive_mae);
-            process.exit(1);
-          }
-          console.log('PASS: TimesFM scaled MAE = ' + r.accuracy.scaled_mae + ' (< 1.0, better than naive)');
-          console.log('  Improvement vs Naive: ' + r.accuracy.improvement_vs_naive_pct + '%');
-          "
+        run: node scripts/ci-benchmark-check.js --verbose
 
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v4

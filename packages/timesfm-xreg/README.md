@@ -1,99 +1,61 @@
 # @agentix-e/timesfm-xreg
 
-Exogenous covariates (XReg) extension for TimesFM — boost forecast accuracy by incorporating external variables: weather, holidays, prices, promotions, or any domain-specific signals.
+> Covariate regression extension for TimesFM — Ridge regression + OneHot encoding for exogenous variables.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/)
 
-📚 [API Documentation](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm_xreg.html) · 📊 [Benchmark](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/) · 📈 [Coverage](https://agentix-e.github.io/agentix-timesfm-ts/coverage/) · 💻 [Source](https://github.com/AgentiX-E/agentix-timesfm-ts)
+## Overview
+
+`@agentix-e/timesfm-xreg` extends the TimesFM forecasting pipeline with exogenous covariate support. It provides a scikit-learn-compatible Ridge regression engine and OneHot encoder for categorical variables, used in the `forecastWithCovariates()` workflow.
+
+### Capabilities
+
+- **Dynamic numerical covariates** — Time-varying features (e.g., weather, promotions, events)
+- **Static numerical covariates** — Per-series constant features (e.g., store ID, location)
+- **Categorical covariates** — OneHot-encoded categorical variables with scikit-learn compatibility
+- **Ridge regression** — L2-regularized linear regression for covariate modeling
+- **XReg + TimesFM hybrid** — Combine covariate regression with TimesFM residuals
+
+## Installation
 
 ```bash
 npm install @agentix-e/timesfm-xreg
 ```
 
-Requires `@agentix-e/timesfm-core` as a peer dependency.
+Requires `@agentix-e/timesfm-core` (peer dependency).
 
 ## Quick Start
 
 ```typescript
-import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
-import { forecastWithCovariates } from '@agentix-e/timesfm-xreg';
+import { TimesFMModel, downloadModel, createForecastConfig } from '@agentix-e/timesfm-core';
 
-const model = await TimesFMModel.fromPretrained({ modelPath: './timesfm-2.5.onnx' });
+const model = await TimesFMModel.fromPretrained({
+  modelPath: await downloadModel(),
+});
 model.compile(createForecastConfig({ maxContext: 512, maxHorizon: 128 }));
 
-const result = await forecastWithCovariates(model, {
-  // The target time series
-  inputs: [salesData],
-
-  // Numerical variables that change over time — length = context + horizon
+const result = await model.forecastWithCovariates({
+  inputs: [new Float32Array(/* historical values */)],
   dynamicNumericalCovariates: {
-    temperature: [new Float32Array(640)], // 512 context + 128 horizon
-    price: [new Float32Array(640)],
+    temperature: [new Float32Array(/* future temperature values */)],
   },
-
-  // Categorical variables that change over time
-  dynamicCategoricalCovariates: {
-    dayOfWeek: [['Mon', 'Tue', 'Wed' /* ... length = 640 */]],
-    isHoliday: [[0, 0, 1 /* ... */]],
-  },
-
-  // Static variables — one value per series
   staticNumericalCovariates: {
-    storeSize: [1500],
+    value: [new Float32Array([42])],
   },
-  staticCategoricalCovariates: {
-    storeType: ['flagship'],
-  },
-
   xregMode: 'xreg + timesfm',
-  ridge: 0.1,
-  normalizeXregTargetPerInput: true,
-  maxRowsPerCol: 100,
 });
-
-// result.pointForecast[0]  — final forecast (TimesFM residual + XReg contribution)
-// result.xregOutputs[0]    — pure covariate contribution
-// result.quantileForecast   — quantile bands adjusted by XReg offset
 ```
 
-## Covariate Types
+## API Documentation
 
-| Type                           | Length                         | Example                      |
-| ------------------------------ | ------------------------------ | ---------------------------- |
-| `dynamicNumericalCovariates`   | `context + horizon` per series | Temperature, price, ad spend |
-| `dynamicCategoricalCovariates` | `context + horizon` per series | Day of week, promotion flag  |
-| `staticNumericalCovariates`    | 1 per series                   | Store area, location lat/lng |
-| `staticCategoricalCovariates`  | 1 per series                   | Region, category, tier       |
+📚 **Full API reference**: [agentix-e.github.io/agentix-timesfm-ts/api/](https://agentix-e.github.io/agentix-timesfm-ts/api/)
 
-## Modes
+Key exports:
 
-| Mode             | Algorithm                                                                      | Best for                                                                    |
-| ---------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `xreg + timesfm` | Fit linear model on targets → forecast **residuals** with TimesFM → combine    | Covariates explain most of the signal (e.g. promotions driving sales)       |
-| `timesfm + xreg` | Forecast with TimesFM → fit linear model on residuals (via backcast) → combine | TimesFM already captures the main pattern; covariates correct the remainder |
-
-## Parameters
-
-| Parameter                     | Type                                   | Default            | Description                                                  |
-| ----------------------------- | -------------------------------------- | ------------------ | ------------------------------------------------------------ |
-| `inputs`                      | `Float32Array[]`                       | required           | Target time series                                           |
-| `xregMode`                    | `'xreg + timesfm' \| 'timesfm + xreg'` | `'xreg + timesfm'` | Fitting order                                                |
-| `ridge`                       | `number`                               | `0`                | L2 regularisation strength for Ridge regression              |
-| `normalizeXregTargetPerInput` | `boolean`                              | `false`            | Z-score normalise each series before fitting                 |
-| `maxRowsPerCol`               | `number`                               | `0` (unlimited)    | Sub-sample rows to `maxRowsPerCol × cols` for memory control |
-
-## Standalone OneHotEncoder
-
-```typescript
-import { OneHotEncoder } from '@agentix-e/timesfm-xreg';
-
-const encoder = new OneHotEncoder({ drop: 'first', handleUnknown: 'ignore' });
-encoder.fit(['a', 'b', 'c', 'a']);
-const encoded = encoder.transform(['b', 'd']); // [[0, 1], [0, 0]]
-```
-
-Scikit-learn compatible. Supports `handleUnknown: 'ignore' | 'error'`.
+- `forecastWithCovariates` — Main entry point for covariate-aware forecasting
+- `XRegEngine` — Ridge regression engine with design matrix construction
+- `OneHotEncoder` — Scikit-learn-compatible OneHot encoder
 
 ## License
 
