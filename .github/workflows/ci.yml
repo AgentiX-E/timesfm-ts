@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload coverage artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage/
@@ -194,7 +194,7 @@ jobs:
         run: node scripts/ci-benchmark-check.js --verbose
 
       - name: Upload benchmark artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-report
           path: |
@@ -249,7 +249,7 @@ jobs:
           node -e "const r=require('./web-benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload web benchmark artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-benchmark-report
           path: |

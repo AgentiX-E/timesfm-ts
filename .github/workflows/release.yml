@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload coverage
         if: ${{ !inputs.skip_tests }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: coverage/
@@ -136,7 +136,7 @@ jobs:
         run: node scripts/ci-benchmark-check.js --verbose
 
       - name: Upload benchmark artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-report
           path: |
@@ -185,7 +185,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Upload web benchmark artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-benchmark-report
           path: |
