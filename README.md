@@ -199,15 +199,15 @@ pnpm run check:latest
 
 ## Documentation & Reports
 
-| Resource          | Description                                                       | URL                                                                                                          |
-| ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 📚 **API Docs**   | Full TypeDoc reference for all packages                           | [agentix-e.github.io/agentix-timesfm-ts/api/](https://agentix-e.github.io/agentix-timesfm-ts/api/)           |
-| 📊 **Benchmark**  | Inference latency, throughput & accuracy reports (Node.js + WASM) | [agentix-e.github.io/.../benchmark/](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)              |
+| Resource          | Description                                                                      | URL                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 📚 **API Docs**   | Full TypeDoc reference for all packages                                          | [agentix-e.github.io/agentix-timesfm-ts/api/](https://agentix-e.github.io/agentix-timesfm-ts/api/)           |
+| 📊 **Benchmark**  | Inference latency, throughput & accuracy reports (Node.js + WASM)                | [agentix-e.github.io/.../benchmark/](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)              |
 | 📈 **Coverage**   | Line, branch, function & statement coverage (≥95% on all covered source modules) | [agentix-e.github.io/agentix-timesfm-ts/coverage/](https://agentix-e.github.io/agentix-timesfm-ts/coverage/) |
-| 📦 **npm (core)** | `@agentix-e/timesfm-core`                                         | [npmjs.com/package/@agentix-e/timesfm-core](https://www.npmjs.com/package/@agentix-e/timesfm-core)           |
-| 📦 **npm (xreg)** | `@agentix-e/timesfm-xreg`                                         | [npmjs.com/package/@agentix-e/timesfm-xreg](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)           |
-| 📦 **npm (cli)**  | `@agentix-e/timesfm-cli`                                          | [npmjs.com/package/@agentix-e/timesfm-cli](https://www.npmjs.com/package/@agentix-e/timesfm-cli)             |
-| 📦 **npm (web)**  | `@agentix-e/timesfm-web`                                          | [npmjs.com/package/@agentix-e/timesfm-web](https://www.npmjs.com/package/@agentix-e/timesfm-web)             |
+| 📦 **npm (core)** | `@agentix-e/timesfm-core`                                                        | [npmjs.com/package/@agentix-e/timesfm-core](https://www.npmjs.com/package/@agentix-e/timesfm-core)           |
+| 📦 **npm (xreg)** | `@agentix-e/timesfm-xreg`                                                        | [npmjs.com/package/@agentix-e/timesfm-xreg](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)           |
+| 📦 **npm (cli)**  | `@agentix-e/timesfm-cli`                                                         | [npmjs.com/package/@agentix-e/timesfm-cli](https://www.npmjs.com/package/@agentix-e/timesfm-cli)             |
+| 📦 **npm (web)**  | `@agentix-e/timesfm-web`                                                         | [npmjs.com/package/@agentix-e/timesfm-web](https://www.npmjs.com/package/@agentix-e/timesfm-web)             |
 
 ## System Requirements
 

@@ -15,7 +15,7 @@
 | ---------- | --------------------------------------------------------------- |
 | Bottom-Up  | Forecast at bottom level, aggregate up                          |
 | Top-Down   | Forecast at top level, disaggregate down by proportions         |
-| OLS        | Ordinary Least Squares — minimizes $\|\tilde{y} - S\beta\|^2$  |
+| OLS        | Ordinary Least Squares — minimizes $\|\tilde{y} - S\beta\|^2$   |
 | WLS        | Weighted Least Squares — weights by forecast variance           |
 | MinT (Cov) | Minimum Trace — minimizes reconciliation error using covariance |
 
