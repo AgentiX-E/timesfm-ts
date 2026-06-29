@@ -301,21 +301,21 @@ jobs:
       # may have been skipped or failed.  continue-on-error ensures
       # that missing artifacts do not block the docs+coverage deployment.
       - name: Download benchmark report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: benchmark-report
           path: docs/benchmark
         continue-on-error: true
 
       - name: Download web benchmark report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web-benchmark-report
           path: docs/web-benchmark
         continue-on-error: true
 
       - name: Download coverage report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-report
           path: docs/coverage
