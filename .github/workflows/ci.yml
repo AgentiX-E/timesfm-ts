@@ -12,15 +12,6 @@ on:
 permissions:
   contents: read
 
-# GitHub deprecated Node.js 20 runtime for actions on 2025-09-19.
-# actions/setup-node@v4 and pnpm/action-setup@v4 still run on Node 20
-# under the hood, producing annotation warnings on every job.  This
-# env var is the recommended suppression (per GitHub's deprecation
-# notice) until upstream actions ship native Node 24 support.
-# Ref: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
