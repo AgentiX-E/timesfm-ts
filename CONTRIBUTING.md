@@ -1,10 +1,10 @@
-# Contributing to agentix-timesfm-ts
+# Contributing to timesfm-ts
 
 ## Development Environment
 
 ```bash
-git clone https://github.com/AgentiX-E/agentix-timesfm-ts.git
-cd agentix-timesfm-ts
+git clone https://github.com/AgentiX-E/timesfm-ts.git
+cd timesfm-ts
 pnpm install && pnpm build
 ```
 
@@ -13,7 +13,7 @@ pnpm install && pnpm build
 ## Project Structure
 
 ```
-agentix-timesfm-ts/
+timesfm-ts/
 ├── packages/
 │   ├── timesfm-core/           # Core inference engine
 │   ├── timesfm-xreg/           # Covariate regression

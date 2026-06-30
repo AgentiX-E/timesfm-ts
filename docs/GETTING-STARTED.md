@@ -1,4 +1,4 @@
-# agentix-timesfm-ts Usage Documentation
+# timesfm-ts Usage Documentation
 
 > Node.js/TypeScript TimesFM 2.5 — Zero-Shot Time Series Forecasting
 
@@ -23,8 +23,8 @@
 ### Installation
 
 ```bash
-git clone https://github.com/AgentiX-E/agentix-timesfm-ts.git
-cd agentix-timesfm-ts
+git clone https://github.com/AgentiX-E/timesfm-ts.git
+cd timesfm-ts
 pnpm install
 pnpm build
 ```
@@ -130,7 +130,7 @@ Expected output:
 
 ```
 ============================================================
-  agentix-timesfm-ts — ONNX Model Checker
+  timesfm-ts — ONNX Model Checker
 ============================================================
 Model file:
   Size:   ~928 MB
@@ -140,7 +140,7 @@ ONNX Runtime:
   Load time: ~5000 ms
   Status:    ✅ Loaded successfully
 ============================================================
-  ✅ Model ready for use with agentix-timesfm-ts
+  ✅ Model ready for use with timesfm-ts
 ============================================================
 ```
 
@@ -692,7 +692,7 @@ for (let i = 0; i < allInputs.length; i += CHUNK) {
 
 ```
 ┌─────────────────────────────────────────┐
-│              agentix-timesfm-ts          │
+│              timesfm-ts          │
 ├─────────────────────────────────────────┤
 │                                          │
 │  User Data (Float32Array[])              │
@@ -734,7 +734,7 @@ for (let i = 0; i < allInputs.length; i += CHUNK) {
 
 ## References
 
-- **Project Repository**: https://github.com/AgentiX-E/agentix-timesfm-ts
+- **Project Repository**: https://github.com/AgentiX-E/timesfm-ts
 - **TimesFM Paper**: https://arxiv.org/abs/2310.10688
 - **HuggingFace Models**: https://huggingface.co/collections/google/timesfm-release-66e4be5fdb56e960c1e482a6
 - **ONNX Runtime**: https://onnxruntime.ai/

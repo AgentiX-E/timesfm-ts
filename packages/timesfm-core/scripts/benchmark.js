@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * agentix-timesfm-ts Official Benchmark Suite
+ * timesfm-ts Official Benchmark Suite
  *
  * Based on TimesFM ICML 2024 paper evaluation protocol:
  *   - Datasets: benchmark datasets
@@ -94,7 +94,7 @@ function loadDataset(csvPath) {
 
 async function runBenchmark(modelPath, dataDir) {
   console.log('='.repeat(72));
-  console.log('  agentix-timesfm-ts — Benchmark Report');
+  console.log('  timesfm-ts — Benchmark Report');
   console.log('  Based on TimesFM ICML 2024 Paper Evaluation Protocol');
   console.log('='.repeat(72));
   console.log();

@@ -105,7 +105,7 @@ describe('model-downloader', () => {
       const p = defaultModelPath();
       const cacheBase = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
       expect(p).toContain(cacheBase);
-      expect(p).toContain('agentix-timesfm-ts');
+      expect(p).toContain('timesfm-ts');
       expect(p).toContain('timesfm-2.5.onnx');
     });
 
@@ -191,7 +191,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'test-model.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(404, 'Not Found');
 
       try {
@@ -229,7 +229,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'test-model.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(500, 'Internal Server Error');
 
       try {
@@ -251,7 +251,7 @@ describe('model-downloader', () => {
 
     it('downloadModel reports error message with HTTP status', async () => {
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(403, 'Forbidden');
 
       try {
@@ -268,7 +268,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'test-model.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(200, '', { 'content-length': '0' });
 
       try {
@@ -325,7 +325,7 @@ describe('model-downloader', () => {
       fs.writeFileSync(dest, Buffer.alloc(900 * 1024 * 1024));
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(404);
 
       try {
@@ -378,7 +378,7 @@ describe('model-downloader', () => {
       // Default nock: intercept the download URL so fetch() doesn't hit
       // the real network regardless of proxy settings.
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(404);
     });
 
@@ -673,7 +673,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'timesfm-2.5.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(200, zipBuffer, { 'content-length': String(zipBuffer.length) });
 
       try {
@@ -745,7 +745,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'timesfm-2.5.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(200, zipBuffer, { 'content-length': String(zipBuffer.length) });
 
       try {
@@ -805,7 +805,7 @@ describe('model-downloader', () => {
       const dest = path.join(tmpDir, 'timesfm-2.5.onnx');
 
       nock('https://github.com')
-        .get('/AgentiX-E/agentix-timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
+        .get('/AgentiX-E/timesfm-ts/releases/download/timesfm-latest/timesfm-onnx-2.5.zip')
         .reply(200, zipBuffer, { 'content-length': String(zipBuffer.length) });
 
       const progressCalls: Array<{ received: number; total: number; speed: number }> = [];

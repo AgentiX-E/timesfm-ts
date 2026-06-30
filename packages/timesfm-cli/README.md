@@ -3,7 +3,7 @@
 > Command-line interface for TimesFM — download models and forecast time series from CSV files.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-cli?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-cli)
-[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-cli.html)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-cli.html)
 
 ## Overview
 
@@ -53,12 +53,12 @@ The `forecast` command resolves the model in this order:
 1. `--model` CLI flag
 2. `TIMESFM_MODEL_PATH` environment variable
 3. Path from `timesfm setup -o <path>` (same process)
-4. Default cache (`~/.cache/agentix-timesfm-ts/`)
+4. Default cache (`~/.cache/timesfm-ts/`)
 5. Auto-download
 
 ## API Documentation
 
-📚 **Full API reference**: [agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-cli.html](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-cli.html)
+📚 **Full API reference**: [agentix-e.github.io/timesfm-ts/api/modules/timesfm-cli.html](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-cli.html)
 
 Key exports:
 

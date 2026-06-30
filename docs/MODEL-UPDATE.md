@@ -1,6 +1,6 @@
 # TimesFM Model Update Guide
 
-> This document describes the automated and manual model update flows for agentix-timesfm-ts.
+> This document describes the automated and manual model update flows for timesfm-ts.
 
 ---
 

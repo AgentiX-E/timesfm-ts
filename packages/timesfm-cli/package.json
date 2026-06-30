@@ -40,7 +40,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AgentiX-E/agentix-timesfm-ts.git"
+    "url": "git+https://github.com/AgentiX-E/timesfm-ts.git"
   },
   "publishConfig": {
     "access": "public"

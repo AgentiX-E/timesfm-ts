@@ -1,6 +1,6 @@
 # Architecture
 
-> `agentix-timesfm-ts` — A TypeScript/Node.js implementation of Google's TimesFM 2.5 decoder-only time-series foundation model.
+> `timesfm-ts` — A TypeScript/Node.js implementation of Google's TimesFM 2.5 decoder-only time-series foundation model.
 
 ---
 

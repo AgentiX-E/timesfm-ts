@@ -325,7 +325,7 @@ const html = `<!DOCTYPE html>
   </table>
 
   <footer>
-    Automated benchmark by <strong>agentix-timesfm-ts</strong> CI · ${esc(nodeData.timestamp)}
+    Automated benchmark by <strong>timesfm-ts</strong> CI · ${esc(nodeData.timestamp)}
   </footer>
 
   <script>

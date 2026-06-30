@@ -24,7 +24,7 @@ export function setup(): void {
   const searchPaths = [
     path.resolve(__dirname, 'models'),
     path.resolve(__dirname),
-    path.join(os.homedir(), '.cache', 'agentix-timesfm-ts'),
+    path.join(os.homedir(), '.cache', 'timesfm-ts'),
   ];
 
   const filenames = ['timesfm-2.5.onnx', 'timesfm-2.5-200m.onnx', 'timesfm.onnx'];

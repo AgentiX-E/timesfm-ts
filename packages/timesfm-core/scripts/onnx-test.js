@@ -5,7 +5,7 @@ const os = require('os');
 
 async function main() {
   console.log('='.repeat(70));
-  console.log('  agentix-timesfm-ts — ONNX Runtime Real Inference Test Report');
+  console.log('  timesfm-ts — ONNX Runtime Real Inference Test Report');
   console.log('='.repeat(70));
   console.log();
 
