@@ -605,7 +605,11 @@ async function extractZip(zipPath: string, outDir: string): Promise<void> {
     () => spawnExtractor('7z', ['x', `-o${outDir}`, '-y', zipPath]),
     () => {
       // PowerShell Expand-Archive (Windows)
-      const psCmd = `Expand-Archive -Path '${zipPath}' -DestinationPath '${outDir}' -Force`;
+      // Escape single quotes by doubling them to prevent command injection:
+      // paths like C:\Users\O'Brien\model.zip are safe after escaping
+      const escapedZip = zipPath.replace(/'/g, "''");
+      const escapedDir = outDir.replace(/'/g, "''");
+      const psCmd = `Expand-Archive -Path '${escapedZip}' -DestinationPath '${escapedDir}' -Force`;
       return spawnExtractor('powershell', ['-NoProfile', '-Command', psCmd]);
     },
   ];

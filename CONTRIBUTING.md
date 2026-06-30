@@ -15,10 +15,11 @@ pnpm install && pnpm build
 ```
 agentix-timesfm-ts/
 ├── packages/
-│   ├── timesfm-core/       # Core inference engine
-│   ├── timesfm-xreg/       # Covariate regression
-│   ├── timesfm-cli/        # CLI tool
-│   └── timesfm-web/        # Browser inference engine (WASM/WebGPU)
+│   ├── timesfm-core/           # Core inference engine
+│   ├── timesfm-xreg/           # Covariate regression
+│   ├── timesfm-cli/            # CLI tool
+│   ├── timesfm-web/            # Browser inference engine (WASM/WebGPU)
+│   └── timesfm-hierarchical/   # Hierarchical reconciliation engine
 ├── docs/                   # Documentation
 ├── scripts/                # Pipeline/export scripts
 ├── .github/workflows/      # CI/CD automation

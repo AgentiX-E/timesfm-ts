@@ -88,7 +88,8 @@ program
   });
 
 // ─── setup — download model ────────────────────────────────────────────────
-
+// Tracks the most recent download path for cross-command convenience.
+// CLI invocations are single-process, so this is safe.
 let _lastSetupPath: string | null = null;
 
 program
@@ -175,13 +176,15 @@ program
   .command('forecast')
   .description('Forecast time series from a CSV file')
   .argument('<input>', 'Path to input CSV file')
-  .requiredOption('-H, --horizon <number>', 'Forecast horizon (number of steps)', parseInt)
+  .requiredOption('-H, --horizon <number>', 'Forecast horizon (number of steps)', (v: string) =>
+    parseInt(v, 10),
+  )
   .option('-m, --model <path>', 'Path to TimesFM ONNX model (auto-download if omitted)')
   .option('-d, --date-col <name>', 'Date column name (default: "date")', 'date')
   .option('-v, --value-cols <names>', 'Comma-separated value column names (default: all numeric)')
   .option('-o, --output <path>', 'Output file path (default: stdout)')
   .option('--output-format <format>', 'Output format: csv or json', 'csv')
-  .option('--context <number>', 'Max context length', parseInt, 1024)
+  .option('--context <number>', 'Max context length', (v: string) => parseInt(v, 10), 1024)
   .option('--no-normalize', 'Disable input normalization')
   .option('--no-flip-invariance', 'Disable flip invariance')
   .option('--no-positive', 'Disable positive-value inference')

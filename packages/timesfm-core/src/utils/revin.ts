@@ -222,5 +222,8 @@ function broadcast1D(arr: Float32Array, len: number): Float32Array {
     result.fill(arr[0]);
     return result;
   }
-  return arr; // assume already correct length
+  if (arr.length !== len) {
+    throw new RangeError(`broadcast1D: array length ${arr.length} cannot be broadcast to ${len}`);
+  }
+  return arr;
 }

@@ -177,11 +177,11 @@ describe('mase', () => {
     expect(mase(actual, modelPred, naivePred)).toBe(1);
   });
 
-  it('returns Infinity when naive is perfect but model has error (naiveMAE < 1e-10, modelMAE >= 1e-10)', () => {
+  it('returns MAX_SAFE_INTEGER when naive is perfect but model has error', () => {
     const actual = new Float32Array([5, 5, 5]);
     const modelPred = new Float32Array([6, 6, 6]); // MAE = 1
     const naivePred = new Float32Array([5, 5, 5]); // MAE = 0 (perfect)
-    expect(mase(actual, modelPred, naivePred)).toBe(Infinity);
+    expect(mase(actual, modelPred, naivePred)).toBe(Number.MAX_SAFE_INTEGER);
   });
 
   it('returns > 1 when model is worse than naive', () => {

@@ -147,7 +147,9 @@ export function postProcess(
 
   // ---- Step 5: Fix quantile crossing ----
   if (fc.fixQuantileCrossing) {
-    fullForecasts = fullForecasts.map((f) => fixQuantileCrossing(f, mc.numQuantiles));
+    fullForecasts = fullForecasts.map((f) =>
+      fixQuantileCrossing(f, mc.numQuantiles, mc.decodeIndex),
+    );
   }
 
   // ---- Step 6: Input normalization reversal ----
@@ -268,19 +270,18 @@ export function applyContinuousQuantileHead(
       result[base] = ff[base];
 
       // Apply quantile spread calibration: q_new = spread[q] - spread[median] + forecast[median]
-      // Lower quantiles (1-4) and upper quantiles (6-9) share the same formula.
-      // Median (5) stays unchanged.
+      // All quantiles except mean (0) and median share the same formula.
       for (let q = 1; q < mc.numQuantiles; q++) {
-        if (q === 5) {
+        if (q === mc.decodeIndex) {
           // Median stays unchanged
-          result[base + 5] = ff[base + 5];
+          result[base + mc.decodeIndex] = ff[base + mc.decodeIndex];
           continue;
         }
         const qsIdx = h * mc.numQuantiles + q;
         const spreadVal = qsIdx < qs.length ? qs[qsIdx] : 0;
-        const medianIdx = h * mc.numQuantiles + 5;
+        const medianIdx = h * mc.numQuantiles + mc.decodeIndex;
         const medianSpread = medianIdx < qs.length ? qs[medianIdx] : 0;
-        result[base + q] = spreadVal - medianSpread + ff[base + 5];
+        result[base + q] = spreadVal - medianSpread + ff[base + mc.decodeIndex];
       }
     }
 
@@ -300,11 +301,17 @@ export function applyContinuousQuantileHead(
 /**
  * Ensure monotonicity: q10 ≤ q20 ≤ … ≤ q90.
  *
- * For lower quantiles (1→4): if q[i] > q[i+1], set q[i] = q[i+1].
- * For upper quantiles (6→9): if q[i] < q[i-1], set q[i] = q[i-1].
- * Median (5) and mean (0) are not modified.
+ * Lowers quantiles below the decode median are corrected rightward:
+ * if q[i] > q[i+1], set q[i] = q[i+1].
+ * Upper quantiles above the median are corrected leftward:
+ * if q[i] < q[i-1], set q[i] = q[i-1].
+ * Median and mean (index 0) are not modified.
  */
-export function fixQuantileCrossing(arr: Float32Array, numQuantiles: number): Float32Array {
+export function fixQuantileCrossing(
+  arr: Float32Array,
+  numQuantiles: number,
+  decodeIndex: number,
+): Float32Array {
   const result = new Float32Array(arr);
   const numSteps = Math.floor(arr.length / numQuantiles);
 
@@ -312,14 +319,14 @@ export function fixQuantileCrossing(arr: Float32Array, numQuantiles: number): Fl
     const base = t * numQuantiles;
 
     // Lower quantiles: ensure q[i] ≤ q[i+1]
-    for (let q = 4; q >= 1; q--) {
+    for (let q = decodeIndex - 1; q >= 1; q--) {
       if (result[base + q] > result[base + q + 1]) {
         result[base + q] = result[base + q + 1];
       }
     }
 
     // Upper quantiles: ensure q[i] ≥ q[i-1]
-    for (let q = 6; q <= 9; q++) {
+    for (let q = decodeIndex + 1; q <= numQuantiles - 1; q++) {
       if (result[base + q] < result[base + q - 1]) {
         result[base + q] = result[base + q - 1];
       }

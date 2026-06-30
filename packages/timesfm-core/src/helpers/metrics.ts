@@ -10,6 +10,9 @@
  *   - Google TimesFM evaluation harness
  */
 
+/** Minimum absolute value threshold for division safety. */
+const EPSILON = 1e-10;
+
 /**
  * Mean Absolute Error.
  *
@@ -71,7 +74,7 @@ export function mape(actual: Float32Array, predicted: Float32Array): number {
     if (
       Number.isFinite(actual[i]) &&
       Number.isFinite(predicted[i]) &&
-      Math.abs(actual[i]) > 1e-10
+      Math.abs(actual[i]) > EPSILON
     ) {
       sum += Math.abs((actual[i] - predicted[i]) / actual[i]);
       count++;
@@ -98,7 +101,7 @@ export function smape(actual: Float32Array, predicted: Float32Array): number {
   for (let i = 0; i < actual.length; i++) {
     if (Number.isFinite(actual[i]) && Number.isFinite(predicted[i])) {
       const denominator = Math.abs(actual[i]) + Math.abs(predicted[i]);
-      if (denominator > 1e-10) {
+      if (denominator > EPSILON) {
         sum += (2 * Math.abs(actual[i] - predicted[i])) / denominator;
         count++;
       }
@@ -121,7 +124,7 @@ export function mase(
 ): number {
   const modelMAE = mae(actual, predicted);
   const naiveMAE = mae(actual, naiveForecast);
-  if (naiveMAE < 1e-10) return modelMAE < 1e-10 ? 1 : Infinity;
+  if (naiveMAE < EPSILON) return modelMAE < EPSILON ? 1 : Number.MAX_SAFE_INTEGER;
   return modelMAE / naiveMAE;
 }
 
@@ -161,7 +164,11 @@ export function r2Score(actual: Float32Array, predicted: Float32Array): number {
     }
   }
 
-  if (ssTot < 1e-10) return 1;
+  if (ssTot < EPSILON) {
+    // Constant target — R² is undefined. Return 1 if predictions are
+    // perfect (zero residual), 0 otherwise (conservative default).
+    return ssRes < EPSILON ? 1 : 0;
+  }
   return 1 - ssRes / ssTot;
 }
 

@@ -42,7 +42,12 @@
  * @module web-engine
  */
 
-import type { ModelConfig, IInferenceEngine, RawModelOutput } from '@agentix-e/timesfm-core';
+import {
+  InferenceError,
+  type ModelConfig,
+  type IInferenceEngine,
+  type RawModelOutput,
+} from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
 // Logger interface
@@ -204,12 +209,8 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
           enableMemPattern: true,
         };
 
-        // Accept both URL string and ArrayBuffer
-        if (typeof modelPath === 'string') {
-          this._session = await ort.InferenceSession.create(modelPath, sessionOptions);
-        } else {
-          this._session = await ort.InferenceSession.create(modelPath, sessionOptions);
-        }
+        // Accept both URL string and ArrayBuffer / Uint8Array
+        this._session = await ort.InferenceSession.create(modelPath as string, sessionOptions);
 
         this._logger.info(`[TimesFM Web] Loaded model with ${provider} provider`, { provider });
         this._loaded = true;
@@ -229,7 +230,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       providers: this._providers,
       lastError: lastError?.message,
     });
-    throw new Error(errorMsg);
+    throw new InferenceError(errorMsg);
   }
 
   // -----------------------------------------------------------------------
@@ -243,18 +244,20 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
    * element is processed sequentially via the ONNX session and results
    * are returned as per-element arrays in the {@link RawModelOutput}.
    *
-   * The `_masks` parameter is intentionally unused — the mask information
-   * is embedded in the second half of each 64-dim tokenizer input pair
-   * (value=0 → visible, value=1 → masked), matching the ONNX export format.
+   * Builds the tokenizer input identically to the Node.js engine:
+   * each 64-dim patch is [patch_values(32), patch_mask(32)] where
+   * mask=0 means "visible" and mask=1 means "padding/ignored".
    */
-  async forward(inputs: Float32Array[], _masks: Uint8Array[]): Promise<RawModelOutput> {
+  async forward(inputs: Float32Array[], masks: Uint8Array[]): Promise<RawModelOutput> {
     if (!this._session || !this._ortModule) {
-      throw new Error('[TimesFM Web] Engine not loaded. Call load() first.');
+      throw new InferenceError('[TimesFM Web] Engine not loaded. Call load() first.');
     }
 
     const ort = this._ortModule;
     const session = this._session;
     const batchSize = inputs.length;
+    const inputPatchLen = this._config.inputPatchLen;
+    const tokenizerLen = this._config.tokenizerInputDims; // 64 = 32 values + 32 mask
 
     // Build output name mapping: preferred canonical name → actual name.
     // This matches the ONNX engine's dynamic output name resolution,
@@ -279,19 +282,37 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
 
     for (let b = 0; b < batchSize; b++) {
       const input = inputs[b];
+      const mask = masks[b];
+      const numInputPatches = Math.floor(input.length / inputPatchLen);
 
-      // Build padded input to match exported model shape
-      const totalLen = this._config.exportedPatches * this._config.tokenizerInputDims;
+      // Build padded input to match exported model shape, interleaving
+      // values and masks per patch (identical to Node.js ONNX engine).
+      const totalLen = this._config.exportedPatches * tokenizerLen;
       const flatInputs = new Float32Array(totalLen);
-      const copyLen = Math.min(input.length, totalLen);
-      flatInputs.set(input.subarray(0, copyLen), 0);
+      const copyPatches = Math.min(numInputPatches, this._config.exportedPatches);
+
+      for (let p = 0; p < this._config.exportedPatches; p++) {
+        const basePatch = p * tokenizerLen;
+        if (p < copyPatches) {
+          for (let i = 0; i < inputPatchLen; i++) {
+            flatInputs[basePatch + i] = input[p * inputPatchLen + i];
+            flatInputs[basePatch + inputPatchLen + i] = mask[p * inputPatchLen + i];
+          }
+        } else {
+          // Padding patch: values=0, mask=1 (ignored)
+          for (let i = 0; i < inputPatchLen; i++) {
+            flatInputs[basePatch + i] = 0;
+            flatInputs[basePatch + inputPatchLen + i] = 1;
+          }
+        }
+      }
 
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
       const feeds: Record<string, import('onnxruntime-web').Tensor> = {
         [inputName]: new ort.Tensor('float32', flatInputs, [
           1,
           this._config.exportedPatches,
-          this._config.tokenizerInputDims,
+          tokenizerLen,
         ]),
       };
 
@@ -300,6 +321,9 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
       const extract = (t: import('onnxruntime-web').Tensor | undefined): Float32Array => {
         if (!t || !t.data) return new Float32Array(0);
+        if (t.type !== 'float32') {
+          throw new InferenceError(`[TimesFM Web] Expected float32 tensor, got ${t.type}`);
+        }
         return new Float32Array(t.data as Float32Array);
       };
 

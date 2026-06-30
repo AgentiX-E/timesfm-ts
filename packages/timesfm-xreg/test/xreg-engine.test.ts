@@ -6,7 +6,7 @@
  * that exercise TimesFM's forecasting capability meaningfully.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TimesFMModel, createForecastConfig } from '@agentix-e/timesfm-core';
 import { forecastWithCovariates } from '../src/xreg-engine.ts';
 import * as fs from 'fs';
@@ -20,7 +20,7 @@ const MODEL_SEARCH_PATHS = [
   path.join(os.homedir(), '.cache', 'agentix-timesfm-ts'),
 ];
 
-function getModelPath(): string {
+function getModelPath(): string | null {
   const env = process.env.TIMESFM_TEST_MODEL || process.env.TIMESFM_TEST_MODEL_DIR;
   if (env) {
     if (fs.existsSync(env)) return env;
@@ -35,16 +35,21 @@ function getModelPath(): string {
       if (fs.existsSync(candidate)) return candidate;
     }
   }
-  throw new Error(
-    `Model not found. Set TIMESFM_TEST_MODEL. Searched: ${MODEL_SEARCH_PATHS.join(', ')}`,
-  );
+  return null;
 }
 
+const MODEL_PATH = getModelPath();
+
 describe('forecastWithCovariates', () => {
+  if (!MODEL_PATH) {
+    it.skip('all covariate tests require ONNX model — skipping', () => {});
+    return;
+  }
+
   let model: TimesFMModel;
 
   beforeAll(async () => {
-    model = await TimesFMModel.fromPretrained({ modelPath: getModelPath() });
+    model = await TimesFMModel.fromPretrained({ modelPath: MODEL_PATH });
     model.compile(
       createForecastConfig({
         maxContext: 128,

@@ -101,6 +101,12 @@ export function parseCSVData(filePath: string, dateCol: string, valueCols?: stri
   return { dates, series };
 }
 
+/**
+ * Remove trailing NaN values from a Float32Array.
+ *
+ * Export is kept for backward compatibility. Internally delegates
+ * to @agentix-e/timesfm-core's stripTrailingNaNs for consistency.
+ */
 export function removeTrailingNaN(arr: Float32Array): Float32Array {
   let end = arr.length;
   while (end > 0 && Number.isNaN(arr[end - 1])) end--;
@@ -124,40 +130,43 @@ export async function csvForecast(options: CSVForecastOptions): Promise<void> {
     modelPath: options.modelPath,
   });
 
-  // Compile
-  const fc = createForecastConfig({
-    maxContext: options.maxContext,
-    maxHorizon: options.horizon,
-    normalizeInputs: options.normalizeInputs,
-    forceFlipInvariance: options.forceFlipInvariance,
-    inferIsPositive: options.inferIsPositive,
-    fixQuantileCrossing: options.fixQuantileCrossing,
-    useContinuousQuantileHead: options.useContinuousQuantileHead,
-  });
+  try {
+    // Compile
+    const fc = createForecastConfig({
+      maxContext: options.maxContext,
+      maxHorizon: options.horizon,
+      normalizeInputs: options.normalizeInputs,
+      forceFlipInvariance: options.forceFlipInvariance,
+      inferIsPositive: options.inferIsPositive,
+      fixQuantileCrossing: options.fixQuantileCrossing,
+      useContinuousQuantileHead: options.useContinuousQuantileHead,
+    });
 
-  model.compile(fc);
-  log.info(`Compiled model with maxContext=${fc.maxContext}, maxHorizon=${fc.maxHorizon}`);
+    model.compile(fc);
+    log.info(`Compiled model with maxContext=${fc.maxContext}, maxHorizon=${fc.maxHorizon}`);
 
-  // Forecast
-  const inputList: Float32Array[] = [];
-  const seriesNames: string[] = [];
+    // Forecast
+    const inputList: Float32Array[] = [];
+    const seriesNames: string[] = [];
 
-  for (const [name, data] of series) {
-    inputList.push(data);
-    seriesNames.push(name);
+    for (const [name, data] of series) {
+      inputList.push(data);
+      seriesNames.push(name);
+    }
+
+    log.info(`Forecasting ${inputList.length} series for ${options.horizon} steps...`);
+    const result = await model.forecast(options.horizon, inputList);
+
+    // Output
+    if (options.outputFormat === 'json') {
+      outputJSON(result, seriesNames, options, log);
+    } else {
+      outputCSV(result, seriesNames, options, log);
+    }
+  } finally {
+    await model.dispose();
   }
 
-  log.info(`Forecasting ${inputList.length} series for ${options.horizon} steps...`);
-  const result = await model.forecast(options.horizon, inputList);
-
-  // Output
-  if (options.outputFormat === 'json') {
-    outputJSON(result, seriesNames, options, log);
-  } else {
-    outputCSV(result, seriesNames, options, log);
-  }
-
-  await model.dispose();
   log.info('Done.');
 }
 

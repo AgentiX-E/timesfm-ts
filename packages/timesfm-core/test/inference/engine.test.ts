@@ -65,11 +65,14 @@ function generateZeroInput(numPatches: number): { input: Float32Array; mask: Uin
   };
 }
 
-// ---------------------------------------------------------------------------
-// TimesFMInferenceEngine
-// ---------------------------------------------------------------------------
+if (!MODEL_PATH) {
+  console.warn('[engine.test] ONNX model not found — all engine tests will be skipped.');
+}
 
-describe('TimesFMInferenceEngine', () => {
+// Use conditional describe to skip when model is absent (maintains CI/local parity)
+const engineDescribe = MODEL_PATH ? describe : describe.skip;
+
+engineDescribe('TimesFMInferenceEngine', () => {
   let engine: TimesFMInferenceEngine;
 
   beforeAll(async () => {

@@ -12,7 +12,13 @@
 
 import { Matrix, solve } from 'ml-matrix';
 import { OneHotEncoder, type Category } from './one-hot-encoder';
-import type { TimesFMModel, ForecastOutput } from '@agentix-e/timesfm-core';
+import {
+  CovariateError,
+  ModelNotCompiledError,
+  ConfigValidationError,
+  type TimesFMModel,
+  type ForecastOutput,
+} from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -282,7 +288,7 @@ function ridgeRegression(
   } catch {
     // Singular matrix fallback: increase ridge penalty with recursion guard
     if (ridge >= 100) {
-      throw new Error(
+      throw new CovariateError(
         `Ridge regression failed: matrix remains singular after increasing ridge to ${ridge}. ` +
           `Check for multicollinear or constant covariates.`,
       );
@@ -357,21 +363,21 @@ export async function forecastWithCovariates(
   params: CovariateForecastParams,
 ): Promise<CovariateForecastOutput> {
   const fc = model.forecastConfig;
-  if (!fc) throw new Error('Model not compiled. Call compile() first.');
+  if (!fc) throw new ModelNotCompiledError('Model not compiled. Call compile() first.');
 
   const xregMode: XRegMode = params.xregMode ?? 'xreg + timesfm';
   const ridge = params.ridge ?? 0;
   const numSeries = params.inputs.length;
 
   if (numSeries === 0) {
-    throw new Error('At least one input series is required.');
+    throw new CovariateError('At least one input series is required.');
   }
 
   // Validate covariate array lengths match inputs
   if (params.dynamicNumericalCovariates) {
     for (const [name, covs] of Object.entries(params.dynamicNumericalCovariates)) {
       if (covs.length !== numSeries) {
-        throw new Error(
+        throw new CovariateError(
           `Dynamic numerical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
       }
@@ -380,7 +386,7 @@ export async function forecastWithCovariates(
   if (params.dynamicCategoricalCovariates) {
     for (const [name, covs] of Object.entries(params.dynamicCategoricalCovariates)) {
       if (covs.length !== numSeries) {
-        throw new Error(
+        throw new CovariateError(
           `Dynamic categorical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
       }
@@ -389,7 +395,7 @@ export async function forecastWithCovariates(
   if (params.staticNumericalCovariates) {
     for (const [name, covs] of Object.entries(params.staticNumericalCovariates)) {
       if (covs.length !== numSeries) {
-        throw new Error(
+        throw new CovariateError(
           `Static numerical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
       }
@@ -398,7 +404,7 @@ export async function forecastWithCovariates(
   if (params.staticCategoricalCovariates) {
     for (const [name, covs] of Object.entries(params.staticCategoricalCovariates)) {
       if (covs.length !== numSeries) {
-        throw new Error(
+        throw new CovariateError(
           `Static categorical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
       }
@@ -411,7 +417,7 @@ export async function forecastWithCovariates(
     for (let s = 0; s < series.length; s++) {
       for (let i = 0; i < series[s].length; i++) {
         if (!Number.isFinite(series[s][i])) {
-          throw new Error(
+          throw new CovariateError(
             `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s][i]} (must be finite). ` +
               `Clean data before calling forecastXReg().`,
           );
@@ -423,7 +429,7 @@ export async function forecastWithCovariates(
   function validateDim1Finiteness(covName: string, covType: string, series: number[]): void {
     for (let s = 0; s < series.length; s++) {
       if (!Number.isFinite(series[s])) {
-        throw new Error(
+        throw new CovariateError(
           `${covType} covariate "${covName}"[${s}] = ${series[s]} (must be finite). ` +
             `Clean data before calling forecastXReg().`,
         );
@@ -594,7 +600,7 @@ export async function forecastWithCovariates(
     const residuals: Float32Array[] = [];
     const backcasts = tsResult.backcast;
     if (!backcasts) {
-      throw new Error(
+      throw new ConfigValidationError(
         'timesfm + xreg mode requires backcast. Ensure the model was compiled with returnBackcast=true.',
       );
     }

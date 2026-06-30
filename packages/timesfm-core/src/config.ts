@@ -34,6 +34,14 @@ export function validateAndNormalizeConfig(
   // --- Copy to avoid mutating the caller's object. ---
   let { maxContext, maxHorizon } = fc;
 
+  // --- Ensure sane defaults (must run before validation & rounding) ---
+  if (maxContext <= 0) {
+    maxContext = mc.inputPatchLen;
+  }
+  if (maxHorizon <= 0) {
+    maxHorizon = mc.outputPatchLen;
+  }
+
   // --- Round context to patch boundary ---
   if (maxContext % mc.inputPatchLen !== 0) {
     maxContext = Math.ceil(maxContext / mc.inputPatchLen) * mc.inputPatchLen;
@@ -42,6 +50,12 @@ export function validateAndNormalizeConfig(
   // --- Round horizon to output-patch boundary ---
   if (maxHorizon % mc.outputPatchLen !== 0) {
     maxHorizon = Math.ceil(maxHorizon / mc.outputPatchLen) * mc.outputPatchLen;
+  }
+
+  // --- Validate perCoreBatchSize ---
+  // 0 or negative would cause division by zero or NaN in model.forecast()
+  if (fc.perCoreBatchSize < 1) {
+    throw new ConfigValidationError(`perCoreBatchSize must be ≥ 1, got ${fc.perCoreBatchSize}.`);
   }
 
   // --- Hard limits ---
@@ -57,14 +71,6 @@ export function validateAndNormalizeConfig(
     throw new ConfigValidationError(
       `Continuous quantile head requires maxHorizon ≤ ${mc.outputQuantileLen}, got ${maxHorizon}.`,
     );
-  }
-
-  // --- Ensure sane defaults ---
-  if (maxContext <= 0) {
-    maxContext = mc.inputPatchLen;
-  }
-  if (maxHorizon <= 0) {
-    maxHorizon = mc.outputPatchLen;
   }
 
   return {
