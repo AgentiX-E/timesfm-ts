@@ -136,7 +136,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
         ]),
       };
       await session.run(feeds);
-    /* v8 ignore next 3 — warmup failure only triggers on broken ONNX Runtime installs */
+      /* v8 ignore next 3 — warmup failure only triggers on broken ONNX Runtime installs */
     } catch {
       // Warmup failure is non-fatal — first real inference will handle it
     }
