@@ -8,7 +8,7 @@ cd timesfm-ts
 pnpm install && pnpm build
 ```
 
-**Prerequisites**: Node.js ≥ 20.x, pnpm ≥ 10.x
+**Prerequisites**: Node.js ≥ 22.x, pnpm ≥ 10.x
 
 ## Project Structure
 

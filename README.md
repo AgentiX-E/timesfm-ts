@@ -8,7 +8,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-report-blue)](https://agentix-e.github.io/timesfm-ts/coverage/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-green)](https://nodejs.org/)
 
 ## Overview
 
@@ -223,7 +223,7 @@ pnpm run check:latest
 | Component             | Minimum                 | Recommended                        |
 | --------------------- | ----------------------- | ---------------------------------- |
 | **OS**                | Linux / macOS / Windows | Linux (production)                 |
-| **Node.js**           | ≥ 20.x                  | ≥ 22.x                             |
+| **Node.js**           | ≥ 22.x                  | ≥ 22.x                             |
 | **RAM**               | 4 GB                    | 8 GB+                              |
 | **Disk (code)**       | 10 MB                   | —                                  |
 | **Disk (model)**      | 1 GB                    | SSD                                |
@@ -234,9 +234,9 @@ pnpm run check:latest
 
 | Usage method                          | Requires pre-install                                                  |
 | ------------------------------------- | --------------------------------------------------------------------- |
-| **npm install + auto model download** | Node.js ≥ 20 only                                                     |
+| **npm install + auto model download** | Node.js ≥ 22 only                                                     |
 | **Export model from HuggingFace**     | Python ≥ 3.10 + `pip install "timesfm[torch]" onnx onnxruntime torch` |
-| **Build from source**                 | Node.js ≥ 20 + pnpm                                                   |
+| **Build from source**                 | Node.js ≥ 22 + pnpm                                                   |
 
 > `onnxruntime-node` includes prebuilt C++ native modules, supports Linux x64 / arm64, macOS x64 / arm64 (Apple Silicon), Windows x64. **No additional system packages required**.
 

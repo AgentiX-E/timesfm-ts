@@ -23,7 +23,7 @@ Raw Series → [NaN Handler] → [Pad/Truncate] → [Patch Split] → [RevIN Nor
 npm install @agentix-e/timesfm-core
 ```
 
-Requires Node.js ≥ 20.
+Requires Node.js ≥ 22.
 
 ## Quick Start
 
