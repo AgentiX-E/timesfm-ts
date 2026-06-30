@@ -88,16 +88,13 @@ export default defineConfig({
         'packages/*/src/index.ts', // barrel re-exports only — no runtime logic
         'packages/timesfm-cli/src/cli.ts', // Commander entry point (stdio); tested via CLI smoke tests
         // ── Code paths that cannot reach ≥95% in CI due to hardware/environment constraints ──
-        // Every excluded file is exercised by real-model integration tests.  The exclusion
-        // is purely a CI coverage counting constraint, not a test gap.  Each file is verified:
-        //
-        //   • onnx-engine.ts → CPU path fully tested; CUDA/DML branches require physical GPU
+        //   • onnx-engine.ts → CPU path fully tested; CUDA/DML branches excluded via per-line v8 ignore
         //     (covered by local developer testing on GPU-equipped machines)
         //   • model-downloader.ts → cache helpers, proxy resolution, SHA-256 logic tested;
-        //     fetch() + streaming + zip extraction require GitHub Releases network access
+        //     fetch() + streaming + zip extraction paths use /* v8 ignore */ pragmas
         //     (exercised by model-release.yml validate job)
         //   • xreg-engine.ts → all Ridge regression, design matrix, OneHot encoding tested;
-        //     dynamic import failure paths cannot be triggered in CI
+        //     dynamic import failure paths excluded via per-line v8 ignore
         //     (exercised by local integration tests with the real 885 MB ONNX model)
         //   • hierarchical.ts → all reconciliation strategies, summing matrix tested;
         //     node-level batch forecasting paths exercised with real model in CI integration tests
@@ -105,10 +102,6 @@ export default defineConfig({
         //     onnxruntime-web in a headless CI node is not supported
         //     (verified by web-benchmark CI job with real model)
         //   • types/ files → pure type definitions with zero runtime code
-        'packages/timesfm-core/src/inference/onnx-engine.ts',
-        'packages/timesfm-core/src/model-downloader.ts',
-        'packages/timesfm-xreg/src/xreg-engine.ts',
-        'packages/timesfm-hierarchical/src/hierarchical.ts',
         'packages/timesfm-web/src/**',
         'packages/timesfm-core/src/types/',
         'packages/timesfm-hierarchical/src/types.ts',

@@ -15,8 +15,13 @@ pnpm lint || exit 1
 # Ensures no formatting drift between local edits and CI.
 pnpm format:check || exit 1
 
+# Build before running tests — ensures TypeScript project references are
+# compiled and vitest can resolve cross-package aliases consistently.
+# Mirrors the separate build job in CI.
+pnpm build || exit 1
+
 # Local coverage quality gate — mirrors CI unit-test job exactly.
-# 1. Build + run unit tests with ≥95% coverage thresholds (vitest.unit.config.ts)
+# 1. Run unit tests with ≥95% coverage thresholds (vitest.unit.config.ts)
 # 2. Explicit coverage verification via ci-coverage-check.js (same script CI uses)
 pnpm test:unit:coverage || exit 1
 node scripts/ci-coverage-check.js --tier unit --verbose || exit 1
