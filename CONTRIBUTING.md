@@ -129,8 +129,14 @@ pnpm check:latest
 # Validate existing models
 pnpm check:model
 
-# Run inference benchmarks
+# Run inference benchmarks (results in benchmark-report.{json,md,html})
 pnpm benchmark
+
+# View benchmark results
+cat benchmark-report.md
+
+# Run with custom iterations (default 10)
+BENCH_ITERATIONS=5 pnpm benchmark
 ```
 
 ## Commit Convention

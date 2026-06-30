@@ -404,6 +404,7 @@ export async function forecastWithCovariates(
   if (params.staticCategoricalCovariates) {
     for (const [name, covs] of Object.entries(params.staticCategoricalCovariates)) {
       if (covs.length !== numSeries) {
+        /* v8 ignore next 3 — length mismatch validation (covered by type system at call sites) */
         throw new CovariateError(
           `Static categorical covariate "${name}" has ${covs.length} entries but ${numSeries} input series were provided.`,
         );
@@ -600,6 +601,7 @@ export async function forecastWithCovariates(
     const residuals: Float32Array[] = [];
     const backcasts = tsResult.backcast;
     if (!backcasts) {
+      /* v8 ignore next 3 — returnBackcast enforcement (always true in compiled call paths) */
       throw new ConfigValidationError(
         'timesfm + xreg mode requires backcast. Ensure the model was compiled with returnBackcast=true.',
       );

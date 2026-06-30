@@ -7,7 +7,8 @@
       "@agentix-e/timesfm-core",
       "@agentix-e/timesfm-xreg",
       "@agentix-e/timesfm-cli",
-      "@agentix-e/timesfm-web"
+      "@agentix-e/timesfm-web",
+      "@agentix-e/timesfm-hierarchical"
     ]
   ],
   "linked": [],

@@ -54,7 +54,7 @@ jobs:
       - run: pnpm config set approve-builds true 2>/dev/null || true
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm vitest run --config vitest.unit.config.ts --coverage
+      - run: pnpm test:unit:coverage
       - name: Generate coverage summary for CI
         if: always()
         run: |
@@ -152,6 +152,8 @@ jobs:
     needs: [integration-test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
@@ -178,7 +180,7 @@ jobs:
             --json benchmark-report.json \
             --md benchmark-report.md \
             --html benchmark-report.html \
-            --baseline benchmarks/baseline.json
+            --baseline benchmarks/baseline.json${{ github.event_name == 'schedule' && ' --save-baseline benchmarks/baseline.json' || '' }}
         timeout-minutes: 10
         env:
           TIMESFM_MODEL_PATH: models/timesfm-2.5.onnx
@@ -193,6 +195,19 @@ jobs:
 
       - name: Accuracy Gate
         run: node scripts/ci-benchmark-check.js --verbose
+
+      - name: Commit updated baseline (scheduled runs)
+        if: github.event_name == 'schedule'
+        run: |
+          if git diff --quiet benchmarks/baseline.json; then
+            echo "No baseline changes."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add benchmarks/baseline.json
+            git commit -m "chore: update performance baseline [skip ci]"
+            git push origin HEAD:master
+          fi
 
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v7
@@ -248,6 +263,9 @@ jobs:
           echo "| Context | Avg Latency (ms) | Throughput (seq/s) |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|------------------|---------------------|" >> $GITHUB_STEP_SUMMARY
           node -e "const r=require('./web-benchmark-report.json');r.latency.forEach(l=>console.log('| '+l.context+' | '+l.avg_ms+' | '+l.throughput_seq_s+' |'))" >> $GITHUB_STEP_SUMMARY
+
+      - name: Web Accuracy Gate
+        run: node scripts/ci-benchmark-check.js --report web-benchmark-report.json --verbose
 
       - name: Upload web benchmark artifact
         uses: actions/upload-artifact@v7

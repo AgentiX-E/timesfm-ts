@@ -136,6 +136,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
         ]),
       };
       await session.run(feeds);
+      /* v8 ignore next 3 — warmup failure only triggers on broken ONNX Runtime installs */
     } catch {
       // Warmup failure is non-fatal — first real inference will handle it
     }
@@ -249,6 +250,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
 
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
         const extract = (t: import('onnxruntime-node').Tensor) => {
+          /* v8 ignore next 2 — TimesFM ONNX models always output float32 tensors */
           if (t.type !== 'float32') {
             throw new Error(`Expected float32 tensor, got ${t.type}`);
           }

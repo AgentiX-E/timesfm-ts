@@ -51,6 +51,7 @@ const skipAccuracy = !!process.env.BENCH_SKIP_ACCURACY;
 const checkRegressionOnly = hasArg('--check-regression');
 const baselinePath = getArgValue('--baseline');
 const currentPath = getArgValue('--current');
+const saveBaselinePath = getArgValue('--save-baseline');
 const regressionThreshold = parseInt(getArgValue('--regression-threshold') || '10', 10);
 
 // Batch sizes (comma-separated or default)
@@ -1067,6 +1068,23 @@ async function main() {
     const html = generateHtmlReport(report, regression);
     fs.writeFileSync(htmlPath, html);
     console.log(`  ✅ HTML report written: ${htmlPath}`);
+  }
+
+  // ── Save baseline (if requested) ───────────────────────────────────────────
+  if (saveBaselinePath) {
+    const baseline = {
+      model: 'timesfm-2.5-200m',
+      precision: 'fp32',
+      created: new Date().toISOString(),
+      description: 'Performance baseline for regression detection. Updated by scheduled CI.',
+      timestamp: new Date().toISOString(),
+      git_sha: report.system.git_sha,
+      latency: report.latency,
+    };
+    fs.writeFileSync(saveBaselinePath, JSON.stringify(baseline, null, 2));
+    console.log(
+      `  ✅ Baseline saved: ${saveBaselinePath} (${report.latency.length} latency entries)`,
+    );
   }
 
   // ── Exit with regression status if applicable ──────────────────────────────

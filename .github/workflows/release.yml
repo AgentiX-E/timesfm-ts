@@ -197,6 +197,9 @@ jobs:
             web-benchmark-report.html
           retention-days: 7
 
+      - name: Web Accuracy Gate
+        run: node scripts/ci-benchmark-check.js --report web-benchmark-report.json --verbose
+
   # ═══════════════════════════════════════════════════════════════════════════
   # Stage 4 — Publish npm Packages (OIDC)
   # ═══════════════════════════════════════════════════════════════════════════
@@ -245,7 +248,7 @@ jobs:
   # Stage 5 — Deploy Documentation to GitHub Pages
   # ═══════════════════════════════════════════════════════════════════════════
   deploy-pages:
-    needs: [quality, benchmark, web-benchmark, publish-npm]
+    needs: [quality, benchmark, web-benchmark]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
