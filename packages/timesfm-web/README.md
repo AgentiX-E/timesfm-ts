@@ -50,7 +50,11 @@ const model = await TimesFMModel.fromPretrained({
 
 // 4. Compile and forecast
 model.compile(createForecastConfig({ maxContext: 1024, maxHorizon: 256 }));
-const result = await model.forecast(24, [new Float32Array([/* historical values */])]);
+const result = await model.forecast(24, [
+  new Float32Array([
+    /* historical values */
+  ]),
+]);
 
 console.log(result.pointForecast); // Shape: [1, 24]
 console.log(result.quantileForecast); // Shape: [1, 10, 24]

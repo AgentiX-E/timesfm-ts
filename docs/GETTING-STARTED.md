@@ -350,7 +350,11 @@ const result = await forecastWithCovariates(model, {
   },
   // Dynamic categorical covariates
   dynamicCategoricalCovariates: {
-    dayOfWeek: [[/* length = context+H */]],
+    dayOfWeek: [
+      [
+        /* length = context+H */
+      ],
+    ],
   },
   // Static covariates — one value per series
   staticCategoricalCovariates: {
