@@ -13,6 +13,7 @@
  */
 
 import type { HierarchyDefinition, HierarchyNode } from './types';
+import { HierarchyValidationError } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
 // Result types
@@ -65,7 +66,7 @@ interface ValidationNode {
  */
 function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string, ValidationNode> {
   if (nodes.length === 0) {
-    throw new Error('Hierarchy must contain at least one node.');
+    throw new HierarchyValidationError('Hierarchy must contain at least one node.');
   }
 
   const map = new Map<string, ValidationNode>();
@@ -74,7 +75,7 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
   // First pass: collect ids & check uniqueness
   for (const n of nodes) {
     if (ids.has(n.id)) {
-      throw new Error(`Duplicate node id: "${n.id}"`);
+      throw new HierarchyValidationError(`Duplicate node id: "${n.id}"`);
     }
     ids.add(n.id);
     map.set(n.id, { id: n.id, parentId: n.parentId, children: [], depth: -1 });
@@ -87,7 +88,7 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
       roots.push(n.id);
     } else {
       if (!ids.has(n.parentId)) {
-        throw new Error(
+        throw new HierarchyValidationError(
           `Node "${n.id}" references unknown parent "${n.parentId}". ` +
             `All parent ids must exist in the hierarchy.`,
         );
@@ -98,10 +99,12 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
   }
 
   if (roots.length === 0) {
-    throw new Error('No root node found — at least one node must have parentId=null.');
+    throw new HierarchyValidationError(
+      'No root node found — at least one node must have parentId=null.',
+    );
   }
   if (roots.length > 1) {
-    throw new Error(
+    throw new HierarchyValidationError(
       `Multiple root nodes found: ${roots.join(', ')}. A hierarchy must have exactly one root (parentId=null).`,
     );
   }
@@ -113,7 +116,10 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
   while (queue.length > 0) {
     const id = queue.shift() as string;
     if (visited.has(id)) {
-      throw new Error(`Cycle detected in hierarchy — node "${id}" reached via multiple paths.`);
+      throw new HierarchyValidationError(
+        `Cycle detected in hierarchy — node "${id}" encountered again in BFS traversal. ` +
+          `Ensure the hierarchy is a strict tree (no circular parent references).`,
+      );
     }
     visited.add(id);
     const vn = mustGet(map, id, 'node');
@@ -124,7 +130,7 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
 
   if (visited.size !== nodes.length) {
     const unreachable = [...ids].filter((id) => !visited.has(id));
-    throw new Error(
+    throw new HierarchyValidationError(
       `Unreachable nodes detected: ${unreachable.join(', ')}. ` +
         `All nodes must be descendants of the root.`,
     );
@@ -146,7 +152,9 @@ function validateAndBuildAdjacency(nodes: readonly HierarchyNode[]): Map<string,
   // Check for at least one leaf
   const leaves = [...map.values()].filter((vn) => vn.children.length === 0);
   if (leaves.length === 0) {
-    throw new Error('Hierarchy must have at least one bottom-level node (leaf).');
+    throw new HierarchyValidationError(
+      'Hierarchy must have at least one bottom-level node (leaf).',
+    );
   }
 
   return map;

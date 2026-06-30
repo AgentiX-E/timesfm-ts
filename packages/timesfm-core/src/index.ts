@@ -18,6 +18,8 @@ export {
   ProxyAuthError,
   ChecksumMismatchError,
   InferenceError,
+  HierarchyValidationError,
+  CovariateError,
 } from './errors';
 
 // ---- Public API ----

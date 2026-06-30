@@ -45,7 +45,11 @@
  * @module hierarchical
  */
 
-import type { TimesFMModel, ForecastOutput } from '@agentix-e/timesfm-core';
+import {
+  HierarchyValidationError,
+  type TimesFMModel,
+  type ForecastOutput,
+} from '@agentix-e/timesfm-core';
 import type { HierarchicalForecastOutput, HierarchicalForecastParams } from './types';
 import { buildSummingMatrix } from './summing-matrix';
 import { reconcileBaseForecasts } from './reconciliation';
@@ -86,7 +90,7 @@ export async function reconcileForecast(
   // 2. Validate all nodes have input series
   for (const id of allNodeIds) {
     if (!inputs[id]) {
-      throw new Error(
+      throw new HierarchyValidationError(
         `Node "${id}" is missing from the inputs map. ` +
           `All ${allNodeIds.length} nodes in the hierarchy must have input data.`,
       );

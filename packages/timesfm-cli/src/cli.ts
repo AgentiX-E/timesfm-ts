@@ -88,7 +88,8 @@ program
   });
 
 // ─── setup — download model ────────────────────────────────────────────────
-
+// Tracks the most recent download path for cross-command convenience.
+// CLI invocations are single-process, so this is safe.
 let _lastSetupPath: string | null = null;
 
 program

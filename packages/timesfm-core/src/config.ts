@@ -52,6 +52,12 @@ export function validateAndNormalizeConfig(
     maxHorizon = Math.ceil(maxHorizon / mc.outputPatchLen) * mc.outputPatchLen;
   }
 
+  // --- Validate perCoreBatchSize ---
+  // 0 or negative would cause division by zero or NaN in model.forecast()
+  if (fc.perCoreBatchSize < 1) {
+    throw new ConfigValidationError(`perCoreBatchSize must be ≥ 1, got ${fc.perCoreBatchSize}.`);
+  }
+
   // --- Hard limits ---
   if (maxContext + maxHorizon > mc.contextLimit) {
     throw new ConfigValidationError(

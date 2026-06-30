@@ -42,7 +42,12 @@
  * @module web-engine
  */
 
-import type { ModelConfig, IInferenceEngine, RawModelOutput } from '@agentix-e/timesfm-core';
+import {
+  InferenceError,
+  type ModelConfig,
+  type IInferenceEngine,
+  type RawModelOutput,
+} from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
 // Logger interface
@@ -204,12 +209,8 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
           enableMemPattern: true,
         };
 
-        // Accept both URL string and ArrayBuffer
-        if (typeof modelPath === 'string') {
-          this._session = await ort.InferenceSession.create(modelPath, sessionOptions);
-        } else {
-          this._session = await ort.InferenceSession.create(modelPath, sessionOptions);
-        }
+        // Accept both URL string and ArrayBuffer / Uint8Array
+        this._session = await ort.InferenceSession.create(modelPath as string, sessionOptions);
 
         this._logger.info(`[TimesFM Web] Loaded model with ${provider} provider`, { provider });
         this._loaded = true;
@@ -229,7 +230,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       providers: this._providers,
       lastError: lastError?.message,
     });
-    throw new Error(errorMsg);
+    throw new InferenceError(errorMsg);
   }
 
   // -----------------------------------------------------------------------
@@ -249,7 +250,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
    */
   async forward(inputs: Float32Array[], masks: Uint8Array[]): Promise<RawModelOutput> {
     if (!this._session || !this._ortModule) {
-      throw new Error('[TimesFM Web] Engine not loaded. Call load() first.');
+      throw new InferenceError('[TimesFM Web] Engine not loaded. Call load() first.');
     }
 
     const ort = this._ortModule;
@@ -320,6 +321,9 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       // eslint-disable-next-line @typescript-eslint/consistent-type-imports
       const extract = (t: import('onnxruntime-web').Tensor | undefined): Float32Array => {
         if (!t || !t.data) return new Float32Array(0);
+        if (t.type !== 'float32') {
+          throw new InferenceError(`[TimesFM Web] Expected float32 tensor, got ${t.type}`);
+        }
         return new Float32Array(t.data as Float32Array);
       };
 

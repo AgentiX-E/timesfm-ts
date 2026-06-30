@@ -107,3 +107,23 @@ export class InferenceError extends TimesFMError {
     this.name = 'InferenceError';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Hierarchical reconciliation
+// ---------------------------------------------------------------------------
+
+/** Hierarchy definition validation failure (orphan nodes, cycles, etc.). */
+export class HierarchyValidationError extends TimesFMError {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'HierarchyValidationError';
+  }
+}
+
+/** Covariate / regression engine error. */
+export class CovariateError extends TimesFMError {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'CovariateError';
+  }
+}

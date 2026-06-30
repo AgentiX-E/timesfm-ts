@@ -248,8 +248,12 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
         const sessionResults = await session.run(feeds);
 
         // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-        const extract = (t: import('onnxruntime-node').Tensor) =>
-          new Float32Array(t.data as Float32Array);
+        const extract = (t: import('onnxruntime-node').Tensor) => {
+          if (t.type !== 'float32') {
+            throw new Error(`Expected float32 tensor, got ${t.type}`);
+          }
+          return new Float32Array(t.data as Float32Array);
+        };
 
         return {
           inputEmb: extract(sessionResults[resolveOutputName('input_emb')]),

@@ -16,6 +16,7 @@
 import { Matrix, solve } from 'ml-matrix';
 import type { ReconciliationStrategy, ReconcileOptions, BaseForecasts } from './types';
 import type { SummingMatrixResult } from './summing-matrix';
+import { HierarchyValidationError, ConfigValidationError } from '@agentix-e/timesfm-core';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,7 +63,7 @@ function solveWithRidge(A: Matrix, b: Matrix, ridge: number, maxRidge = 100): Ma
     return solve(Aug, b);
   } catch {
     if (ridge >= maxRidge) {
-      throw new Error(
+      throw new HierarchyValidationError(
         `Reconciliation failed: matrix remains singular after increasing ridge to ${ridge}. ` +
           `Check for degenerate hierarchy or constant base forecasts.`,
       );
@@ -204,7 +205,7 @@ export function computeProjectionMatrix(
 
     default: {
       const exhaustive: never = strategy;
-      throw new Error(`Unknown reconciliation strategy: ${exhaustive}`);
+      throw new ConfigValidationError(`Unknown reconciliation strategy: ${exhaustive}`);
     }
   }
 }
@@ -243,7 +244,7 @@ export function reconcileBaseForecasts(
   for (const id of allNodeIds) {
     const bf = baseForecasts[id];
     if (!bf || bf.length !== horizon) {
-      throw new Error(
+      throw new HierarchyValidationError(
         `Node "${id}" is missing from baseForecasts or has mismatched horizon length.`,
       );
     }
@@ -274,18 +275,28 @@ export function reconcileBaseForecasts(
     for (let i = 0; i < m; i++) {
       const bf = baseForecasts[allNodeIds[i]];
       let sum = 0,
-        sumSq = 0,
         count = 0;
       for (let h = 0; h < bf.length; h++) {
         const v = bf[h];
         if (Number.isFinite(v)) {
           sum += v;
-          sumSq += v * v;
           count++;
         }
       }
       const mu = count > 0 ? sum / count : 0;
-      const variance = count > 1 ? Math.max((sumSq - count * mu * mu) / (count - 1), 1e-12) : 1e-12;
+      // Two-pass variance (numerically stable, avoids catastrophic cancellation)
+      let variance = 1e-12;
+      if (count > 1) {
+        let sqDiff = 0;
+        for (let h = 0; h < bf.length; h++) {
+          const v = bf[h];
+          if (Number.isFinite(v)) {
+            const d = v - mu;
+            sqDiff += d * d;
+          }
+        }
+        variance = Math.max(sqDiff / (count - 1), 1e-12);
+      }
       diagVals[i] = variance;
     }
     effectiveCov = diagFromArray(diagVals);

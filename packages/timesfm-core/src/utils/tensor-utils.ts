@@ -124,6 +124,11 @@ export function stack(arrays: Float32Array[]): Float32Array {
   const colLen = arrays[0].length;
   const result = new Float32Array(arrays.length * colLen);
   for (let i = 0; i < arrays.length; i++) {
+    if (arrays[i].length !== colLen) {
+      throw new RangeError(
+        `stack: all arrays must have the same length (expected ${colLen}, got ${arrays[i].length} at index ${i})`,
+      );
+    }
     result.set(arrays[i], i * colLen);
   }
   return result;
