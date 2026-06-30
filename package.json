@@ -1,5 +1,5 @@
 {
-  "name": "agentix-timesfm-ts",
+  "name": "timesfm-ts",
   "version": "0.3.1",
   "private": true,
   "description": "Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting",
@@ -43,7 +43,7 @@
     "precommit": "pnpm lint && pnpm format:check",
     "docs:generate": "typedoc",
     "publish:all": "pnpm -r --filter './packages/*' publish --access public",
-    "release": "node scripts/pipeline.js && gh release create v$(node -p \"require('./package.json').version\") models/timesfm-2.5.onnx --title \"TimesFM 2.5 200M ONNX\" --notes \"Pre-exported TimesFM 2.5 200M ONNX model for agentix-timesfm-ts.\"",
+    "release": "node scripts/pipeline.js && gh release create v$(node -p \"require('./package.json').version\") models/timesfm-2.5.onnx --title \"TimesFM 2.5 200M ONNX\" --notes \"Pre-exported TimesFM 2.5 200M ONNX model for timesfm-ts.\"",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -86,7 +86,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/AgentiX-E/agentix-timesfm-ts"
+    "url": "https://github.com/AgentiX-E/timesfm-ts"
   },
   "keywords": [
     "timesfm",

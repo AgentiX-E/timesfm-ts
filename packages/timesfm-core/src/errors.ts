@@ -1,5 +1,5 @@
 /**
- * Typed error hierarchy for agentix-timesfm-ts.
+ * Typed error hierarchy for timesfm-ts.
  *
  * All project errors extend `TimesFMError` so callers can catch them
  * with a single `instanceof` check.  Each subclass carries structured

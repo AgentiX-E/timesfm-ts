@@ -1,18 +1,18 @@
-# agentix-timesfm-ts
+# timesfm-ts
 
 > Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting.
 
-[![CI](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentiX-E/agentix-timesfm-ts/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/)
-[![Benchmark Report](https://img.shields.io/badge/benchmark-latest-blue)](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)
-[![Coverage](https://img.shields.io/badge/coverage-report-blue)](https://agentix-e.github.io/agentix-timesfm-ts/coverage/)
+[![CI](https://github.com/AgentiX-E/timesfm-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentiX-E/timesfm-ts/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/)
+[![Benchmark Report](https://img.shields.io/badge/benchmark-latest-blue)](https://agentix-e.github.io/timesfm-ts/benchmark/)
+[![Coverage](https://img.shields.io/badge/coverage-report-blue)](https://agentix-e.github.io/timesfm-ts/coverage/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green)](https://nodejs.org/)
 
 ## Overview
 
-**agentix-timesfm-ts** brings Google's TimesFM 2.5 (200M parameters, decoder-only transformer) to the Node.js ecosystem. It provides zero-shot time series forecasting — feed it any univariate time series and get point forecasts with calibrated prediction intervals, no training required.
+**timesfm-ts** brings Google's TimesFM 2.5 (200M parameters, decoder-only transformer) to the Node.js ecosystem. It provides zero-shot time series forecasting — feed it any univariate time series and get point forecasts with calibrated prediction intervals, no training required.
 
 ### Architecture
 
@@ -31,7 +31,7 @@ Raw Time Series → [Preprocessor] → [ONNX Runtime] → [Postprocessor] → Fo
 - **Automatic NaN handling** — leading NaN stripped, internal NaN interpolated
 - **Covariate support** — dynamic/static numerical & categorical exogenous variables (XReg)
 - **Production-grade** — built on ONNX Runtime's native C++ backend (CPU, CUDA, DirectML)
-- **Verified accuracy** — Scaled MAE < 1.0 (better than naive baseline), see [latest benchmark](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)
+- **Verified accuracy** — Scaled MAE < 1.0 (better than naive baseline), see [latest benchmark](https://agentix-e.github.io/timesfm-ts/benchmark/)
 
 ## Packages
 
@@ -78,8 +78,8 @@ const { pointForecast, quantileForecast } = await model.forecast(24, [
 ### Option 3 — Build from source + HuggingFace export
 
 ```bash
-git clone https://github.com/AgentiX-E/agentix-timesfm-ts.git
-cd agentix-timesfm-ts && pnpm install && pnpm build
+git clone https://github.com/AgentiX-E/timesfm-ts.git
+cd timesfm-ts && pnpm install && pnpm build
 
 # One-click pipeline
 pnpm run pipeline
@@ -115,7 +115,7 @@ pnpm run pipeline
 ## Project Structure
 
 ```
-agentix-timesfm-ts/
+timesfm-ts/
 ├── packages/
 │   ├── timesfm-core/           # Core inference engine
 │   │   ├── src/
@@ -208,15 +208,15 @@ pnpm run check:latest
 
 ## Documentation & Reports
 
-| Resource          | Description                                                                      | URL                                                                                                          |
-| ----------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 📚 **API Docs**   | Full TypeDoc reference for all packages                                          | [agentix-e.github.io/agentix-timesfm-ts/api/](https://agentix-e.github.io/agentix-timesfm-ts/api/)           |
-| 📊 **Benchmark**  | Inference latency, throughput & accuracy reports (Node.js + WASM)                | [agentix-e.github.io/.../benchmark/](https://agentix-e.github.io/agentix-timesfm-ts/benchmark/)              |
-| 📈 **Coverage**   | Line, branch, function & statement coverage (≥95% on all covered source modules) | [agentix-e.github.io/agentix-timesfm-ts/coverage/](https://agentix-e.github.io/agentix-timesfm-ts/coverage/) |
-| 📦 **npm (core)** | `@agentix-e/timesfm-core`                                                        | [npmjs.com/package/@agentix-e/timesfm-core](https://www.npmjs.com/package/@agentix-e/timesfm-core)           |
-| 📦 **npm (xreg)** | `@agentix-e/timesfm-xreg`                                                        | [npmjs.com/package/@agentix-e/timesfm-xreg](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)           |
-| 📦 **npm (cli)**  | `@agentix-e/timesfm-cli`                                                         | [npmjs.com/package/@agentix-e/timesfm-cli](https://www.npmjs.com/package/@agentix-e/timesfm-cli)             |
-| 📦 **npm (web)**  | `@agentix-e/timesfm-web`                                                         | [npmjs.com/package/@agentix-e/timesfm-web](https://www.npmjs.com/package/@agentix-e/timesfm-web)             |
+| Resource          | Description                                                                      | URL                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 📚 **API Docs**   | Full TypeDoc reference for all packages                                          | [agentix-e.github.io/timesfm-ts/api/](https://agentix-e.github.io/timesfm-ts/api/)                 |
+| 📊 **Benchmark**  | Inference latency, throughput & accuracy reports (Node.js + WASM)                | [agentix-e.github.io/timesfm-ts/benchmark/](https://agentix-e.github.io/timesfm-ts/benchmark/)     |
+| 📈 **Coverage**   | Line, branch, function & statement coverage (≥95% on all covered source modules) | [agentix-e.github.io/timesfm-ts/coverage/](https://agentix-e.github.io/timesfm-ts/coverage/)       |
+| 📦 **npm (core)** | `@agentix-e/timesfm-core`                                                        | [npmjs.com/package/@agentix-e/timesfm-core](https://www.npmjs.com/package/@agentix-e/timesfm-core) |
+| 📦 **npm (xreg)** | `@agentix-e/timesfm-xreg`                                                        | [npmjs.com/package/@agentix-e/timesfm-xreg](https://www.npmjs.com/package/@agentix-e/timesfm-xreg) |
+| 📦 **npm (cli)**  | `@agentix-e/timesfm-cli`                                                         | [npmjs.com/package/@agentix-e/timesfm-cli](https://www.npmjs.com/package/@agentix-e/timesfm-cli)   |
+| 📦 **npm (web)**  | `@agentix-e/timesfm-web`                                                         | [npmjs.com/package/@agentix-e/timesfm-web](https://www.npmjs.com/package/@agentix-e/timesfm-web)   |
 
 ## System Requirements
 
@@ -244,7 +244,7 @@ pnpm run check:latest
 
 ```bash
 # Download model
-timesfm setup                              # Default: ~/.cache/agentix-timesfm-ts/
+timesfm setup                              # Default: ~/.cache/timesfm-ts/
 timesfm setup -o ./models/my-model.onnx    # Custom path
 timesfm setup -f                           # Force re-download
 timesfm setup --precision int8             # Download INT8 quantized model
@@ -292,9 +292,9 @@ This project is open source under [Apache 2.0](LICENSE).
 
 ### License compatibility
 
-| Component               | License             | Description        |
-| ----------------------- | ------------------- | ------------------ |
-| agentix-timesfm-ts code | Apache 2.0          | Fully original     |
-| TimesFM model weights   | Apache 2.0 (Google) | HuggingFace hosted |
-| ONNX Runtime            | MIT (Microsoft)     | npm dependency     |
-| ml-matrix               | MIT                 | npm dependency     |
+| Component             | License             | Description        |
+| --------------------- | ------------------- | ------------------ |
+| timesfm-ts code       | Apache 2.0          | Fully original     |
+| TimesFM model weights | Apache 2.0 (Google) | HuggingFace hosted |
+| ONNX Runtime          | MIT (Microsoft)     | npm dependency     |
+| ml-matrix             | MIT                 | npm dependency     |

@@ -3,7 +3,7 @@
 > Hierarchical time series reconciliation engine — bottom-up, OLS, WLS, and MinT forecast reconciliation.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-hierarchical?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-hierarchical)
-[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-hierarchical.html)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-hierarchical.html)
 
 ## Overview
 
@@ -74,7 +74,7 @@ assertCoherent(result.reconciled.total, result.reconciled.west, result.reconcile
 
 ## API Documentation
 
-📚 **Full API reference**: [agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-hierarchical.html](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-hierarchical.html)
+📚 **Full API reference**: [agentix-e.github.io/timesfm-ts/api/modules/timesfm-hierarchical.html](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-hierarchical.html)
 
 Key exports:
 

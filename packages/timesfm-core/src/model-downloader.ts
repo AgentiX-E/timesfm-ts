@@ -56,7 +56,7 @@ import { DownloadError, ChecksumMismatchError, ProxyAuthError } from './errors';
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
-const REPO = 'AgentiX-E/agentix-timesfm-ts';
+const REPO = 'AgentiX-E/timesfm-ts';
 const DESCRIPTOR_FILENAME = 'model-descriptor.json';
 
 /** Precision-specific download profile. */
@@ -106,7 +106,7 @@ function releaseUrl(precision: string): string {
 /** Default cache directory (platform-aware). */
 function defaultCacheDir(): string {
   const base = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
-  return path.join(base, 'agentix-timesfm-ts');
+  return path.join(base, 'timesfm-ts');
 }
 
 /** Default model path. */
@@ -145,7 +145,7 @@ export interface ProxyConfig {
 // ─── Download Options ───────────────────────────────────────────────────────
 
 export interface DownloadOptions {
-  /** Target file path (default: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx) */
+  /** Target file path (default: ~/.cache/timesfm-ts/timesfm-2.5.onnx) */
   dest?: string;
   /** Force re-download even if file exists */
   force?: boolean;

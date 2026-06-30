@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * agentix-timesfm-ts  Automated Pipeline Tool
+ * timesfm-ts  Automated Pipeline Tool
  *
  * No dependency on make/bash, pure Node.js implementation.
  *
@@ -131,7 +131,7 @@ function benchmark() {
 
 function printHelp() {
   console.log(`
-${COLORS.cyan}agentix-timesfm-ts  Automated Pipeline${COLORS.reset}
+${COLORS.cyan}timesfm-ts  Automated Pipeline${COLORS.reset}
 
 Usage:
   node scripts/pipeline.js [options]
@@ -169,7 +169,7 @@ async function main() {
   }
 
   console.log('='.repeat(66));
-  console.log(`  agentix-timesfm-ts  Automated Pipeline  (Node.js)`);
+  console.log(`  timesfm-ts  Automated Pipeline  (Node.js)`);
   console.log(`  ${new Date().toLocaleString()}`);
   console.log(`  ${os.cpus()[0]?.model || 'unknown'}  x ${os.cpus().length} cores`);
   console.log('='.repeat(66));

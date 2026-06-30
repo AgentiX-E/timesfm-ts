@@ -44,7 +44,7 @@ async function main() {
   }
 
   console.log('='.repeat(60));
-  console.log('  agentix-timesfm-ts — ONNX Model Checker');
+  console.log('  timesfm-ts — ONNX Model Checker');
   console.log('='.repeat(60));
   console.log();
 
@@ -195,7 +195,7 @@ async function main() {
 
   console.log();
   console.log('='.repeat(60));
-  console.log('  ✅ Model ready for use with agentix-timesfm-ts');
+  console.log('  ✅ Model ready for use with timesfm-ts');
   console.log('='.repeat(60));
 }
 

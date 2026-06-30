@@ -98,7 +98,7 @@ program
   .option('-f, --force', 'Force re-download even if already cached')
   .option(
     '-o, --output <path>',
-    'Custom output path (default: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)',
+    'Custom output path (default: ~/.cache/timesfm-ts/timesfm-2.5.onnx)',
   )
   .option('--proxy-url <url>', 'Proxy URL for downloading through corporate firewall')
   .option('--proxy-username <user>', 'Proxy authentication username')
@@ -147,7 +147,7 @@ program
  *   1. Explicit `--model` flag
  *   2. `TIMESFM_MODEL_PATH` environment variable
  *   3. Path from `timesfm setup -o <path>` in the same process (programmatic use only)
- *   4. Default cache path (~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx)
+ *   4. Default cache path (~/.cache/timesfm-ts/timesfm-2.5.onnx)
  *   5. Auto-download to default cache path
  */
 async function resolveModelPath(explicitPath: string | undefined): Promise<string> {

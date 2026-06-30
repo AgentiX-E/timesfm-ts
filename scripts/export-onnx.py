@@ -3,7 +3,7 @@
 TimesFM ONNX Model Exporter — 生产级导出工具
 
 Exports a TimesFM 2.5 200M PyTorch checkpoint from HuggingFace
-to a self-contained ONNX file for agentix-timesfm-ts.
+to a self-contained ONNX file for timesfm-ts.
 
 Requirements:
     pip install "timesfm[torch]" onnx onnxruntime torch
@@ -386,7 +386,7 @@ Examples:
     args = ap.parse_args()
 
     print("=" * 60)
-    print("  TimesFM → ONNX  Exporter for agentix-timesfm-ts")
+    print("  TimesFM → ONNX  Exporter for timesfm-ts")
     print("=" * 60)
 
     # --check-latest
@@ -466,7 +466,7 @@ Examples:
     print(f"  📁  {args.output}  ({os.path.getsize(args.output)/1024**2:.0f} MB)")
     base = os.path.splitext(args.output)[0]
     print(f"  📋  {base}-descriptor.json")
-    print(f"  📐  Compatible: agentix-timesfm-ts (onnxruntime-node)")
+    print(f"  📐  Compatible: timesfm-ts (onnxruntime-node)")
     if info:
         print(f"  🔖  HF revision: {info['sha']}")
     print(f"{'=' * 60}")

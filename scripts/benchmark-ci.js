@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * agentix-timesfm-ts  Benchmark Suite with JSON / Markdown / HTML Reports
+ * timesfm-ts  Benchmark Suite with JSON / Markdown / HTML Reports
  *
  * Usage:
  *   node scripts/benchmark-ci.js                              # console output
@@ -68,7 +68,7 @@ function resolveModelPath() {
   const searchPaths = [
     path.join(__dirname, '..', 'models', 'timesfm-2.5.onnx'),
     path.join(__dirname, '..', '..', 'models', 'timesfm-2.5.onnx'),
-    path.join(os.homedir(), '.cache', 'agentix-timesfm-ts', 'timesfm-2.5.onnx'),
+    path.join(os.homedir(), '.cache', 'timesfm-ts', 'timesfm-2.5.onnx'),
   ];
   for (const p of searchPaths) {
     if (fs.existsSync(p)) return p;
@@ -459,7 +459,7 @@ function generateHtmlReport(report, regression) {
   </p>
 
   <footer>
-    Automated benchmark by <strong>agentix-timesfm-ts</strong> CI · ${esc(report.timestamp)}
+    Automated benchmark by <strong>timesfm-ts</strong> CI · ${esc(report.timestamp)}
   </footer>
 
   <!-- Embedded JSON for programmatic access -->
@@ -564,7 +564,7 @@ ${regSection}${
 `
       : ''
   }---
-*Automated benchmark by agentix-timesfm-ts CI*
+*Automated benchmark by timesfm-ts CI*
 `;
 }
 

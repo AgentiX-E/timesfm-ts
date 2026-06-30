@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * agentix-timesfm-ts  Web (WASM) Benchmark Suite
+ * timesfm-ts  Web (WASM) Benchmark Suite
  *
  * Benchmarks onnxruntime-web (WASM backend) in a Node.js environment.
  * Mirrors benchmark-ci.js but uses onnxruntime-web instead of onnxruntime-node
@@ -60,7 +60,7 @@ function resolveModelPath() {
   const searchPaths = [
     path.join(__dirname, '..', 'models', 'timesfm-2.5.onnx'),
     path.join(__dirname, '..', '..', 'models', 'timesfm-2.5.onnx'),
-    path.join(os.homedir(), '.cache', 'agentix-timesfm-ts', 'timesfm-2.5.onnx'),
+    path.join(os.homedir(), '.cache', 'timesfm-ts', 'timesfm-2.5.onnx'),
   ];
   for (const p of searchPaths) {
     if (fs.existsSync(p)) return p;
@@ -244,7 +244,7 @@ function generateHtmlReport(report) {
   </p>
 
   <footer>
-    Automated web benchmark by <strong>agentix-timesfm-ts</strong> CI · ${esc(report.timestamp)}
+    Automated web benchmark by <strong>timesfm-ts</strong> CI · ${esc(report.timestamp)}
   </footer>
 
   <script type="application/json" id="benchmark-data">
@@ -301,7 +301,7 @@ ${latencyTable}
 | Heap Total | ${report.memory.heap_total_mb} MB |
 
 ---
-*Automated web benchmark by agentix-timesfm-ts CI*
+*Automated web benchmark by timesfm-ts CI*
 `;
 }
 

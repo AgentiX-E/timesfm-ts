@@ -6,7 +6,7 @@
  *   1. TIMESFM_TEST_MODEL environment variable (absolute path)
  *   2. TIMESFM_TEST_MODEL_DIR environment variable (directory containing timesfm-2.5.onnx)
  *   3. Relative path: ../../models/timesfm-2.5.onnx (from packages/timesfm-core/test/)
- *   4. Default cache: ~/.cache/agentix-timesfm-ts/timesfm-2.5.onnx
+ *   4. Default cache: ~/.cache/timesfm-ts/timesfm-2.5.onnx
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -19,7 +19,7 @@ const MODEL_FILENAMES = ['timesfm-2.5.onnx', 'timesfm-2.5-200m.onnx', 'timesfm.o
 const RELATIVE_SEARCH_PATHS = [
   path.resolve(__dirname, '..', '..', '..', 'models'), // ../../models/
   path.resolve(__dirname, '..', '..', '..'), // project root
-  path.join(os.homedir(), '.cache', 'agentix-timesfm-ts'), // default cache
+  path.join(os.homedir(), '.cache', 'timesfm-ts'), // default cache
 ];
 
 /**

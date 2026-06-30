@@ -17,7 +17,7 @@ const MODEL_FILENAMES = ['timesfm-2.5.onnx', 'timesfm-2.5-200m.onnx', 'timesfm.o
 const MODEL_SEARCH_PATHS = [
   path.resolve(__dirname, '..', '..', '..', 'models'),
   path.resolve(__dirname, '..', '..', '..'),
-  path.join(os.homedir(), '.cache', 'agentix-timesfm-ts'),
+  path.join(os.homedir(), '.cache', 'timesfm-ts'),
 ];
 
 function getModelPath(): string | null {

@@ -3,7 +3,7 @@
 > Covariate regression extension for TimesFM — Ridge regression + OneHot encoding for exogenous variables.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-xreg?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-xreg)
-[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-xreg.html)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-xreg.html)
 
 ## Overview
 
@@ -49,7 +49,7 @@ const result = await model.forecastWithCovariates({
 
 ## API Documentation
 
-📚 **Full API reference**: [agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-xreg.html](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-xreg.html)
+📚 **Full API reference**: [agentix-e.github.io/timesfm-ts/api/modules/timesfm-xreg.html](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-xreg.html)
 
 Key exports:
 

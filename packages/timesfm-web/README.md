@@ -3,7 +3,7 @@
 > Browser inference engine for TimesFM — zero-shot forecasting via WebAssembly, WebGPU, or WebGL.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-web?color=orange)](https://www.npmjs.com/package/@agentix-e/timesfm-web)
-[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-web.html)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-web.html)
 
 ## Overview
 
@@ -64,7 +64,7 @@ await model.dispose();
 
 ## API Documentation
 
-📚 **Full API reference**: [agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-web.html](https://agentix-e.github.io/agentix-timesfm-ts/api/modules/timesfm-web.html)
+📚 **Full API reference**: [agentix-e.github.io/timesfm-ts/api/modules/timesfm-web.html](https://agentix-e.github.io/timesfm-ts/api/modules/timesfm-web.html)
 
 Key exports:
 

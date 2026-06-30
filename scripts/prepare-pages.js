@@ -45,7 +45,7 @@ function writeCoverageIndex() {
       '<html lang="en">',
       '<head>',
       '<meta charset="UTF-8">',
-      '<title>Coverage Report &middot; agentix-timesfm-ts</title>',
+      '<title>Coverage Report &middot; timesfm-ts</title>',
       '<style>',
       'body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:#1a1a2e}',
       'h1{border-bottom:3px solid #2563eb;padding-bottom:.5rem}',
@@ -62,7 +62,7 @@ function writeCoverageIndex() {
       '<h1>&#x1F4C8; Coverage Report</h1>',
       '<p>Generated ' +
         new Date().toISOString() +
-        ' &middot; <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">agentix-timesfm-ts</a></p>',
+        ' &middot; <a href="https://github.com/AgentiX-E/timesfm-ts">timesfm-ts</a></p>',
       '<div class=grid>',
       '  <div class=card><div class=pct>' +
         pct('lines') +
@@ -126,7 +126,7 @@ function writeRootLandingPage() {
       '<html lang="en">',
       '<head>',
       '<meta charset="UTF-8">',
-      '<title>agentix-timesfm-ts &middot; Docs</title>',
+      '<title>timesfm-ts &middot; Docs</title>',
       '<style>',
       'body{font-family:system-ui,sans-serif;max-width:800px;margin:3rem auto;padding:0 1.5rem;line-height:1.7;color:#1a1a2e;background:#fafbfc}',
       'h1{font-size:2rem;border-bottom:3px solid #2563eb;padding-bottom:0.5rem}',
@@ -136,13 +136,13 @@ function writeRootLandingPage() {
       '</style>',
       '</head>',
       '<body>',
-      '<h1>&#x1F680; agentix-timesfm-ts</h1>',
+      '<h1>&#x1F680; timesfm-ts</h1>',
       '<p>Node.js/TypeScript reimplementation of Google Research&apos;s TimesFM 2.5 &mdash; zero-shot time series forecasting.</p>',
       '<div class=card><h2>&#x1F4DA; <a href="api/index.html">API Documentation</a></h2><p>Full TypeDoc reference for all packages</p></div>',
       '<div class=card><h2>&#x1F4CA; <a href="benchmark/">Benchmark Reports</a></h2><p>Inference latency, throughput, and prediction accuracy benchmarks (Node.js + WASM comparison)</p></div>',
       '<div class=card><h2>&#x1F4C8; <a href="coverage/">Test Coverage</a></h2><p>Code coverage reports (lines, branches, functions, statements)</p></div>',
-      '<div class=card><h2>&#x1F3D7; <a href="https://github.com/AgentiX-E/agentix-timesfm-ts/blob/master/docs/ARCHITECTURE.md">Architecture</a></h2><p>System design, data flow, component breakdown, and design principles</p></div>',
-      '<div class=card><h2>&#x1F4BB; <a href="https://github.com/AgentiX-E/agentix-timesfm-ts">Source Code</a></h2><p>GitHub repository with README, contributing guide, and full source</p></div>',
+      '<div class=card><h2>&#x1F3D7; <a href="https://github.com/AgentiX-E/timesfm-ts/blob/master/docs/ARCHITECTURE.md">Architecture</a></h2><p>System design, data flow, component breakdown, and design principles</p></div>',
+      '<div class=card><h2>&#x1F4BB; <a href="https://github.com/AgentiX-E/timesfm-ts">Source Code</a></h2><p>GitHub repository with README, contributing guide, and full source</p></div>',
       '</body>',
       '</html>',
     ].join('\n') + '\n';

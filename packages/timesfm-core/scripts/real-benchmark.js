@@ -16,7 +16,7 @@ function resolveModelPath() {
     path.join(scriptDir, '..', '..', '..', 'models', 'timesfm-2.5.onnx'),
     path.join(scriptDir, 'models', 'timesfm-2.5.onnx'),
     path.join(scriptDir, '..', '..', '..', '..', 'models', 'timesfm-2.5.onnx'),
-    path.join(os.homedir(), '.cache', 'agentix-timesfm-ts', 'timesfm-2.5.onnx'),
+    path.join(os.homedir(), '.cache', 'timesfm-ts', 'timesfm-2.5.onnx'),
   ];
   for (const p of searchPaths) {
     if (fs.existsSync(p)) return p;
