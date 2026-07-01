@@ -217,7 +217,7 @@ jobs:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
 
@@ -225,6 +225,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+      # npm 10.x (bundled with node 22) uses .npmrc authToken instead of
+      # OIDC token for the PUT to registry, causing E404 after successful
+      # provenance signing.  npm 11.x (node 24) natively supports OIDC.
       - name: Publish to npm (OIDC)
         run: |
           for pkg in timesfm-core timesfm-xreg timesfm-cli timesfm-web timesfm-hierarchical; do
