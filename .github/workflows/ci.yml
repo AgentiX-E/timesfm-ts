@@ -370,6 +370,19 @@ jobs:
         continue-on-error: true
 
       - name: Retry deploy (transient error)
-        id: deployment
+        id: deploy2
         if: steps.deploy1.outcome == 'failure'
         uses: actions/deploy-pages@v4
+
+      - name: Collect page URL
+        id: deployment
+        if: always()
+        run: |
+          if [ "${{ steps.deploy1.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy1.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.deploy2.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Page deployment failed after retry" >&2
+            exit 1
+          fi
