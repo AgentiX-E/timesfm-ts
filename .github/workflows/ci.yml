@@ -365,5 +365,11 @@ jobs:
           path: docs
 
       - name: Deploy to GitHub Pages
+        id: deploy1
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Retry deploy (transient error)
         id: deployment
+        if: steps.deploy1.outcome == 'failure'
         uses: actions/deploy-pages@v4
