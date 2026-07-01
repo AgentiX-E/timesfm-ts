@@ -51,8 +51,8 @@ function resolveWasmPath(): string {
   try {
     const req = createRequire(import.meta.url);
     const ortPkg = req.resolve('onnxruntime-web');
-    // onnxruntime-web exports from lib/index.js, WASM files are in dist/
-    const distDir = path.dirname(ortPkg).replace(/\/lib$/, '/dist/');
+    // CJS entry (main field) is dist/ort.node.min.js — dirname gets dist/
+    const distDir = path.dirname(ortPkg);
     if (fs.existsSync(distDir)) {
       return distDir;
     }

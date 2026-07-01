@@ -179,11 +179,12 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       // Try Node.js detection: resolve onnxruntime-web from node_modules
       try {
         const { createRequire } = await import('node:module');
+        const { dirname } = await import('node:path');
         const req = createRequire(import.meta.url);
         const pkgDir = req.resolve('onnxruntime-web');
-        // onnxruntime-web's main entry is lib/index.js or dist/ort.node.min.js
-        // WASM files are in dist/. Ensure trailing slash.
-        let distDir = pkgDir.replace(/\/lib\/.+$/, '/dist/');
+        // onnxruntime-web's CJS entry (main field) is dist/ort.node.min.js.
+        // Use path.dirname to strip the filename and get the dist/ directory.
+        let distDir = dirname(pkgDir);
         if (!distDir.endsWith('/')) distDir += '/';
         ort.env.wasm.wasmPaths = distDir;
       } catch {
