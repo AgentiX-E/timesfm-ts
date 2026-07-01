@@ -94,8 +94,8 @@ export async function decode(
   for (let b = 0; b < batchSize; b++) {
     for (let p = 0; p < mc.exportedPatches; p++) {
       if (p < numInputPatches) {
-        paddedContextMu.push(contextMu[b * numInputPatches + p]);
-        paddedContextSigma.push(contextSigma[b * numInputPatches + p]);
+        paddedContextMu.push(contextMu[b * numInputPatches + p]!);
+        paddedContextSigma.push(contextSigma[b * numInputPatches + p]!);
       } else {
         paddedContextMu.push(new Float32Array([0]));
         paddedContextSigma.push(new Float32Array([1.0]));
@@ -130,25 +130,25 @@ export async function decode(
   for (let b = 0; b < batchSize; b++) {
     const perPatch = mc.outputPatchLen * mc.numQuantiles;
     const validLen = numInputPatches * perPatch;
-    pfTrimmed.push(pfDenormed[b].slice(0, validLen));
+    pfTrimmed.push(pfDenormed[b]!.slice(0, validLen));
   }
 
   // Extract quantile spread from the last patch
   const quantileSpreads: Float32Array[] = [];
   for (let b = 0; b < batchSize; b++) {
     const qsLen = mc.outputQuantileLen * mc.numQuantiles;
-    const perPatch = outputQuantileSpread[b].length / mc.exportedPatches;
-    const lastPatchQS = outputQuantileSpread[b].slice(outputQuantileSpread[b].length - perPatch);
+    const perPatch = outputQuantileSpread[b]!.length / mc.exportedPatches;
+    const lastPatchQS = outputQuantileSpread[b]!.slice(outputQuantileSpread[b]!.length - perPatch);
     // Denormalise — process per-patch blocks rather than per-element
-    const lastMu = paddedContextMu[(b + 1) * mc.exportedPatches - 1][0];
-    const lastSigma = paddedContextSigma[(b + 1) * mc.exportedPatches - 1][0];
-    const safeS = lastSigma < 1e-6 ? 1.0 : lastSigma;
+    const lastMu = paddedContextMu[(b + 1) * mc.exportedPatches - 1]![0]!;
+    const lastSigma = paddedContextSigma[(b + 1) * mc.exportedPatches - 1]![0]!;
+    const safeS = lastSigma! < 1e-6 ? 1.0 : lastSigma!;
     const denormed = new Float32Array(qsLen);
     for (let o = 0; o < mc.outputQuantileLen; o++) {
       const base = o * mc.numQuantiles;
       for (let q = 0; q < mc.numQuantiles; q++) {
         const idx = base + q;
-        denormed[idx] = idx < lastPatchQS.length ? lastPatchQS[idx] * safeS + lastMu : 0;
+        denormed[idx] = idx < lastPatchQS.length ? lastPatchQS[idx]! * safeS + lastMu! : 0;
       }
     }
     quantileSpreads.push(denormed);
@@ -167,11 +167,11 @@ export async function decode(
   let arSeeds: Float32Array[] = [];
   for (let b = 0; b < batchSize; b++) {
     const perPatch = mc.outputPatchLen * mc.numQuantiles;
-    const lastPatchStart = pfTrimmed[b].length - perPatch;
+    const lastPatchStart = pfTrimmed[b]!.length - perPatch;
     const seed = new Float32Array(mc.outputPatchLen);
     for (let o = 0; o < mc.outputPatchLen; o++) {
       const idx = lastPatchStart + o * mc.numQuantiles + mc.decodeIndex;
-      seed[o] = pfTrimmed[b][idx];
+      seed[o] = pfTrimmed[b]![idx]!;
     }
     arSeeds.push(seed);
   }
@@ -192,15 +192,15 @@ export async function decode(
     for (let b = 0; b < batchSize; b++) {
       const patches: Float32Array[] = [];
       const masks: Uint8Array[] = [];
-      let stats = { ...arStats[b] };
+      let stats = { ...arStats[b]! };
 
       for (let sp = 0; sp < m; sp++) {
         const offset = sp * mc.inputPatchLen;
-        const patch = arSeeds[b].slice(offset, offset + mc.inputPatchLen);
+        const patch = arSeeds[b]!.slice(offset, offset + mc.inputPatchLen);
         const mask = new Uint8Array(mc.inputPatchLen); // all zeros
 
         const [updated] = updateRunningStats(stats, patch, mask);
-        stats = updated;
+        stats = updated!;
 
         patches.push(patch);
         masks.push(mask);
@@ -253,7 +253,7 @@ export async function decode(
       const seed = new Float32Array(mc.outputPatchLen);
       for (let o = 0; o < mc.outputPatchLen; o++) {
         const idx = lastSubPatchStart + o * mc.numQuantiles + mc.decodeIndex;
-        seed[o] = arDenormed[b][idx];
+        seed[o] = arDenormed[b]![idx]!;
       }
       nextSeeds.push(seed);
 
@@ -268,10 +268,10 @@ export async function decode(
         const srcBase = lastSubPatchStart + o * mc.numQuantiles;
         const dstBase = o * mc.numQuantiles;
         for (let q = 0; q < mc.numQuantiles; q++) {
-          arStepForecast[dstBase + q] = arDenormed[b][srcBase + q];
+          arStepForecast[dstBase + q] = arDenormed[b]![srcBase + q]!;
         }
       }
-      arOutputsByBatch[b].push(arStepForecast);
+      arOutputsByBatch[b]!.push(arStepForecast);
     }
 
     arSeeds = nextSeeds;

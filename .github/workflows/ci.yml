@@ -113,7 +113,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v4
 
       - name: Export TimesFM ONNX model
         if: steps.cache-model.outputs.cache-hit != 'true'
@@ -171,7 +171,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v4
           fail-on-cache-miss: true
 
       - name: Run benchmark
@@ -241,7 +241,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: models/timesfm-2.5.onnx
-          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v3
+          key: timesfm-model-${{ hashFiles('scripts/export-onnx.py', 'models/model-descriptor.json') }}-v4
           fail-on-cache-miss: true
 
       - name: Run web benchmark (WASM)

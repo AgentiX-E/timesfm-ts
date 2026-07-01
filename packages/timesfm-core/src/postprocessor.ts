@@ -57,20 +57,20 @@ export function postProcess(
   for (let b = 0; b < batchSize; b++) {
     // Take the last output patch
     const perPatch = mc.outputPatchLen * mc.numQuantiles;
-    const lastPatch = pfOutputs[b].slice(pfOutputs[b].length - perPatch);
+    const lastPatch = pfOutputs[b]!.slice(pfOutputs[b]!.length - perPatch);
 
     // Concatenate with AR outputs
     let full = new Float32Array(lastPatch);
     if (arOutputs) {
-      const arFlat = arOutputs[b];
-      const combined = new Float32Array(full.length + arFlat.length);
+      const arFlat = arOutputs[b]!;
+      const combined = new Float32Array(full!.length + arFlat.length);
       combined.set(full, 0);
-      combined.set(arFlat, full.length);
+      combined.set(arFlat, full!.length);
       full = combined;
     }
 
     // Truncate to horizon
-    full = full.slice(0, horizon * mc.numQuantiles);
+    full = full!.slice(0, horizon * mc.numQuantiles);
     fullForecasts.push(full);
   }
 
@@ -83,12 +83,12 @@ export function postProcess(
     // Build the flipped forecast from the negated-input decode
     for (let b = 0; b < batchSize; b++) {
       const perPatch = mc.outputPatchLen * mc.numQuantiles;
-      const lastFlipPf = flipPf[b].slice(flipPf[b].length - perPatch);
+      const lastFlipPf = flipPf[b]!.slice(flipPf[b]!.length - perPatch);
       const flippedLast = flipQuantileArray(lastFlipPf, mc.numQuantiles);
 
       let combined = new Float32Array(flippedLast);
       if (flipAr) {
-        const flippedAr = flipQuantileArray(flipAr[b], mc.numQuantiles);
+        const flippedAr = flipQuantileArray(flipAr[b]!, mc.numQuantiles);
         const tmp = new Float32Array(flippedLast.length + flippedAr.length);
         tmp.set(flippedLast, 0);
         tmp.set(flippedAr, flippedLast.length);
@@ -97,7 +97,7 @@ export function postProcess(
       const flippedFull = combined.slice(0, horizon * mc.numQuantiles);
 
       // (forecast(x) - forecast(-x)) / 2
-      fullForecasts[b] = elementwiseMean(fullForecasts[b], negate(flippedFull));
+      fullForecasts[b] = elementwiseMean(fullForecasts[b]!, negate(flippedFull));
     }
   }
 
@@ -124,7 +124,7 @@ export function postProcess(
           for (let q = 0; q < mc.numQuantiles; q++) {
             const srcIdx = patchStart + i * mc.numQuantiles + q;
             const dstIdx = (p * mc.inputPatchLen + i) * mc.numQuantiles + q;
-            backcast[dstIdx] = pf[srcIdx];
+            backcast[dstIdx] = pf[srcIdx]!;
           }
         }
       }
@@ -134,11 +134,11 @@ export function postProcess(
     // Apply the same z-score reversal to backcast if inputs were normalized
     if (fc.normalizeInputs && inputStats) {
       backcastOutputs = backcastOutputs.map((bc, b) => {
-        const { mu, sigma } = inputStats[b] ?? { mu: 0, sigma: 1 };
+        const { mu, sigma } = inputStats[b]! ?? { mu: 0, sigma: 1 };
         const safeSigma = sigma < 1e-6 ? 1.0 : sigma;
         const result = new Float32Array(bc.length);
         for (let i = 0; i < bc.length; i++) {
-          result[i] = bc[i] * safeSigma + mu;
+          result[i] = bc[i]! * safeSigma + mu;
         }
         return result;
       });
@@ -182,10 +182,10 @@ export function postProcess(
 
     for (let h = 0; h < horizon; h++) {
       for (let q = 0; q < numQ; q++) {
-        const val = fullForecasts[b][h * numQ + q];
-        quantArr[q][h] = Number.isFinite(val) ? val : 0;
+        const val = fullForecasts[b]![h * numQ + q]!;
+        quantArr[q]![h] = Number.isFinite(val) ? val : 0;
       }
-      pointArr[h] = quantArr[mc.decodeIndex][h];
+      pointArr[h] = quantArr[mc.decodeIndex]![h]!;
     }
 
     pointForecast.push(pointArr);
@@ -218,7 +218,7 @@ export function flipQuantileArray(
   // Copy the mean (index 0) for each step if not in-place
   if (!inPlace) {
     for (let t = 0; t < numSteps; t++) {
-      result[t * numQuantiles] = arr[t * numQuantiles];
+      result[t * numQuantiles] = arr[t * numQuantiles]!;
     }
   }
 
@@ -230,11 +230,11 @@ export function flipQuantileArray(
       const src = base + numQuantiles - q;
       // In-place: only copy when src > dst to avoid overwriting
       if (inPlace && src > dst) {
-        const tmp = arr[dst];
-        result[dst] = arr[src];
+        const tmp = arr[dst]!;
+        result[dst] = arr[src]!;
         result[src] = tmp;
       } else if (!inPlace) {
-        result[dst] = arr[src];
+        result[dst] = arr[src]!;
       }
     }
   }
@@ -259,7 +259,7 @@ export function applyContinuousQuantileHead(
   mc: ModelConfig,
 ): Float32Array[] {
   return fullForecasts.map((ff, b) => {
-    const qs = quantileSpreads[b];
+    const qs = quantileSpreads[b]!;
     const result = new Float32Array(ff.length);
     const numSteps = Math.floor(ff.length / mc.numQuantiles);
 
@@ -267,27 +267,27 @@ export function applyContinuousQuantileHead(
       const base = h * mc.numQuantiles;
 
       // Mean stays unchanged
-      result[base] = ff[base];
+      result[base] = ff[base]!;
 
       // Apply quantile spread calibration: q_new = spread[q] - spread[median] + forecast[median]
       // All quantiles except mean (0) and median share the same formula.
       for (let q = 1; q < mc.numQuantiles; q++) {
         if (q === mc.decodeIndex) {
           // Median stays unchanged
-          result[base + mc.decodeIndex] = ff[base + mc.decodeIndex];
+          result[base + mc.decodeIndex] = ff[base + mc.decodeIndex]!;
           continue;
         }
         const qsIdx = h * mc.numQuantiles + q;
-        const spreadVal = qsIdx < qs.length ? qs[qsIdx] : 0;
+        const spreadVal = qsIdx < qs.length ? qs[qsIdx]! : 0;
         const medianIdx = h * mc.numQuantiles + mc.decodeIndex;
-        const medianSpread = medianIdx < qs.length ? qs[medianIdx] : 0;
-        result[base + q] = spreadVal - medianSpread + ff[base + mc.decodeIndex];
+        const medianSpread = medianIdx < qs.length ? qs[medianIdx]! : 0;
+        result[base + q] = spreadVal - medianSpread + ff[base + mc.decodeIndex]!;
       }
     }
 
     // Copy remaining values unchanged (only applicable when numSteps < ff.length / mc.numQuantiles)
     for (let i = numSteps * mc.numQuantiles; i < ff.length; i++) {
-      result[i] = ff[i];
+      result[i] = ff[i]!;
     }
 
     return result;
@@ -320,15 +320,15 @@ export function fixQuantileCrossing(
 
     // Lower quantiles: ensure q[i] ≤ q[i+1]
     for (let q = decodeIndex - 1; q >= 1; q--) {
-      if (result[base + q] > result[base + q + 1]) {
-        result[base + q] = result[base + q + 1];
+      if (result[base + q]! > result[base + q + 1]!) {
+        result[base + q] = result[base + q + 1]!;
       }
     }
 
     // Upper quantiles: ensure q[i] ≥ q[i-1]
     for (let q = decodeIndex + 1; q <= numQuantiles - 1; q++) {
-      if (result[base + q] < result[base + q - 1]) {
-        result[base + q] = result[base + q - 1];
+      if (result[base + q]! < result[base + q - 1]!) {
+        result[base + q] = result[base + q - 1]!;
       }
     }
   }
@@ -349,11 +349,11 @@ export function reverseInputNormalization(
   stats: { mu: number; sigma: number }[],
 ): Float32Array[] {
   return forecasts.map((ff, b) => {
-    const { mu, sigma } = stats[b] ?? { mu: 0, sigma: 1 };
+    const { mu, sigma } = stats[b]! ?? { mu: 0, sigma: 1 };
     const safeSigma = sigma < 1e-6 ? 1.0 : sigma;
     const result = new Float32Array(ff.length);
     for (let i = 0; i < ff.length; i++) {
-      result[i] = ff[i] * safeSigma + mu;
+      result[i] = ff[i]! * safeSigma + mu;
     }
     return result;
   });

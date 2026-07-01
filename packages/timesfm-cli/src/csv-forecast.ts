@@ -81,7 +81,7 @@ export function parseCSVData(filePath: string, dateCol: string, valueCols?: stri
   }
 
   // Identify columns
-  const allCols = Object.keys(records[0]);
+  const allCols = Object.keys(records[0]!);
   const numericCols = valueCols ?? allCols.filter((c) => c !== dateCol);
 
   // Extract dates
@@ -92,7 +92,7 @@ export function parseCSVData(filePath: string, dateCol: string, valueCols?: stri
   for (const col of numericCols) {
     const values: number[] = [];
     for (const record of records) {
-      const v = parseFloat(record[col]);
+      const v = parseFloat(record[col]!);
       values.push(Number.isFinite(v) ? v : NaN);
     }
     series.set(col, removeTrailingNaN(new Float32Array(values)));
@@ -184,17 +184,17 @@ export function outputCSV(
   const rows: Record<string, string | number>[] = [];
 
   for (let s = 0; s < result.pointForecast.length; s++) {
-    const pf = result.pointForecast[s];
-    const qf = result.quantileForecast[s];
+    const pf = result.pointForecast[s]!;
+    const qf = result.quantileForecast[s]!;
 
     for (let h = 0; h < pf.length; h++) {
       rows.push({
-        series_id: seriesNames[s],
+        series_id: seriesNames[s]!,
         horizon_step: h + 1,
-        point_forecast: pf[h],
-        q10: qf[1][h],
-        q50: qf[5][h],
-        q90: qf[9][h],
+        point_forecast: pf[h]!,
+        q10: qf[1]![h]!,
+        q50: qf[5]![h]!,
+        q90: qf[9]![h]!,
       });
     }
   }
@@ -224,20 +224,20 @@ export function outputJSON(
 
   const seriesOut = output.series as Record<string, unknown>;
   for (let s = 0; s < result.pointForecast.length; s++) {
-    seriesOut[seriesNames[s]] = {
-      point_forecast: Array.from(result.pointForecast[s]),
-      lower_80: Array.from(result.quantileForecast[s][1]), // q10
-      upper_80: Array.from(result.quantileForecast[s][9]), // q90
+    seriesOut[seriesNames[s]!] = {
+      point_forecast: Array.from(result.pointForecast[s]!),
+      lower_80: Array.from(result.quantileForecast[s]![1]!), // q10
+      upper_80: Array.from(result.quantileForecast[s]![9]!), // q90
       quantiles: {
-        q10: Array.from(result.quantileForecast[s][1]),
-        q20: Array.from(result.quantileForecast[s][2]),
-        q30: Array.from(result.quantileForecast[s][3]),
-        q40: Array.from(result.quantileForecast[s][4]),
-        q50: Array.from(result.quantileForecast[s][5]),
-        q60: Array.from(result.quantileForecast[s][6]),
-        q70: Array.from(result.quantileForecast[s][7]),
-        q80: Array.from(result.quantileForecast[s][8]),
-        q90: Array.from(result.quantileForecast[s][9]),
+        q10: Array.from(result.quantileForecast[s]![1]!),
+        q20: Array.from(result.quantileForecast[s]![2]!),
+        q30: Array.from(result.quantileForecast[s]![3]!),
+        q40: Array.from(result.quantileForecast[s]![4]!),
+        q50: Array.from(result.quantileForecast[s]![5]!),
+        q60: Array.from(result.quantileForecast[s]![6]!),
+        q70: Array.from(result.quantileForecast[s]![7]!),
+        q80: Array.from(result.quantileForecast[s]![8]!),
+        q90: Array.from(result.quantileForecast[s]![9]!),
       },
     };
   }

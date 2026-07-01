@@ -102,7 +102,7 @@ export async function reconcileForecast(
   const inputKeys: string[] = [];
 
   for (const id of allNodeIds) {
-    inputList.push(inputs[id]);
+    inputList.push(inputs[id]!);
     inputKeys.push(id);
   }
 
@@ -111,7 +111,7 @@ export async function reconcileForecast(
   // 4. Extract per-node base forecasts from raw output
   const baseForecasts: Record<string, Float32Array> = {};
   for (let i = 0; i < inputKeys.length; i++) {
-    baseForecasts[inputKeys[i]] = rawOutput.pointForecast[i];
+    baseForecasts[inputKeys[i]!] = rawOutput.pointForecast[i]!;
   }
 
   // 5. Reconcile
@@ -125,10 +125,10 @@ export async function reconcileForecast(
   const reconciled: HierarchicalForecastOutput['reconciled'] = {};
 
   for (let i = 0; i < allNodeIds.length; i++) {
-    const id = allNodeIds[i];
-    const basePoint = baseForecasts[id];
-    const baseQuantile = rawOutput.quantileForecast[i];
-    const reconcPoint = reconciledPoint[id];
+    const id = allNodeIds[i]!;
+    const basePoint = baseForecasts[id]!;
+    const baseQuantile = rawOutput.quantileForecast[i]!;
+    const reconcPoint = reconciledPoint[id]!;
 
     // Proportional adjustment: quantile_new[h][q] = baseQ[h][q] * (reconciled[h] / base[h])
     // with safe division and zero base → zero reconciled handling
@@ -136,9 +136,9 @@ export async function reconcileForecast(
     for (let q = 0; q < baseQuantile.length; q++) {
       const adjQ = new Float32Array(horizon);
       for (let h = 0; h < horizon; h++) {
-        const baseVal = basePoint[h];
-        const ratio = Math.abs(baseVal) > 1e-10 ? reconcPoint[h] / baseVal : 1;
-        adjQ[h] = baseQuantile[q][h] * ratio;
+        const baseVal = basePoint[h]!;
+        const ratio = Math.abs(baseVal) > 1e-10 ? reconcPoint[h]! / baseVal : 1;
+        adjQ[h] = baseQuantile[q]![h]! * ratio;
       }
       adjustedQuantile.push(adjQ);
     }

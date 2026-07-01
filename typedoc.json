@@ -1,7 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-    "packages/timesfm-core/src/index.ts",
     "packages/timesfm-core/src/model.ts",
     "packages/timesfm-core/src/config.ts",
     "packages/timesfm-core/src/types.ts",
@@ -18,15 +17,12 @@
     "packages/timesfm-core/src/utils/stats.ts",
     "packages/timesfm-core/src/utils/revin.ts",
     "packages/timesfm-core/src/utils/tensor-utils.ts",
-    "packages/timesfm-xreg/src/index.ts",
     "packages/timesfm-xreg/src/xreg-engine.ts",
     "packages/timesfm-xreg/src/one-hot-encoder.ts",
     "packages/timesfm-cli/src/cli.ts",
     "packages/timesfm-cli/src/csv-forecast.ts",
-    "packages/timesfm-web/src/index.ts",
     "packages/timesfm-web/src/web-engine.ts",
     "packages/timesfm-web/src/model-loader.ts",
-    "packages/timesfm-hierarchical/src/index.ts",
     "packages/timesfm-hierarchical/src/hierarchical.ts",
     "packages/timesfm-hierarchical/src/reconciliation.ts",
     "packages/timesfm-hierarchical/src/summing-matrix.ts",

@@ -86,17 +86,17 @@ function buildDesignMatrices(
   // ---- Dynamic numerical covariates ----
   if (params.dynamicNumericalCovariates) {
     for (const name of Object.keys(params.dynamicNumericalCovariates).sort()) {
-      const covs = params.dynamicNumericalCovariates[name];
+      const covs = params.dynamicNumericalCovariates[name]!;
       const trainCol: number[] = [];
       const testCol: number[] = [];
 
       for (let s = 0; s < numSeries; s++) {
-        const cov = covs[s];
-        for (let t = inputLens[s] - trainLens[s]; t < inputLens[s]; t++) {
-          trainCol.push(t < cov.length ? cov[t] : 0);
+        const cov = covs![s]!;
+        for (let t = inputLens[s]! - trainLens[s]!; t < inputLens[s]!; t++) {
+          trainCol.push(t < cov!.length ? cov![t]! : 0);
         }
-        for (let t = inputLens[s]; t < inputLens[s] + testLens[s] && t < cov.length; t++) {
-          testCol.push(cov[t]);
+        for (let t = inputLens[s]!; t < inputLens[s]! + testLens[s]! && t < cov!.length; t++) {
+          testCol.push(cov![t]!);
         }
       }
 
@@ -120,8 +120,8 @@ function buildDesignMatrices(
       const testCol: number[] = [];
 
       for (let s = 0; s < numSeries; s++) {
-        for (let t = 0; t < trainLens[s]; t++) trainCol.push(covs[s]);
-        for (let t = 0; t < testLens[s]; t++) testCol.push(covs[s]);
+        for (let t = 0; t < trainLens[s]!; t++) trainCol.push(covs![s]! ?? 0);
+        for (let t = 0; t < testLens[s]!; t++) testCol.push(covs![s]! ?? 0);
       }
 
       trainBlocks.push(trainCol);
@@ -138,7 +138,7 @@ function buildDesignMatrices(
       // Collect all categories for fitting
       const allCats: Category[] = [];
       for (let s = 0; s < numSeries; s++) {
-        for (const v of covs[s]) allCats.push(v);
+        for (const v of covs![s]!) allCats.push(v);
       }
       encoder.fit(allCats);
 
@@ -147,12 +147,12 @@ function buildDesignMatrices(
       const testRows: number[][] = [];
 
       for (let s = 0; s < numSeries; s++) {
-        const cov = covs[s];
-        for (let t = inputLens[s] - trainLens[s]; t < inputLens[s]; t++) {
-          trainRows.push(encoder.transform([cov[t]])[0]);
+        const cov = covs![s]!;
+        for (let t = inputLens[s]! - trainLens[s]!; t < inputLens[s]!; t++) {
+          trainRows.push(encoder.transform([cov![t]!])[0]!);
         }
-        for (let t = inputLens[s]; t < inputLens[s] + testLens[s] && t < cov.length; t++) {
-          testRows.push(encoder.transform([cov[t]])[0]);
+        for (let t = inputLens[s]!; t < inputLens[s]! + testLens[s]! && t < cov!.length; t++) {
+          testRows.push(encoder.transform([cov![t]!])[0]!);
         }
       }
 
@@ -175,9 +175,9 @@ function buildDesignMatrices(
       const testRows: number[][] = [];
 
       for (let s = 0; s < numSeries; s++) {
-        const encoded = encoder.transform([covs[s]])[0];
-        for (let t = 0; t < trainLens[s]; t++) trainRows.push(encoded);
-        for (let t = 0; t < testLens[s]; t++) testRows.push(encoded);
+        const encoded = encoder.transform([covs![s]!])[0]!;
+        for (let t = 0; t < trainLens[s]!; t++) trainRows.push(encoded);
+        for (let t = 0; t < testLens[s]!; t++) testRows.push(encoded);
       }
 
       for (let c = 0; c < encoder.numColumns; c++) {
@@ -197,14 +197,14 @@ function buildDesignMatrices(
   for (let r = 0; r < totalTrain; r++) {
     xTrainMat.set(r, 0, 1.0); // intercept
     for (let c = 0; c < trainBlocks.length; c++) {
-      xTrainMat.set(r, c + 1, trainBlocks[c][r] ?? 0);
+      xTrainMat.set(r, c + 1, trainBlocks[c]![r]! ?? 0);
     }
   }
 
   for (let r = 0; r < totalTest; r++) {
     xTestMat.set(r, 0, 1.0); // intercept
     for (let c = 0; c < testBlocks.length; c++) {
-      xTestMat.set(r, c + 1, testBlocks[c][r] ?? 0);
+      xTestMat.set(r, c + 1, testBlocks[c]![r]! ?? 0);
     }
   }
 
@@ -252,9 +252,9 @@ function ridgeRegression(
       const subX = new Matrix(effectiveRows, ncols);
       const subY = new Float32Array(effectiveRows);
       for (let i = 0; i < effectiveRows; i++) {
-        const src = selRows[i];
+        const src = selRows[i]!;
         for (let c = 0; c < ncols; c++) subX.set(i, c, xMat.get(src, c));
-        subY[i] = yVec[src];
+        subY[i] = yVec[src]!;
       }
       xMat = subX;
       yVec = subY;
@@ -313,7 +313,7 @@ function normalizeXregTargets(batch: Float32Array[]): {
     let sum = 0,
       n = 0;
     for (let i = 0; i < x.length; i++) {
-      const v = x[i];
+      const v = x[i]!;
       if (!Number.isFinite(v)) continue;
       sum += v;
       n++;
@@ -323,7 +323,7 @@ function normalizeXregTargets(batch: Float32Array[]): {
     // Second pass: squared deviations from the computed mean
     let varSum = 0;
     for (let i = 0; i < x.length; i++) {
-      const v = x[i];
+      const v = x[i]!;
       if (!Number.isFinite(v)) continue;
       const diff = v - mu;
       varSum += diff * diff;
@@ -334,7 +334,7 @@ function normalizeXregTargets(batch: Float32Array[]): {
   });
   const normalized = batch.map((x, i) => {
     const r = new Float32Array(x.length);
-    for (let j = 0; j < x.length; j++) r[j] = (x[j] - stats[i].mu) / stats[i].sigma;
+    for (let j = 0; j < x.length; j++) r[j] = (x[j]! - stats[i]!.mu) / stats[i]!.sigma;
     return r;
   });
   return { normalized, stats };
@@ -347,7 +347,7 @@ function renormalizeXregOutputs(
 ): Float32Array[] {
   return batch.map((x, i) => {
     const r = new Float32Array(x.length);
-    for (let j = 0; j < x.length; j++) r[j] = x[j] * stats[i].sigma + stats[i].mu;
+    for (let j = 0; j < x.length; j++) r[j] = x[j]! * stats[i]!.sigma + stats[i]!.mu;
     return r;
   });
 }
@@ -416,10 +416,10 @@ export async function forecastWithCovariates(
   // cause Ridge regression to produce NaN coefficients with no clear error.
   function validateDim2Finiteness(covName: string, covType: string, series: Float32Array[]): void {
     for (let s = 0; s < series.length; s++) {
-      for (let i = 0; i < series[s].length; i++) {
-        if (!Number.isFinite(series[s][i])) {
+      for (let i = 0; i < series[s]!.length; i++) {
+        if (!Number.isFinite(series[s]![i]!)) {
           throw new CovariateError(
-            `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s][i]} (must be finite). ` +
+            `${covType} covariate "${covName}" series[${s}][${i}] = ${series[s]![i]!} (must be finite). ` +
               `Clean data before calling forecastXReg().`,
           );
         }
@@ -457,17 +457,17 @@ export async function forecastWithCovariates(
   for (let s = 0; s < numSeries; s++) {
     if (xregMode === 'timesfm + xreg') {
       // Don't use first patch for model fitting
-      trainLens.push(Math.max(0, inputLens[s] - model.modelConfig.inputPatchLen));
+      trainLens.push(Math.max(0, inputLens[s]! - model.modelConfig.inputPatchLen));
     } else {
-      trainLens.push(inputLens[s]);
+      trainLens.push(inputLens[s]!);
     }
 
     if (params.dynamicNumericalCovariates) {
       const firstCov = Object.values(params.dynamicNumericalCovariates)[0];
-      testLens.push(firstCov[s].length - inputLens[s]);
+      testLens.push(firstCov![s]!.length - inputLens[s]!);
     } else if (params.dynamicCategoricalCovariates) {
       const firstCov = Object.values(params.dynamicCategoricalCovariates)[0];
-      testLens.push(firstCov[s].length - inputLens[s]);
+      testLens.push(firstCov![s]!.length - inputLens[s]!);
     } else {
       testLens.push(fc.maxHorizon);
     }
@@ -482,8 +482,8 @@ export async function forecastWithCovariates(
   if (xregMode === 'xreg + timesfm') {
     // Step 1: Fit linear model on targets
     let targets: Float32Array[] = params.inputs.map((s, i) => {
-      const start = inputLens[i] - trainLens[i];
-      return new Float32Array(s.slice(start, inputLens[i]));
+      const start = inputLens[i]! - trainLens[i]!;
+      return new Float32Array(s.slice(start, inputLens[i]!));
     });
 
     // Per-series normalization
@@ -512,12 +512,12 @@ export async function forecastWithCovariates(
     const residuals: Float32Array[] = [];
     let trainOffset = 0;
     for (let s = 0; s < numSeries; s++) {
-      const residual = new Float32Array(trainLens[s]);
-      for (let t = 0; t < trainLens[s]; t++) {
-        residual[t] = targets[s][t] - yHatContext.get(trainOffset + t, 0);
+      const residual = new Float32Array(trainLens[s]!);
+      for (let t = 0; t < trainLens[s]!; t++) {
+        residual[t] = targets[s]![t]! - yHatContext.get(trainOffset + t, 0);
       }
       residuals.push(residual);
-      trainOffset += trainLens[s];
+      trainOffset += trainLens[s]!;
     }
 
     // Step 3: Forecast residuals with TimesFM
@@ -529,10 +529,10 @@ export async function forecastWithCovariates(
       const yHatSeries: Float32Array[] = [];
       let to = 0;
       for (let s = 0; s < numSeries; s++) {
-        const arr = new Float32Array(testLens[s]);
-        for (let t = 0; t < testLens[s]; t++) arr[t] = yHatTest.get(to + t, 0);
+        const arr = new Float32Array(testLens[s]!);
+        for (let t = 0; t < testLens[s]!; t++) arr[t] = yHatTest.get(to + t, 0);
         yHatSeries.push(arr);
-        to += testLens[s];
+        to += testLens[s]!;
       }
       const renormalized = renormalizeXregOutputs(yHatSeries, xregStats);
       // Rebuild flat yHatTest
@@ -549,28 +549,28 @@ export async function forecastWithCovariates(
     const xregOutputs: Float32Array[] = [];
     let testOffset = 0;
     for (let s = 0; s < numSeries; s++) {
-      const xreg = new Float32Array(testLens[s]);
-      for (let t = 0; t < testLens[s]; t++) {
+      const xreg = new Float32Array(testLens[s]!);
+      for (let t = 0; t < testLens[s]!; t++) {
         xreg[t] = yHatTest.get(testOffset + t, 0);
       }
       xregOutputs.push(xreg);
-      testOffset += testLens[s];
+      testOffset += testLens[s]!;
     }
 
     // Combine: forecast + xreg
     return {
       pointForecast: tsResult.pointForecast.map((pf: Float32Array, i: number) => {
-        const result = new Float32Array(Math.min(pf.length, testLens[i]));
+        const result = new Float32Array(Math.min(pf.length, testLens[i]!));
         for (let t = 0; t < result.length; t++) {
-          result[t] = pf[t] + (xregOutputs[i][t] ?? 0);
+          result[t] = pf[t]! + (xregOutputs[i]![t]! ?? 0);
         }
         return result;
       }),
       quantileForecast: tsResult.quantileForecast.map((qf: Float32Array[], i: number) => {
         return qf.map((q: Float32Array) => {
-          const result = new Float32Array(Math.min(q.length, testLens[i]));
+          const result = new Float32Array(Math.min(q.length, testLens[i]!));
           for (let t = 0; t < result.length; t++) {
-            result[t] = q[t] + (xregOutputs[i][t] ?? 0);
+            result[t] = q[t]! + (xregOutputs[i]![t]! ?? 0);
           }
           return result;
         });
@@ -593,8 +593,8 @@ export async function forecastWithCovariates(
 
     // Step 2: Compute residuals using backcast (historical reconstruction)
     const targets: Float32Array[] = params.inputs.map((s, i) => {
-      const start = inputLens[i] - trainLens[i];
-      return new Float32Array(s.slice(start, inputLens[i]));
+      const start = inputLens[i]! - trainLens[i]!;
+      return new Float32Array(s.slice(start, inputLens[i]!));
     });
 
     // Use the backcast portion matching the training window
@@ -608,12 +608,12 @@ export async function forecastWithCovariates(
     }
 
     for (let s = 0; s < numSeries; s++) {
-      const residual = new Float32Array(trainLens[s]);
-      const contextLen = backcasts[s].length;
-      const backcastOffset = contextLen - trainLens[s];
+      const residual = new Float32Array(trainLens[s]!);
+      const contextLen = backcasts[s]!.length;
+      const backcastOffset = contextLen - trainLens[s]!;
 
-      for (let t = 0; t < trainLens[s]; t++) {
-        residual[t] = targets[s][t] - backcasts[s][backcastOffset + t];
+      for (let t = 0; t < trainLens[s]!; t++) {
+        residual[t] = targets[s]![t]! - backcasts[s]![backcastOffset + t]!;
       }
       residuals.push(residual);
     }
@@ -633,27 +633,27 @@ export async function forecastWithCovariates(
     const xregOutputs: Float32Array[] = [];
     let testOffset = 0;
     for (let s = 0; s < numSeries; s++) {
-      const xreg = new Float32Array(testLens[s]);
-      for (let t = 0; t < testLens[s]; t++) {
+      const xreg = new Float32Array(testLens[s]!);
+      for (let t = 0; t < testLens[s]!; t++) {
         xreg[t] = yHatTest.get(testOffset + t, 0);
       }
       xregOutputs.push(xreg);
-      testOffset += testLens[s];
+      testOffset += testLens[s]!;
     }
 
     return {
       pointForecast: tsResult.pointForecast.map((pf: Float32Array, i: number) => {
-        const result = new Float32Array(Math.min(pf.length, testLens[i]));
+        const result = new Float32Array(Math.min(pf.length, testLens[i]!));
         for (let t = 0; t < result.length; t++) {
-          result[t] = pf[t] + (xregOutputs[i][t] ?? 0);
+          result[t] = pf[t]! + (xregOutputs[i]![t]! ?? 0);
         }
         return result;
       }),
       quantileForecast: tsResult.quantileForecast.map((qf: Float32Array[], i: number) => {
         return qf.map((q: Float32Array) => {
-          const result = new Float32Array(Math.min(q.length, testLens[i]));
+          const result = new Float32Array(Math.min(q.length, testLens[i]!));
           for (let t = 0; t < result.length; t++) {
-            result[t] = q[t] + (xregOutputs[i][t] ?? 0);
+            result[t] = q[t]! + (xregOutputs[i]![t]! ?? 0);
           }
           return result;
         });

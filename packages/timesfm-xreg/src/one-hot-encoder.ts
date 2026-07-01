@@ -77,7 +77,7 @@ export class OneHotEncoder {
     let colIdx = 0;
     for (let i = 0; i < sorted.length; i++) {
       if (this._drop === 'first' && i === 0) continue; // drop first
-      indexMap.set(sorted[i], colIdx);
+      indexMap.set(sorted[i]!, colIdx);
       colIdx++;
     }
 

@@ -233,7 +233,7 @@ export function buildSummingMatrix(hierarchy: HierarchyDefinition): SummingMatri
     const desc = mustGet(descendantSet, nodeId, 'descendant');
 
     for (let j = 0; j < n; j++) {
-      row.push(desc.has(bottomNodeIds[j]) ? 1 : 0);
+      row.push(desc.has(bottomNodeIds[j]!) ? 1 : 0);
     }
 
     S.push(row);

@@ -121,15 +121,15 @@ export function concatUint8(arrays: Uint8Array[]): Uint8Array {
  */
 export function stack(arrays: Float32Array[]): Float32Array {
   if (arrays.length === 0) return new Float32Array(0);
-  const colLen = arrays[0].length;
+  const colLen = arrays[0]!.length;
   const result = new Float32Array(arrays.length * colLen);
   for (let i = 0; i < arrays.length; i++) {
-    if (arrays[i].length !== colLen) {
+    if (arrays[i]!.length !== colLen) {
       throw new RangeError(
-        `stack: all arrays must have the same length (expected ${colLen}, got ${arrays[i].length} at index ${i})`,
+        `stack: all arrays must have the same length (expected ${colLen}, got ${arrays[i]!.length} at index ${i})`,
       );
     }
-    result.set(arrays[i], i * colLen);
+    result.set(arrays[i]!, i * colLen);
   }
   return result;
 }
@@ -162,7 +162,7 @@ export function takeLast(arrays: Float32Array[], n: number): Float32Array[] {
 export function clipMin(values: Float32Array, minVal: number): Float32Array {
   const result = new Float32Array(values.length);
   for (let i = 0; i < values.length; i++) {
-    result[i] = Math.max(values[i], minVal);
+    result[i] = Math.max(values[i]!, minVal);
   }
   return result;
 }
@@ -173,7 +173,7 @@ export function clipMin(values: Float32Array, minVal: number): Float32Array {
 export function clipMax(values: Float32Array, maxVal: number): Float32Array {
   const result = new Float32Array(values.length);
   for (let i = 0; i < values.length; i++) {
-    result[i] = Math.min(values[i], maxVal);
+    result[i] = Math.min(values[i]!, maxVal);
   }
   return result;
 }
@@ -194,7 +194,7 @@ export function elementwiseMean(a: Float32Array, b: Float32Array): Float32Array 
   const len = a.length;
   const result = new Float32Array(len);
   for (let i = 0; i < len; i++) {
-    result[i] = (a[i] + b[i]) / 2;
+    result[i] = (a[i]! + b[i]!) / 2;
   }
   return result;
 }
@@ -211,7 +211,7 @@ export function elementwiseDiff(a: Float32Array, b: Float32Array): Float32Array 
   const len = a.length;
   const result = new Float32Array(len);
   for (let i = 0; i < len; i++) {
-    result[i] = a[i] - b[i];
+    result[i] = a[i]! - b[i]!;
   }
   return result;
 }
@@ -222,7 +222,7 @@ export function elementwiseDiff(a: Float32Array, b: Float32Array): Float32Array 
 export function negate(arr: Float32Array): Float32Array {
   const result = new Float32Array(arr.length);
   for (let i = 0; i < arr.length; i++) {
-    result[i] = -arr[i];
+    result[i] = -arr[i]!;
   }
   return result;
 }
@@ -241,8 +241,8 @@ export function mean(arr: Float32Array): number {
   let sum = 0;
   let count = 0;
   for (let i = 0; i < arr.length; i++) {
-    if (Number.isFinite(arr[i])) {
-      sum += arr[i];
+    if (Number.isFinite(arr[i]!)) {
+      sum += arr[i]!;
       count++;
     }
   }
@@ -257,12 +257,12 @@ export function mean(arr: Float32Array): number {
  */
 export function std(arr: Float32Array): number {
   let count = 0;
-  for (let i = 0; i < arr.length; i++) if (Number.isFinite(arr[i])) count++;
+  for (let i = 0; i < arr.length; i++) if (Number.isFinite(arr[i]!)) count++;
   if (count <= 1) return 0;
   const m = mean(arr);
   let sumSq = 0;
   for (let i = 0; i < arr.length; i++) {
-    if (Number.isFinite(arr[i])) sumSq += (arr[i] - m) ** 2;
+    if (Number.isFinite(arr[i]!)) sumSq += (arr[i]! - m) ** 2;
   }
   return Math.sqrt(Math.max(0, sumSq / count));
 }
@@ -276,7 +276,7 @@ export function std(arr: Float32Array): number {
  */
 export function allNonNegative(arr: Float32Array): boolean {
   for (let i = 0; i < arr.length; i++) {
-    const v = arr[i];
+    const v = arr[i]!;
     if (Number.isNaN(v)) return false; // NaN → unknown sign, treat as not positive
     if (v < 0) return false;
   }

@@ -103,7 +103,7 @@ export function descriptorToModelConfig(desc: ModelDescriptor): ModelConfig {
   let decodeIndex = 5; // canonical default
   let bestDist = Infinity;
   for (let q = 0; q < quantiles.length; q++) {
-    const dist = Math.abs(quantiles[q] - 0.5);
+    const dist = Math.abs(quantiles[q]! - 0.5);
     if (dist < bestDist) {
       bestDist = dist;
       decodeIndex = q + 1; // +1 because index 0 is the mean
@@ -112,7 +112,7 @@ export function descriptorToModelConfig(desc: ModelDescriptor): ModelConfig {
 
   return Object.freeze({
     contextLimit: arc.context_limit,
-    exportedPatches: onx.input_shape[1],
+    exportedPatches: onx.input_shape[1]!,
     inputPatchLen: arc.input_patch_len,
     outputPatchLen: arc.output_patch_len,
     outputQuantileLen: arc.output_quantile_len,

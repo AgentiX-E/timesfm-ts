@@ -50,7 +50,7 @@ export function updateRunningStats(
   for (let i = 0; i < len; i++) {
     if (mask[i] === 0) {
       // non-masked = valid
-      const v = values[i];
+      const v = values[i]!;
       // Skip NaN and Infinity to prevent poisoning the running statistics.
       // A single NaN would make sum=NaN, mean=NaN, sigma=NaN, destroying
       // all downstream RevIN normalization.
@@ -74,8 +74,8 @@ export function updateRunningStats(
   // Two-pass: accumulate squared deviations from the computed mean
   let incVar = 0;
   for (let i = 0; i < len; i++) {
-    if (mask[i] === 0 && Number.isFinite(values[i])) {
-      const diff = values[i] - incMu;
+    if (mask[i] === 0 && Number.isFinite(values[i]!)) {
+      const diff = values[i]! - incMu;
       incVar += diff * diff;
     }
   }
@@ -127,7 +127,7 @@ export function computeStats(
 
   for (let i = 0; i < values.length; i++) {
     if (mask && mask[i] !== 0) continue;
-    const v = values[i];
+    const v = values[i]!;
     if (!Number.isFinite(v)) continue;
     n++;
     sum += v;
@@ -141,7 +141,7 @@ export function computeStats(
   let varSum = 0;
   for (let i = 0; i < values.length; i++) {
     if (mask && mask[i] !== 0) continue;
-    const v = values[i];
+    const v = values[i]!;
     if (!Number.isFinite(v)) continue;
     const diff = v - mean;
     varSum += diff * diff;

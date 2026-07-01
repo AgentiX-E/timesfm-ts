@@ -48,11 +48,11 @@ export function getQuantile(
       `seriesIndex ${seriesIndex} out of range [0, ${output.pointForecast.length})`,
     );
   }
-  if (quantileIndex < 0 || quantileIndex >= output.quantileForecast[seriesIndex].length) {
-    const max = output.quantileForecast[seriesIndex].length;
+  if (quantileIndex < 0 || quantileIndex >= output.quantileForecast[seriesIndex]!.length) {
+    const max = output.quantileForecast[seriesIndex]!.length;
     throw new RangeError(`quantileIndex ${quantileIndex} out of range [0, ${max})`);
   }
-  return output.quantileForecast[seriesIndex][quantileIndex];
+  return output.quantileForecast[seriesIndex]![quantileIndex]!;
 }
 
 /**

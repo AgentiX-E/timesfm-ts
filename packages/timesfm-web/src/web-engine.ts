@@ -266,7 +266,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
       if (session.outputNames.includes(preferred)) return preferred;
       const canonicalOrder = ['input_emb', 'output_emb', 'output_ts', 'output_qs'];
       const idx = canonicalOrder.indexOf(preferred);
-      if (idx >= 0 && idx < session.outputNames.length) return session.outputNames[idx];
+      if (idx >= 0 && idx < session.outputNames.length) return session.outputNames[idx]!;
       return preferred;
     };
 
@@ -283,7 +283,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
     for (let b = 0; b < batchSize; b++) {
       const input = inputs[b];
       const mask = masks[b];
-      const numInputPatches = Math.floor(input.length / inputPatchLen);
+      const numInputPatches = Math.floor(input!.length / inputPatchLen);
 
       // Build padded input to match exported model shape, interleaving
       // values and masks per patch (identical to Node.js ONNX engine).
@@ -295,8 +295,8 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
         const basePatch = p * tokenizerLen;
         if (p < copyPatches) {
           for (let i = 0; i < inputPatchLen; i++) {
-            flatInputs[basePatch + i] = input[p * inputPatchLen + i];
-            flatInputs[basePatch + inputPatchLen + i] = mask[p * inputPatchLen + i];
+            flatInputs[basePatch + i] = input![p * inputPatchLen + i]!;
+            flatInputs[basePatch + inputPatchLen + i] = mask![p * inputPatchLen + i]!;
           }
         } else {
           // Padding patch: values=0, mask=1 (ignored)

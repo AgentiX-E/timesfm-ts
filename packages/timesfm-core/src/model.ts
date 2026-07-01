@@ -259,7 +259,7 @@ export class TimesFMModel implements ITimesFMModel {
 
         const result = new Float32Array(arr.length);
         for (let i = 0; i < arr.length; i++) {
-          result[i] = Number.isFinite(arr[i]) ? (arr[i] - mu) / safeSigma : 0;
+          result[i] = Number.isFinite(arr[i]!) ? (arr[i]! - mu) / safeSigma : 0;
         }
         return result;
       });
@@ -315,7 +315,7 @@ export class TimesFMModel implements ITimesFMModel {
         // sessions are safe for concurrent calls in the Node.js event loop.
         const negInputs = batchInputs.map((arr) => {
           const neg = new Float32Array(arr.length);
-          for (let i = 0; i < arr.length; i++) neg[i] = -arr[i];
+          for (let i = 0; i < arr.length; i++) neg[i] = -arr[i]!;
           return neg;
         });
         const flipPre = preprocess(negInputs, fc, this._config);

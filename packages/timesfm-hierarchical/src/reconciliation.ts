@@ -36,10 +36,10 @@ function matrixTo2D(m: Matrix): number[][] {
 /** Build Matrix from number[][]. */
 function matrixFrom2D(data: readonly (readonly number[])[]): Matrix {
   const rows = data.length;
-  const cols = rows > 0 ? data[0].length : 0;
+  const cols = rows > 0 ? data[0]!.length : 0;
   const m = new Matrix(rows, cols);
   for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) m.set(r, c, data[r][c]);
+    for (let c = 0; c < cols; c++) m.set(r, c, data[r]![c]!);
   }
   return m;
 }
@@ -47,7 +47,7 @@ function matrixFrom2D(data: readonly (readonly number[])[]): Matrix {
 /** Build an m × m diagonal Matrix from a Float32Array of diagonal values. */
 function diagFromArray(diag: Float32Array): Matrix {
   const m = new Matrix(diag.length, diag.length);
-  for (let i = 0; i < diag.length; i++) m.set(i, i, diag[i]);
+  for (let i = 0; i < diag.length; i++) m.set(i, i, diag[i]!);
   return m;
 }
 
@@ -240,7 +240,7 @@ export function reconcileBaseForecasts(
   const n = bottomNodeIds.length;
 
   // Validate every node has a base forecast
-  const horizon = baseForecasts[allNodeIds[0]]?.length;
+  const horizon = baseForecasts[allNodeIds[0]!]?.length;
   for (const id of allNodeIds) {
     const bf = baseForecasts[id];
     if (!bf || bf.length !== horizon) {
@@ -259,10 +259,10 @@ export function reconcileBaseForecasts(
   let residualCov: Matrix | undefined;
   if (options?.residualCovariance && options.residualCovariance.length > 0) {
     const cov = options.residualCovariance;
-    residualCov = new Matrix(cov.length, cov.length > 0 ? cov[0].length : 0);
+    residualCov = new Matrix(cov.length, cov.length > 0 ? cov[0]!.length : 0);
     for (let r = 0; r < cov.length; r++) {
-      for (let c = 0; c < cov[r].length; c++) {
-        residualCov.set(r, c, cov[r][c]);
+      for (let c = 0; c < cov[r]!.length; c++) {
+        residualCov.set(r, c, cov[r]![c]!);
       }
     }
   }
@@ -273,11 +273,11 @@ export function reconcileBaseForecasts(
     // Estimate per-node variance from base forecasts for WLS
     const diagVals = new Float32Array(m);
     for (let i = 0; i < m; i++) {
-      const bf = baseForecasts[allNodeIds[i]];
+      const bf = baseForecasts[allNodeIds[i]!]!;
       let sum = 0,
         count = 0;
       for (let h = 0; h < bf.length; h++) {
-        const v = bf[h];
+        const v = bf[h]!;
         if (Number.isFinite(v)) {
           sum += v;
           count++;
@@ -289,7 +289,7 @@ export function reconcileBaseForecasts(
       if (count > 1) {
         let sqDiff = 0;
         for (let h = 0; h < bf.length; h++) {
-          const v = bf[h];
+          const v = bf[h]!;
           if (Number.isFinite(v)) {
             const d = v - mu;
             sqDiff += d * d;
@@ -314,15 +314,15 @@ export function reconcileBaseForecasts(
   const reconciled: Record<string, Float32Array> = {};
 
   for (const id of allNodeIds) {
-    reconciled[id] = new Float32Array(horizon);
+    reconciled[id] = new Float32Array(horizon!);
   }
 
-  for (let h = 0; h < horizon; h++) {
+  for (let h = 0; h < horizon!; h++) {
     // Stack base forecasts into ŷ_b: length-m vector
     const yb: number[] = [];
     for (let i = 0; i < m; i++) {
-      const bf = baseForecasts[allNodeIds[i]];
-      yb.push(bf[h]);
+      const bf = baseForecasts[allNodeIds[i]!]!;
+      yb.push(bf[h]!);
     }
 
     // ŷ_h = S · P · ŷ_b
@@ -331,7 +331,7 @@ export function reconcileBaseForecasts(
     for (let j = 0; j < n; j++) {
       let val = 0;
       for (let k = 0; k < m; k++) {
-        val += P.get(j, k) * yb[k];
+        val += P.get(j, k) * yb[k]!;
       }
       bottom.push(val);
     }
@@ -340,9 +340,9 @@ export function reconcileBaseForecasts(
     for (let i = 0; i < m; i++) {
       let val = 0;
       for (let j = 0; j < n; j++) {
-        val += sMat[i][j] * bottom[j];
+        val += sMat[i]![j]! * bottom[j]!;
       }
-      reconciled[allNodeIds[i]][h] = val;
+      reconciled[allNodeIds[i]!]![h] = val;
     }
   }
 

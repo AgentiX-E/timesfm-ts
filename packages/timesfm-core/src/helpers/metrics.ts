@@ -26,8 +26,8 @@ export function mae(actual: Float32Array, predicted: Float32Array): number {
   let sum = 0;
   let count = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i]) && Number.isFinite(predicted[i])) {
-      sum += Math.abs(actual[i] - predicted[i]);
+    if (Number.isFinite(actual[i]!) && Number.isFinite(predicted[i]!)) {
+      sum += Math.abs(actual[i]! - predicted[i]!);
       count++;
     }
   }
@@ -47,8 +47,8 @@ export function rmse(actual: Float32Array, predicted: Float32Array): number {
   let sumSq = 0;
   let count = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i]) && Number.isFinite(predicted[i])) {
-      const diff = actual[i] - predicted[i];
+    if (Number.isFinite(actual[i]!) && Number.isFinite(predicted[i]!)) {
+      const diff = actual[i]! - predicted[i]!;
       sumSq += diff * diff;
       count++;
     }
@@ -74,9 +74,9 @@ export function mape(actual: Float32Array, predicted: Float32Array): number {
     if (
       Number.isFinite(actual[i]) &&
       Number.isFinite(predicted[i]) &&
-      Math.abs(actual[i]) > EPSILON
+      Math.abs(actual[i]!) > EPSILON
     ) {
-      sum += Math.abs((actual[i] - predicted[i]) / actual[i]);
+      sum += Math.abs((actual[i]! - predicted[i]!) / actual[i]!);
       count++;
     }
   }
@@ -99,10 +99,10 @@ export function smape(actual: Float32Array, predicted: Float32Array): number {
   let sum = 0;
   let count = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i]) && Number.isFinite(predicted[i])) {
-      const denominator = Math.abs(actual[i]) + Math.abs(predicted[i]);
+    if (Number.isFinite(actual[i]!) && Number.isFinite(predicted[i]!)) {
+      const denominator = Math.abs(actual[i]!) + Math.abs(predicted[i]!);
       if (denominator > EPSILON) {
-        sum += (2 * Math.abs(actual[i] - predicted[i])) / denominator;
+        sum += (2 * Math.abs(actual[i]! - predicted[i]!)) / denominator;
         count++;
       }
     }
@@ -145,8 +145,8 @@ export function r2Score(actual: Float32Array, predicted: Float32Array): number {
   let sumActual = 0;
   let n = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i])) {
-      sumActual += actual[i];
+    if (Number.isFinite(actual[i]!)) {
+      sumActual += actual[i]!;
       n++;
     }
   }
@@ -156,9 +156,9 @@ export function r2Score(actual: Float32Array, predicted: Float32Array): number {
   let ssRes = 0;
   let ssTot = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i]) && Number.isFinite(predicted[i])) {
-      const diffRes = actual[i] - predicted[i];
-      const diffTot = actual[i] - meanActual;
+    if (Number.isFinite(actual[i]!) && Number.isFinite(predicted[i]!)) {
+      const diffRes = actual[i]! - predicted[i]!;
+      const diffTot = actual[i]! - meanActual;
       ssRes += diffRes * diffRes;
       ssTot += diffTot * diffTot;
     }
@@ -191,8 +191,8 @@ export function picCoverage(
   let covered = 0;
   let total = 0;
   for (let i = 0; i < actual.length; i++) {
-    if (Number.isFinite(actual[i]) && Number.isFinite(lower[i]) && Number.isFinite(upper[i])) {
-      if (actual[i] >= lower[i] && actual[i] <= upper[i]) covered++;
+    if (Number.isFinite(actual[i]!) && Number.isFinite(lower[i]!) && Number.isFinite(upper[i]!)) {
+      if (actual[i]! >= lower[i]! && actual[i]! <= upper[i]!) covered++;
       total++;
     }
   }
@@ -212,8 +212,8 @@ export function piWidth(lower: Float32Array, upper: Float32Array): number {
   let sum = 0;
   let count = 0;
   for (let i = 0; i < lower.length; i++) {
-    if (Number.isFinite(lower[i]) && Number.isFinite(upper[i])) {
-      sum += upper[i] - lower[i];
+    if (Number.isFinite(lower[i]!) && Number.isFinite(upper[i]!)) {
+      sum += upper[i]! - lower[i]!;
       count++;
     }
   }

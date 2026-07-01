@@ -101,8 +101,8 @@ export function preprocess(
 
     for (let p = 0; p < numPatches; p++) {
       const offset = p * inputPatchLen;
-      patchValues.push(flatInput.slice(offset, offset + inputPatchLen));
-      patchMasks.push(flatMask.slice(offset, offset + inputPatchLen));
+      patchValues.push(flatInput!.slice(offset, offset + inputPatchLen));
+      patchMasks.push(flatMask!.slice(offset, offset + inputPatchLen));
     }
 
     patchedInputs.push(concat(patchValues));
@@ -121,8 +121,8 @@ export function preprocess(
 
     for (let p = 0; p < numPatches; p++) {
       const offset = p * inputPatchLen;
-      const patchValues = flatInput.slice(offset, offset + inputPatchLen);
-      const patchMask = flatMask.slice(offset, offset + inputPatchLen);
+      const patchValues = flatInput!.slice(offset, offset + inputPatchLen);
+      const patchMask = flatMask!.slice(offset, offset + inputPatchLen);
 
       const [updated] = updateRunningStats(stats, patchValues, patchMask);
       stats = updated;
@@ -146,10 +146,10 @@ export function preprocess(
 
   // Apply mask → zero out padded positions
   for (let b = 0; b < batchSize; b++) {
-    const mask = patchedMasks[b];
-    for (let i = 0; i < normed[b].length; i++) {
-      if (mask[i] === 1) {
-        normed[b][i] = 0;
+    const mask = patchedMasks[b]!;
+    for (let i = 0; i < normed[b]!.length; i++) {
+      if (mask[i]! === 1) {
+        normed[b]![i] = 0;
       }
     }
   }

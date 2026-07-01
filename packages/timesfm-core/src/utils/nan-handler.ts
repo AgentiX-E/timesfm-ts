@@ -22,7 +22,7 @@
 export function stripLeadingNaNs(arr: Float32Array): Float32Array {
   const len = arr.length;
   for (let i = 0; i < len; i++) {
-    if (!Number.isNaN(arr[i])) {
+    if (!Number.isNaN(arr[i]!)) {
       if (i === 0) return arr; // no leading NaNs — return as-is for zero-copy
       return arr.slice(i);
     }
@@ -66,8 +66,8 @@ export function linearInterpolateNaNs(arr: Float32Array): Float32Array {
   let validCount = 0;
 
   for (let i = 0; i < len; i++) {
-    if (!Number.isNaN(arr[i])) {
-      lastValid = arr[i];
+    if (!Number.isNaN(arr[i]!)) {
+      lastValid = arr[i]!;
       lastPos = i;
       validCount++;
     }
@@ -85,7 +85,7 @@ export function linearInterpolateNaNs(arr: Float32Array): Float32Array {
   if (validCount === 1) {
     const fill = lastValid;
     for (let i = 0; i < len; i++) {
-      if (Number.isNaN(result[i])) result[i] = fill;
+      if (Number.isNaN(result[i]!)) result[i] = fill;
     }
     return result;
   }
@@ -96,14 +96,14 @@ export function linearInterpolateNaNs(arr: Float32Array): Float32Array {
   let rightPos = -1;
 
   for (let i = len - 1; i >= 0; i--) {
-    if (!Number.isNaN(arr[i])) {
-      rightValid = arr[i];
+    if (!Number.isNaN(arr[i]!)) {
+      rightValid = arr[i]!;
       rightPos = i;
       continue;
     }
 
-    const lVal = leftValid[i];
-    const lPos = leftPos[i];
+    const lVal = leftValid[i]!;
+    const lPos = leftPos[i]!;
 
     if (!Number.isNaN(lVal) && rightPos >= 0) {
       // Both sides valid → linear interpolation

@@ -43,7 +43,8 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
   ) {
     this._config = config;
     this._executionProvider =
-      PROVIDER_MAP[options.executionProvider ?? 'cpu'] ?? PROVIDER_MAP['cpu'];
+      (PROVIDER_MAP[options.executionProvider ?? 'cpu'] as string) ??
+      (PROVIDER_MAP['cpu'] as string);
     this._intraOpNumThreads = options.intraOpNumThreads ?? 0;
   }
 
@@ -78,7 +79,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
     if (this._executionProvider !== CPU) {
       /* v8 ignore next 4 — CUDA/DML provider paths require GPU hardware, tested locally */
       this._session = await this._ortModule.InferenceSession.create(modelPath, {
-        executionProviders: [this._executionProvider, CPU],
+        executionProviders: [this._executionProvider, CPU] as [string, ...string[]],
         ...commonOpts,
       });
     } else {
@@ -206,7 +207,7 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
       // Fallback: match by positional index matching canonical order
       const canonicalOrder = ['input_emb', 'output_emb', 'output_ts', 'output_qs'];
       const idx = canonicalOrder.indexOf(preferred);
-      if (idx >= 0 && idx < outputNames.length) return outputNames[idx];
+      if (idx >= 0 && idx < outputNames.length) return outputNames[idx]!;
       // Last resort: use the name as-is (let ONNX Runtime error if wrong)
       return preferred;
     };
@@ -214,8 +215,8 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
     // Run all batch elements concurrently
     const results = await Promise.all(
       Array.from({ length: batchSize }, async (_, b) => {
-        const input = inputs[b];
-        const mask = masks[b];
+        const input = inputs[b]!;
+        const mask = masks[b]!;
         const numInputPatches = Math.floor(input.length / inputPatchLen);
 
         // Build padded input to match exported model shape
@@ -226,8 +227,8 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
           const basePatch = p * tokenizerLen;
           if (p < copyPatches) {
             for (let i = 0; i < inputPatchLen; i++) {
-              flatInputs[basePatch + i] = input[p * inputPatchLen + i];
-              flatInputs[basePatch + inputPatchLen + i] = mask[p * inputPatchLen + i];
+              flatInputs[basePatch + i] = input![p * inputPatchLen + i]!;
+              flatInputs[basePatch + inputPatchLen + i] = mask![p * inputPatchLen + i]!;
             }
           } else {
             for (let i = 0; i < inputPatchLen; i++) {
@@ -258,10 +259,10 @@ export class TimesFMInferenceEngine implements IInferenceEngine {
         };
 
         return {
-          inputEmb: extract(sessionResults[resolveOutputName('input_emb')]),
-          outputEmb: extract(sessionResults[resolveOutputName('output_emb')]),
-          outputTS: extract(sessionResults[resolveOutputName('output_ts')]),
-          outputQS: extract(sessionResults[resolveOutputName('output_qs')]),
+          inputEmb: extract(sessionResults[resolveOutputName('input_emb')]!),
+          outputEmb: extract(sessionResults[resolveOutputName('output_emb')]!),
+          outputTS: extract(sessionResults[resolveOutputName('output_ts')]!),
+          outputQS: extract(sessionResults[resolveOutputName('output_qs')]!),
         };
       }),
     );

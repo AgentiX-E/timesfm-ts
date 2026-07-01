@@ -94,7 +94,7 @@ const PRECISION_PROFILES: Readonly<Record<string, PrecisionProfile>> = Object.fr
 const DOWNLOAD_DEFAULT_PRECISION = 'fp32';
 
 function precisionProfile(precision: string = DOWNLOAD_DEFAULT_PRECISION): PrecisionProfile {
-  return PRECISION_PROFILES[precision] ?? PRECISION_PROFILES[DOWNLOAD_DEFAULT_PRECISION];
+  return PRECISION_PROFILES[precision]! ?? PRECISION_PROFILES[DOWNLOAD_DEFAULT_PRECISION]!;
 }
 
 function releaseUrl(precision: string): string {

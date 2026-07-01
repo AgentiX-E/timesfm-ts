@@ -43,13 +43,13 @@ export function revin(
   if (reverse) {
     // x * σ + μ
     for (let i = 0; i < len; i++) {
-      result[i] = values[i] * sigmaFlat[i] + muFlat[i];
+      result[i] = values[i]! * sigmaFlat[i]! + muFlat[i]!;
     }
   } else {
     // (x - μ) / max(σ, ε)
     for (let i = 0; i < len; i++) {
-      const safeSigma = sigmaFlat[i] < TOLERANCE ? 1.0 : sigmaFlat[i];
-      result[i] = (values[i] - muFlat[i]) / safeSigma;
+      const safeSigma = sigmaFlat[i]! < TOLERANCE ? 1.0 : sigmaFlat[i]!;
+      result[i] = (values[i]! - muFlat[i]!) / safeSigma;
     }
   }
 
@@ -89,22 +89,22 @@ export function revinBatch(
   const perPatch = mu.length === batchSize * numPatches;
 
   for (let b = 0; b < batchSize; b++) {
-    const totalLen = values[b].length;
+    const totalLen = values[b]!.length;
     const out = new Float32Array(totalLen);
 
     for (let p = 0; p < numPatches; p++) {
       const patchOffset = p * patchLen;
       const muIndex = perPatch ? b * numPatches + p : b;
-      const m = mu[muIndex][0]; // scalar per patch/batch
-      const s = sigma[muIndex][0]; // scalar per patch/batch
+      const m = mu[muIndex]![0]!; // scalar per patch/batch
+      const s = sigma[muIndex]![0]!; // scalar per patch/batch
 
       for (let i = 0; i < patchLen && patchOffset + i < totalLen; i++) {
         const idx = patchOffset + i;
         if (reverse) {
-          out[idx] = values[b][idx] * s + m;
+          out[idx] = values[b]![idx]! * s + m;
         } else {
           const safeS = s < TOLERANCE ? 1.0 : s;
-          out[idx] = (values[b][idx] - m) / safeS;
+          out[idx] = (values[b]![idx]! - m) / safeS;
         }
       }
     }
@@ -148,7 +148,7 @@ export function revinBatch4D(
 
   for (let b = 0; b < batchSize; b++) {
     // Total elements per batch: numPatches * patchLen * numQuantiles
-    const totalLen = values[b].length;
+    const totalLen = values[b]!.length;
     const out = new Float32Array(totalLen);
 
     for (let p = 0; p < numPatches; p++) {
@@ -156,14 +156,14 @@ export function revinBatch4D(
         for (let q = 0; q < numQuantiles; q++) {
           const idx = (p * patchLen + i) * numQuantiles + q;
           const muIndex = perPatch ? b * numPatches + p : b;
-          const m = mu[muIndex][0];
-          const s = sigma[muIndex][0];
+          const m = mu[muIndex]![0]!;
+          const s = sigma[muIndex]![0]!;
 
           if (reverse) {
-            out[idx] = values[b][idx] * s + m;
+            out[idx] = values[b]![idx]! * s + m;
           } else {
             const safeS = s < TOLERANCE ? 1.0 : s;
-            out[idx] = (values[b][idx] - m) / safeS;
+            out[idx] = (values[b]![idx]! - m) / safeS;
           }
         }
       }
@@ -195,7 +195,7 @@ function flattenParam(param: Float32Array | Float32Array[], len: number): Float3
   // Array of scalars — each element is a Float32Array([scalar])
   const flat = new Float32Array(len);
   if (param.length === len) {
-    for (let i = 0; i < len; i++) flat[i] = param[i][0];
+    for (let i = 0; i < len; i++) flat[i] = param[i]![0]!;
   } else {
     // Assume it's per-patch sized — repeat values evenly.
     // Handle the remainder to avoid dropping trailing elements.
@@ -205,7 +205,7 @@ function flattenParam(param: Float32Array | Float32Array[], len: number): Float3
     for (let i = 0; i < param.length; i++) {
       const repeatCount = ratio + (i < remainder ? 1 : 0);
       for (let j = 0; j < repeatCount; j++) {
-        flat[cursor + j] = param[i][0];
+        flat[cursor + j] = param[i]![0]!;
       }
       cursor += repeatCount;
     }
@@ -219,7 +219,7 @@ function flattenParam(param: Float32Array | Float32Array[], len: number): Float3
 function broadcast1D(arr: Float32Array, len: number): Float32Array {
   if (arr.length === 1) {
     const result = new Float32Array(len);
-    result.fill(arr[0]);
+    result.fill(arr[0]!);
     return result;
   }
   if (arr.length !== len) {

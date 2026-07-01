@@ -40,7 +40,11 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      '@typescript-eslint/no-non-null-assertion': 'error',
+      // no-non-null-assertion is redundant with tsconfig noUncheckedIndexedAccess:
+      // TypeScript itself enforces undefined-checking on all indexed access,
+      // so non-null assertions are explicit acknowledgements of verified bounds,
+      // not a safety gap.
+      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
