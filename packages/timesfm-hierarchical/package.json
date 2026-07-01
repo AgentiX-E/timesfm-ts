@@ -1,6 +1,6 @@
 {
   "name": "@agentix-e/timesfm-hierarchical",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Hierarchical time series reconciliation for TimesFM — bottom-up, OLS, WLS, and MinT strategies",
   "type": "module",
   "main": "./dist/index.js",
