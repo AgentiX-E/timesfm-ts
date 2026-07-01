@@ -504,7 +504,7 @@ export const QUANTILE_INDICES = {
 } as const;
 
 /** The named quantile levels (for display / reference). */
-export const QUANTILE_NAMES: Readonly<Record<number, string>> = {
+export const QUANTILE_NAMES: Readonly<Record<0|1|2|3|4|5|6|7|8|9, string>> = {
   0: 'mean',
   1: 'q10',
   2: 'q20',

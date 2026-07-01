@@ -3,6 +3,7 @@
 Node.js ONNX Runtime inference engine for TimesFM — zero-shot time series forecasting.
 
 [![npm](https://img.shields.io/npm/v/@agentix-e/timesfm-node?color=blue)](https://www.npmjs.com/package/@agentix-e/timesfm-node)
+[![API Docs](https://img.shields.io/badge/docs-TypeDoc-blue)](https://agentix-e.github.io/timesfm-ts/api/classes/timesfm_node.TimesFMNodeEngine.html)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 
 📚 [API Documentation](https://agentix-e.github.io/timesfm-ts/api/classes/timesfm_node.TimesFMNodeEngine.html) · 📊 [Benchmark](https://agentix-e.github.io/timesfm-ts/benchmark/) · 📈 [Coverage](https://agentix-e.github.io/timesfm-ts/coverage/) · 💻 [Source](https://github.com/AgentiX-E/timesfm-ts)

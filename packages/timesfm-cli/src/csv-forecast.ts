@@ -69,6 +69,14 @@ interface ParsedCSV {
 // ---------------------------------------------------------------------------
 
 export function parseCSVData(filePath: string, dateCol: string, valueCols?: string[]): ParsedCSV {
+  const stat = fs.statSync(filePath);
+  if (stat.size > 100 * 1024 * 1024) {
+    console.warn(
+      `Warning: CSV file is ${(stat.size / 1024 / 1024).toFixed(0)} MB — ` +
+      `reading large files synchronously may block the event loop. ` +
+      `Consider splitting the file into smaller chunks.`,
+    );
+  }
   const raw = fs.readFileSync(filePath, 'utf-8');
   const records: Record<string, string>[] = parse(raw, {
     columns: true,

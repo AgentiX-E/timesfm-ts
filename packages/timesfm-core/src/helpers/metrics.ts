@@ -124,7 +124,7 @@ export function mase(
 ): number {
   const modelMAE = mae(actual, predicted);
   const naiveMAE = mae(actual, naiveForecast);
-  if (naiveMAE < EPSILON) return modelMAE < EPSILON ? 1 : Number.MAX_SAFE_INTEGER;
+  if (naiveMAE < EPSILON) return modelMAE < EPSILON ? 1 : Infinity;
   return modelMAE / naiveMAE;
 }
 

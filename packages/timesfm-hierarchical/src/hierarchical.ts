@@ -137,7 +137,9 @@ export async function reconcileForecast(
       const adjQ = new Float32Array(horizon);
       for (let h = 0; h < horizon; h++) {
         const baseVal = basePoint[h]!;
-        const ratio = Math.abs(baseVal) > 1e-10 ? reconcPoint[h]! / baseVal : 1;
+        const ratio = Math.abs(baseVal) > 1e-10 
+          ? Math.max(0.1, Math.min(10, reconcPoint[h]! / baseVal))
+          : 1;
         adjQ[h] = baseQuantile[q]![h]! * ratio;
       }
       adjustedQuantile.push(adjQ);

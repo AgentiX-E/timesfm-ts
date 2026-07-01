@@ -13,8 +13,8 @@
  * node -e scripts to avoid shell escaping issues.
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const THRESHOLDS = { lines: 95, branches: 95, functions: 95, statements: 95 };
 const TIER = process.argv.includes('--tier')
@@ -32,7 +32,7 @@ function main() {
     process.exit(1);
   }
 
-  const summary = require(summaryPath);
+  const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf-8'));
 
   if (!summary || !summary.total) {
     console.error(`[${TIER}] FAIL: No total coverage data. All metrics are 0%.`);

@@ -127,6 +127,12 @@ export function revinBatch(
  * mu/sigma are broadcast from (batch,) or (batch, patches) with
  * two trailing singleton dims added internally.
  *
+ * @remarks
+ * The output always has `exportedPatches`-worth of elements regardless of
+ * the actual number of valid sub-patches.  Callers MUST index by the known
+ * sub-patch count, NOT by the output array length.  Using the wrong index
+ * silently produces zero-valued outputs.
+ *
  * **Contract**: The returned array always has exportedPatches-worth of
  * elements per batch entry.  When the caller only populated m < exportedPatches
  * sub-patches, the trailing (exportedPatches - m) sub-patches are zero-filled.

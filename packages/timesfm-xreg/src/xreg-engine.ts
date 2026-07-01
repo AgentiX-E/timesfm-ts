@@ -236,7 +236,7 @@ function ridgeRegression(
     const ncols = x.columns;
     const maxRows = ncols * maxRowsPerCol;
     if (nrows > maxRows) {
-      // Deterministic reservoir-like subset: take evenly spaced rows.
+      // Systematic evenly-spaced sampling for large covariate matrices
       // When step < 1, avoid duplicates by capping at nrows.
       const step = nrows / maxRows;
       const selRows: number[] = [];
@@ -463,11 +463,31 @@ export async function forecastWithCovariates(
     }
 
     if (params.dynamicNumericalCovariates) {
-      const firstCov = Object.values(params.dynamicNumericalCovariates)[0];
-      testLens.push(firstCov![s]!.length - inputLens[s]!);
+      // Validate all covariates have consistent lengths
+      const covEntries = Object.entries(params.dynamicNumericalCovariates);
+      const firstLen = covEntries[0]![1]![s]!.length;
+      for (const [name, cov] of covEntries) {
+        if (cov[s]!.length !== firstLen) {
+          throw new CovariateError(
+            `Covariate "${name}" has length ${cov[s]!.length} for series ${s}, ` +
+            `expected ${firstLen} (matching "${covEntries[0]![0]}")`,
+          );
+        }
+      }
+      testLens.push(firstLen - inputLens[s]!);
     } else if (params.dynamicCategoricalCovariates) {
-      const firstCov = Object.values(params.dynamicCategoricalCovariates)[0];
-      testLens.push(firstCov![s]!.length - inputLens[s]!);
+      // Validate all categorical covariates have consistent lengths
+      const covEntries = Object.entries(params.dynamicCategoricalCovariates);
+      const firstLen = covEntries[0]![1]![s]!.length;
+      for (const [name, cov] of covEntries) {
+        if (cov[s]!.length !== firstLen) {
+          throw new CovariateError(
+            `Categorical covariate "${name}" has length ${cov[s]!.length} for series ${s}, ` +
+            `expected ${firstLen} (matching "${covEntries[0]![0]}")`,
+          );
+        }
+      }
+      testLens.push(firstLen - inputLens[s]!);
     } else {
       testLens.push(fc.maxHorizon);
     }

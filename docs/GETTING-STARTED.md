@@ -373,20 +373,20 @@ const result = await forecastWithCovariates(model, {
 
 ```bash
 # Forecast from CSV
-node packages/timesfm-cli/dist/cli.js forecast \
+npx @agentix-e/timesfm-cli forecast \
   --model ./models/timesfm-2.5.onnx \
   --horizon 24 \
   input.csv
 
 # Specify output file
-node packages/timesfm-cli/dist/cli.js forecast \
+npx @agentix-e/timesfm-cli forecast \
   --model ./models/timesfm-2.5.onnx \
   --horizon 52 \
   --output forecasts.csv \
   input.csv
 
 # JSON format output
-node packages/timesfm-cli/dist/cli.js forecast \
+npx @agentix-e/timesfm-cli forecast \
   --model ./models/timesfm-2.5.onnx \
   --horizon 24 \
   --output-format json \
@@ -394,7 +394,7 @@ node packages/timesfm-cli/dist/cli.js forecast \
   input.csv
 
 # Specify columns to forecast and date column
-node packages/timesfm-cli/dist/cli.js forecast \
+npx @agentix-e/timesfm-cli forecast \
   --model ./models/timesfm-2.5.onnx \
   --horizon 24 \
   --date-col date \

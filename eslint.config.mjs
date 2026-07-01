@@ -40,11 +40,6 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      // no-non-null-assertion is redundant with tsconfig noUncheckedIndexedAccess:
-      // TypeScript itself enforces undefined-checking on all indexed access,
-      // so non-null assertions are explicit acknowledgements of verified bounds,
-      // not a safety gap.
-      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/consistent-type-imports': [
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
@@ -56,6 +51,21 @@ export default [
       'no-duplicate-imports': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+
+  // Packages that genuinely need non-null assertions due to noUncheckedIndexedAccess
+  {
+    files: [
+      'packages/timesfm-core/src/**/*.ts',
+      'packages/timesfm-node/src/**/*.ts',
+      'packages/timesfm-xreg/src/**/*.ts',
+      'packages/timesfm-hierarchical/src/**/*.ts',
+      'packages/timesfm-web/src/**/*.ts',
+      'packages/timesfm-cli/src/**/*.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
 

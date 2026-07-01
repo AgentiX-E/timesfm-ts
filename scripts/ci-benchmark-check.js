@@ -12,8 +12,8 @@
  * Called from ci.yml (benchmark and web-benchmark jobs).
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 const REPORT_FILE = process.argv.includes('--report')
   ? process.argv[process.argv.indexOf('--report') + 1] || 'benchmark-report.json'

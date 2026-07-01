@@ -23,8 +23,6 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/nock": "^11.1.0",
-    "nock": "^14.0.16",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },

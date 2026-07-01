@@ -232,6 +232,13 @@ jobs:
         run: |
           for pkg in timesfm-core timesfm-node timesfm-xreg timesfm-web timesfm-hierarchical timesfm-cli; do
             cd "packages/${pkg}"
+            PKG_NAME=$(node -p "require('./package.json').name")
+            PKG_VER=$(node -p "require('./package.json').version")
+            if npm view "${PKG_NAME}@${PKG_VER}" version >/dev/null 2>&1; then
+              echo "⚠ ${PKG_NAME}@${PKG_VER} already published — skipping"
+              cd ../..
+              continue
+            fi
             npm publish --access public --provenance
             cd ../..
           done

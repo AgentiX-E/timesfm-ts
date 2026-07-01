@@ -14,6 +14,7 @@
   "scripts": {
     "build": "tsc -b packages/timesfm-core packages/timesfm-node packages/timesfm-xreg packages/timesfm-cli packages/timesfm-web packages/timesfm-hierarchical",
     "build:core": "tsc -b packages/timesfm-core",
+    "build:node": "tsc -b packages/timesfm-node",
     "build:xreg": "tsc -b packages/timesfm-xreg",
     "build:cli": "tsc -b packages/timesfm-cli",
     "build:web": "tsc -b packages/timesfm-web",

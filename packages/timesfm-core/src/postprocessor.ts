@@ -107,7 +107,10 @@ export function postProcess(
   }
 
   // ---- Step 4: Return backcast (if requested) ----
-  // Compute backcast from pfOutputs BEFORE Step 1 assembles the forecast.
+  // Backcast is extracted from the raw pfOutputs after flip invariance (Step 2)
+  // and continuous quantile head (Step 3) have already been applied to
+  // fullForecasts. The extraction uses pfOutputs, which are the original
+  // prefill outputs — Steps 1–3 only modify fullForecasts, not pfOutputs.
   // Backcast = model's reconstruction of historical context (all but last output patch)
   let backcastOutputs: Float32Array[] | undefined;
   if (fc.returnBackcast) {

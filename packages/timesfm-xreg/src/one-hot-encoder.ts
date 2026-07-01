@@ -59,30 +59,35 @@ export class OneHotEncoder {
    * Fit the encoder to the given categories.
    */
   fit(values: Category[]): void {
-    // Get sorted unique categories
-    const unique = new Set<string>();
-    for (const v of values) {
-      unique.add(String(v));
+    // Get unique categories
+    const cats = [...new Set(values)];
+    let categories: string[];
+
+    // Detect if all categories can be parsed as numbers
+    const allNumeric = cats.every((v) => !Number.isNaN(Number(v)));
+    if (allNumeric) {
+      categories = [...new Set(cats)].sort((a, b) => Number(a) - Number(b)).map(String);
+    } else {
+      categories = [...new Set(cats.map((v) => String(v)))].sort();
     }
-    const sorted = Array.from(unique).sort();
 
     // Build index map
     const indexMap = new Map<string, number>();
-    let numColumns = sorted.length;
+    let numColumns = categories.length;
 
     if (this._drop === 'first') {
-      numColumns = Math.max(0, sorted.length - 1);
+      numColumns = Math.max(0, categories.length - 1);
     }
 
     let colIdx = 0;
-    for (let i = 0; i < sorted.length; i++) {
+    for (let i = 0; i < categories.length; i++) {
       if (this._drop === 'first' && i === 0) continue; // drop first
-      indexMap.set(sorted[i]!, colIdx);
+      indexMap.set(categories[i]!, colIdx);
       colIdx++;
     }
 
     this.state = {
-      categories: sorted,
+      categories,
       drop: this._drop,
       indexMap,
       numColumns,

@@ -25,14 +25,18 @@
 
 import { Command } from 'commander';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { csvForecast, type CSVForecastOptions } from './csv-forecast';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json') as { version: string };
 
 const program = new Command();
 
 program
   .name('timesfm')
   .description('Zero-shot time series forecasting with TimesFM (Node.js)')
-  .version('0.3.1');
+  .version(version);
 
 // ─── info — model metadata ─────────────────────────────────────────────────
 
@@ -46,7 +50,7 @@ program
       const modelPath =
         (options.model as string) || process.env.TIMESFM_MODEL_PATH || core.defaultModelPath();
 
-      console.log('TimesFM CLI  —  @agentix-e/timesfm-cli  v0.3.1');
+      console.log(`TimesFM CLI  —  @agentix-e/timesfm-cli  v${version}`);
       console.log(`Model path:  ${modelPath}`);
       if (existsSync(modelPath)) {
         const { resolveModelConfig } = core;
@@ -121,16 +125,21 @@ program
         ? { url: proxyUrl, username: proxyUsername, password: proxyPassword }
         : undefined;
 
+      const prec = (options.precision as string) || process.env.TIMESFM_PRECISION || 'fp32';
+      if (prec !== 'fp32' && prec !== 'int8') {
+        console.error(`Error: Unknown precision "${prec}". Supported: fp32, int8`);
+        process.exit(1);
+      }
+
       const dest = await core.downloadModel({
         force: options.force === true,
         dest: options.output as string | undefined,
         proxy: proxyConfig,
-        precision: (options.precision as string) || process.env.TIMESFM_PRECISION || 'fp32',
+        precision: prec,
       });
       _lastSetupPath = dest;
       console.log(`\nModel ready: ${dest}`);
-      const prec = (options.precision as string) || process.env.TIMESFM_PRECISION;
-      if (prec && prec !== 'fp32') {
+      if (prec !== 'fp32') {
         console.log(`Precision:   ${prec}`);
       }
       console.log(`   Run: timesfm forecast --horizon 24 your-data.csv`);
@@ -201,7 +210,7 @@ program
         inputPath: input,
         horizon: options.horizon as number,
         modelPath: resolvedPath,
-        dateCol: (options.dateCol as string) || 'date',
+        dateCol: options.dateCol as string,
         valueCols: options.valueCols
           ? (options.valueCols as string).split(',').map((s: string) => s.trim())
           : undefined,

@@ -155,10 +155,13 @@ export async function loadModelDescriptor(path: string): Promise<ModelDescriptor
   for (const candidate of candidates) {
     try {
       const content = await readJsonFile(candidate);
-      const desc = JSON.parse(content) as ModelDescriptor;
+      let desc = JSON.parse(content) as ModelDescriptor;
       // Normalise missing precision to default for downstream consumers.
       if (desc.onnx && !desc.onnx.precision) {
-        (desc as { onnx: { precision?: string } }).onnx.precision = PRECISION_DEFAULT;
+        desc = {
+          ...desc,
+          onnx: { ...desc.onnx, precision: PRECISION_DEFAULT },
+        };
       }
       return validateDescriptor(desc) ? desc : null;
     } catch (err) {

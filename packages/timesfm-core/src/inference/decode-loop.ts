@@ -253,7 +253,13 @@ export async function decode(
       const seed = new Float32Array(mc.outputPatchLen);
       for (let o = 0; o < mc.outputPatchLen; o++) {
         const idx = lastSubPatchStart + o * mc.numQuantiles + mc.decodeIndex;
-        seed[o] = arDenormed[b]![idx]!;
+        let seedVal = arDenormed[b]![idx]!;
+        if (!Number.isFinite(seedVal)) {
+          // Replace NaN/Inf with zero — pathological inputs may produce
+          // undefined values at extreme quantiles after RevIN reversal
+          seedVal = 0;
+        }
+        seed[o] = seedVal;
       }
       nextSeeds.push(seed);
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * prepare-pages.js — Generate GitHub Pages static HTML files
  *
@@ -10,8 +11,8 @@
  * issues that arise with inline `node -e '...'` containing JS template literals.
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ function writeCoverageIndex() {
   let html;
   try {
     const summaryPath = path.join('docs', 'coverage', 'coverage-summary.json');
-    const summary = require(path.resolve(summaryPath)).total;
+    const summary = JSON.parse(fs.readFileSync(path.resolve(summaryPath), 'utf-8')).total;
     const pct = (k) => summary[k].pct.toFixed(1);
     const hasLcov = fs.existsSync(path.join('docs', 'coverage', 'lcov-report', 'index.html'));
 

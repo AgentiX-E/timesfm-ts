@@ -13,6 +13,7 @@ import {
   type ModelConfig,
 } from './types';
 import { ConfigValidationError } from './errors';
+import * as os from 'node:os';
 
 /**
  * Validate and normalise a ForecastConfig against a ModelConfig.
@@ -95,6 +96,9 @@ export function createForecastConfig(
 /**
  * Check whether two ForecastConfigs are equivalent (ignoring fields that
  * don't affect the compiled decode function).
+ *
+ * @deprecated This function is not used in the current codebase and may be
+ * removed in a future version. If you depend on it, please open an issue.
  */
 export function configsEqual(a: ForecastConfig, b: ForecastConfig): boolean {
   const keys: Array<keyof ForecastConfig> = [
@@ -144,11 +148,6 @@ export function suggestBatchSize(freeMemoryGB?: number, memoryFraction: number =
   const PER_BATCH_GB = 0.2;
 
   if (freeMemoryGB === undefined) {
-    // Lazy require avoids loading 'node:os' on every config import —
-    // only suggestBatchSize() callers pay the cost.
-    // This is a Node.js-only function; non-Node runtimes must pass
-    // freeMemoryGB as a parameter.
-    const os = require('node:os');
     freeMemoryGB = os.freemem() / 1024 ** 3;
   }
 

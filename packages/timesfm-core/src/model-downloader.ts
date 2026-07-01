@@ -598,6 +598,12 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
  *
  * If all backends fail, a descriptive error with platform-specific
  * installation instructions is thrown.
+ *
+ * **Optimization note**: The backends are tried in order regardless of
+ * platform.  On Windows, `unzip` is tried first (almost certain to fail)
+ * before reaching `7z` or PowerShell.  A platform-aware reordering
+ * (e.g., try PowerShell first on Windows, unzip first on Unix) would
+ * eliminate wasted spawn attempts and reduce extraction latency.
  */
 async function extractZip(zipPath: string, outDir: string): Promise<void> {
   const backends: Array<() => Promise<void>> = [
