@@ -62,6 +62,9 @@ importers:
       '@agentix-e/timesfm-core':
         specifier: workspace:*
         version: link:../timesfm-core
+      '@agentix-e/timesfm-node':
+        specifier: workspace:*
+        version: link:../timesfm-node
       '@agentix-e/timesfm-xreg':
         specifier: workspace:*
         version: link:../timesfm-xreg
