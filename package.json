@@ -5,6 +5,7 @@
   "description": "Node.js/TypeScript reimplementation of Google Research's TimesFM — a decoder-only foundation model for zero-shot time-series forecasting",
   "workspaces": [
     "packages/timesfm-core",
+    "packages/timesfm-node",
     "packages/timesfm-xreg",
     "packages/timesfm-cli",
     "packages/timesfm-web",

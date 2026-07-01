@@ -9,7 +9,7 @@
     "packages/timesfm-core/src/postprocessor.ts",
     "packages/timesfm-core/src/model-descriptor.ts",
     "packages/timesfm-core/src/model-downloader.ts",
-    "packages/timesfm-core/src/inference/onnx-engine.ts",
+    "packages/timesfm-node/src/node-engine.ts",
     "packages/timesfm-core/src/inference/decode-loop.ts",
     "packages/timesfm-core/src/helpers/metrics.ts",
     "packages/timesfm-core/src/helpers/quantile.ts",

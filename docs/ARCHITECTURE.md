@@ -8,12 +8,12 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     @agentix-e/timesfm-cli                     │
+│                 @agentix-e/timesfm-cli                        │
 │  Commander-based CLI: setup (model download) + forecast      │
 └──────────────────────────┬──────────────────────────────────┘
                            │ uses
 ┌──────────────────────────▼──────────────────────────────────┐
-│                   @agentix-e/timesfm-core                      │
+│               @agentix-e/timesfm-core                         │
 │  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌───────────┐ │
 │  │  Model   │  │  Config  │  │ Preprocess │  │Postprocess│ │
 │  │  (API)   │  │ (types)  │  │  (pipeline)│  │ (pipeline)│ │
@@ -29,23 +29,40 @@
 │  └────────────────┬────────────────────────┘              │
 │                   │ uses                                    │
 │  ┌────────────────▼────────────────────────┐              │
-│  │       TimesFMInferenceEngine             │              │
-│  │  IInferenceEngine → ONNX Runtime backend  │              │
-│  │  Concurrent batch inference (Promise.all) │              │
+│  │   IInferenceEngine (abstraction)         │              │
+│  │   load() / forward() / dispose()         │              │
+│  │   Implementations: ⇓                     │              │
 │  └─────────────────────────────────────────┘              │
 │                                                             │
 │  Utilities: NaN handler, RevIN, RunningStats, Tensor ops    │
 │  Model Downloader: GitHub Releases → streaming fetch        │
 └─────────────────────────────────────────────────────────────┘
+                           │ implements IInferenceEngine
+┌──────────────────────────▼──────────────────────────────────┐
+│               @agentix-e/timesfm-node                         │
+│  ┌─────────────────────────────────────────┐              │
+│  │       TimesFMNodeEngine                   │              │
+│  │  ONNX Runtime backend (onnxruntime-node)  │              │
+│  │  Concurrent batch inference (Promise.all) │              │
+│  └─────────────────────────────────────────┘              │
+└─────────────────────────────────────────────────────────────┘
+                           │ implements IInferenceEngine
+┌──────────────────────────▼──────────────────────────────────┐
+│               @agentix-e/timesfm-web                          │
+│  ┌─────────────────────────────────────────┐              │
+│  │    TimesFMWebInferenceEngine              │              │
+│  │  WASM/WebGPU backend (onnxruntime-web)    │              │
+│  └─────────────────────────────────────────┘              │
+└─────────────────────────────────────────────────────────────┘
                            │ uses (optional)
 ┌──────────────────────────▼──────────────────────────────────┐
-│                   @agentix-e/timesfm-xreg                      │
+│               @agentix-e/timesfm-xreg                         │
 │  Ridge regression + OneHotEncoder for exogenous covariates   │
 │  Modes: "xreg + timesfm" | "timesfm + xreg"                 │
 └─────────────────────────────────────────────────────────────┘
                            │ uses (optional)
 ┌──────────────────────────▼──────────────────────────────────┐
-│              @agentix-e/timesfm-hierarchical                   │
+│           @agentix-e/timesfm-hierarchical                     │
 │  Hierarchical reconciliation: bottom-up, top-down, MinT     │
 │  Components: reconciliation, summing-matrix, orchestration  │
 └─────────────────────────────────────────────────────────────┘
@@ -117,16 +134,26 @@ Step 7: Positive clamping → clamp ≥ 0 (only for all-non-negative inputs)
 Step 8: Split into point/quantile arrays
 ```
 
-### 5. ONNX Inference Engine
+### 5. Node.js Inference Engine
 
-**File**: `packages/timesfm-core/src/inference/onnx-engine.ts`
+**File**: `packages/timesfm-node/src/node-engine.ts`
 
-Implements `IInferenceEngine`:
+Implements `IInferenceEngine` via `onnxruntime-node`:
 
 - **Pluggable execution providers**: CPU / CUDA / DirectML
 - **Concurrent batch inference**: `Promise.all` for parallel ONNX session calls
 - **Fixed-shape handling**: Exported model has `[1, 16, 64]` input shape; pads variable inputs
 - **Proper resource cleanup**: Calls `session.release()` on dispose
+
+The `IInferenceEngine` interface in `@agentix-e/timesfm-core` keeps the core
+ONNX-free, enabling:
+
+- `@agentix-e/timesfm-node` — Node.js engine (onnxruntime-node)
+- `@agentix-e/timesfm-web` — Browser engine (onnxruntime-web via WASM/WebGPU)
+
+`TimesFMModel.fromPretrained()` dynamically imports `@agentix-e/timesfm-node`
+when no custom engine is provided, making the dependency truly optional for
+browser users.
 
 ### 6. Model Downloader
 
@@ -236,11 +263,13 @@ IInferenceEngine — pluggable backend (ONNX)
 
 ## Package Sizes
 
-| Package                   | Code Size | Dependencies                                        |
-| ------------------------- | --------- | --------------------------------------------------- |
-| `@agentix-e/timesfm-core` | ~100 KB   | `onnxruntime-node` (dynamic)                        |
-| `@agentix-e/timesfm-xreg` | ~30 KB    | `ml-matrix`                                         |
-| `@agentix-e/timesfm-cli`  | ~15 KB    | `commander`, `csv-parse`, `csv-stringify`           |
-| `@agentix-e/timesfm-web`  | ~10 KB    | `@agentix-e/timesfm-core`, `onnxruntime-web` (peer) |
+| Package                           | Code Size | Dependencies                                                                                                               |
+| --------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `@agentix-e/timesfm-core`         | ~100 KB   | _Zero runtime dependencies_ (pure TypeScript)                                                                              |
+| `@agentix-e/timesfm-node`         | ~15 KB    | `@agentix-e/timesfm-core`, `onnxruntime-node`                                                                              |
+| `@agentix-e/timesfm-xreg`         | ~30 KB    | `@agentix-e/timesfm-core`, `ml-matrix`                                                                                     |
+| `@agentix-e/timesfm-cli`          | ~15 KB    | `@agentix-e/timesfm-core`, `@agentix-e/timesfm-node`, `@agentix-e/timesfm-xreg`, `commander`, `csv-parse`, `csv-stringify` |
+| `@agentix-e/timesfm-web`          | ~10 KB    | `@agentix-e/timesfm-core`, `onnxruntime-web` (peer)                                                                        |
+| `@agentix-e/timesfm-hierarchical` | ~30 KB    | `@agentix-e/timesfm-core`, `ml-matrix`                                                                                     |
 
 Model weights (885 MB) are downloaded separately from GitHub Releases.

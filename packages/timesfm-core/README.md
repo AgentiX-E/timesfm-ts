@@ -53,9 +53,9 @@ await model.dispose();
 Key exports:
 
 - `TimesFMModel` — Main model class (`fromPretrained`, `compile`, `forecast`, `forecastWithCovariates`)
+- `IInferenceEngine`, `RawModelOutput` — Engine abstraction (implementations: `@agentix-e/timesfm-node`, `@agentix-e/timesfm-web`)
 - `downloadModel` / `defaultModelPath` / `isModelCached` — Model download & cache management
 - `createForecastConfig` / `validateAndNormalizeConfig` — Configuration builder
-- `TimesFMInferenceEngine` — ONNX Runtime inference engine
 - `preprocess` / `postProcess` — Preprocessing & postprocessing pipelines
 - `decode` — Autoregressive decode loop
 - `mae`, `rmse`, `mape`, `smape`, `mase`, `r2Score` — Evaluation metrics

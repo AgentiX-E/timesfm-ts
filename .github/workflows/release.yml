@@ -230,7 +230,7 @@ jobs:
       # provenance signing.  npm 11.x (node 24) natively supports OIDC.
       - name: Publish to npm (OIDC)
         run: |
-          for pkg in timesfm-core timesfm-xreg timesfm-cli timesfm-node timesfm-web timesfm-hierarchical; do
+          for pkg in timesfm-core timesfm-node timesfm-xreg timesfm-web timesfm-hierarchical timesfm-cli; do
             cd "packages/${pkg}"
             npm publish --access public --provenance
             cd ../..
@@ -241,7 +241,7 @@ jobs:
           echo "### 📦 npm Packages Published" >> $GITHUB_STEP_SUMMARY
           echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
-          for pkg in packages/timesfm-core packages/timesfm-xreg packages/timesfm-cli packages/timesfm-node packages/timesfm-web packages/timesfm-hierarchical; do
+          for pkg in packages/timesfm-core packages/timesfm-node packages/timesfm-xreg packages/timesfm-web packages/timesfm-hierarchical packages/timesfm-cli; do
             name=$(node -p "require('./${pkg}/package.json').name")
             version=$(node -p "require('./${pkg}/package.json').version")
             echo "| \`${name}\` | ${version} |" >> $GITHUB_STEP_SUMMARY
