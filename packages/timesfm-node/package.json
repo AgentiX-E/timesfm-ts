@@ -1,6 +1,7 @@
 {
   "name": "@agentix-e/timesfm-node",
-  "version": "0.3.6",
+  "version": "0.4.0",
+  "type": "module",
   "description": "Node.js ONNX Runtime inference engine for TimesFM — zero-shot time series forecasting",
   "keywords": [
     "timesfm",
