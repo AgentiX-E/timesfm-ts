@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "rm -rf dist && tsc"
   },
   "dependencies": {
     "@agentix-e/timesfm-core": "workspace:*",

@@ -38,7 +38,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "rm -rf dist && tsc"
   },
   "publishConfig": {
     "access": "public"
