@@ -229,7 +229,7 @@ jobs:
         run: |
           for pkg in timesfm-core timesfm-xreg timesfm-cli timesfm-web timesfm-hierarchical; do
             cd "packages/${pkg}"
-            npm publish --access public --provenance
+            npm publish --access public --provenance || npm publish --access public
             cd ../..
           done
 
