@@ -355,7 +355,7 @@ export function reconcileBaseForecasts(
 }
 
 /** Return type of reconcileBaseForecasts (avoids inline type in JSDoc). */
-interface ReconciledResult {
+export interface ReconciledResult {
   reconciled: Record<string, Float32Array>;
   projectionMatrix: number[][];
   strategy: ReconciliationStrategy;

@@ -38,7 +38,12 @@ import {
   type CovariateForecastParams,
   type CovariateForecastOutput,
 } from './types';
-import { ModelNotFoundError, ModelNotCompiledError, HorizonExceededError } from './errors';
+import {
+  ModelNotFoundError,
+  ModelNotCompiledError,
+  HorizonExceededError,
+  ConfigValidationError,
+} from './errors';
 import { validateAndNormalizeConfig } from './config';
 import { preprocess } from './preprocessor';
 import { decode } from './inference/decode-loop';
@@ -256,6 +261,10 @@ export class TimesFMModel implements ITimesFMModel {
 
     // Check for early abort
     signal?.throwIfAborted();
+
+    if (!Number.isFinite(horizon) || horizon <= 0) {
+      throw new ConfigValidationError(`Horizon must be a positive finite number, got ${horizon}.`);
+    }
 
     if (horizon > fc.maxHorizon) {
       throw new HorizonExceededError(`Horizon ${horizon} exceeds maxHorizon ${fc.maxHorizon}.`);

@@ -36,10 +36,11 @@ export function validateAndNormalizeConfig(
   let { maxContext, maxHorizon } = fc;
 
   // --- Ensure sane defaults (must run before validation & rounding) ---
-  if (maxContext <= 0) {
+  // NaN and Infinity are NOT caught by <= 0 checks, so guard them explicitly.
+  if (!Number.isFinite(maxContext) || maxContext <= 0) {
     maxContext = mc.inputPatchLen;
   }
-  if (maxHorizon <= 0) {
+  if (!Number.isFinite(maxHorizon) || maxHorizon <= 0) {
     maxHorizon = mc.outputPatchLen;
   }
 
@@ -54,8 +55,8 @@ export function validateAndNormalizeConfig(
   }
 
   // --- Validate perCoreBatchSize ---
-  // 0 or negative would cause division by zero or NaN in model.forecast()
-  if (fc.perCoreBatchSize < 1) {
+  // NaN, 0, or negative would cause division by zero or NaN in model.forecast()
+  if (!Number.isFinite(fc.perCoreBatchSize) || fc.perCoreBatchSize < 1) {
     throw new ConfigValidationError(`perCoreBatchSize must be ≥ 1, got ${fc.perCoreBatchSize}.`);
   }
 

@@ -164,7 +164,7 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
    *
    * @param modelPath  URL to the ONNX model file, **or** an ArrayBuffer.
    */
-  async load(modelPath: string | ArrayBuffer, _options?: { skipWarmup?: boolean }): Promise<void> {
+  async load(modelPath: string | ArrayBuffer, options?: { skipWarmup?: boolean }): Promise<void> {
     const ort = await import('onnxruntime-web');
     this._ortModule = ort;
 
@@ -217,6 +217,19 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
 
         this._logger.info(`[TimesFM Web] Loaded model with ${provider} provider`, { provider });
         this._loaded = true;
+
+        // Run warmup inference unless explicitly skipped.
+        // The WASM backend JIT-compiles graph ops lazily; a warmup run
+        // ensures consistent latency for the first real forecast call.
+        if (!options?.skipWarmup) {
+          try {
+            await this._warmup();
+          } catch (warmupErr) {
+            this._logger.warn('[TimesFM Web] Warmup inference failed (non-fatal)', {
+              error: (warmupErr as Error).message,
+            });
+          }
+        }
         return;
       } catch (err) {
         this._logger.warn(`[TimesFM Web] ${provider} provider failed — trying next`, {
@@ -347,6 +360,44 @@ export class TimesFMWebInferenceEngine implements IInferenceEngine {
   // -----------------------------------------------------------------------
   // IInferenceEngine — dispose
   // -----------------------------------------------------------------------
+
+  // -----------------------------------------------------------------------
+  // Warmup
+  // -----------------------------------------------------------------------
+
+  /**
+   * Run a single dummy inference to JIT-compile the ONNX graph.
+   *
+   * Without warmup, the first real `forward()` call pays the full graph
+   * compilation cost, which can be several seconds for the 200M model.
+   */
+  private async _warmup(): Promise<void> {
+    if (!this._session || !this._ortModule) return;
+
+    const exportedPatches = this._config.exportedPatches;
+    const tokenizerInputDims = this._config.inputPatchLen * 2; // values + mask
+
+    const dummyInput = new Float32Array(1 * exportedPatches * tokenizerInputDims);
+    const inputTensor = new this._ortModule.Tensor('float32', dummyInput, [
+      1,
+      exportedPatches,
+      tokenizerInputDims,
+    ]);
+
+    // Resolve input name by trying the known canonical names and the first
+    // actual session input as fallback.
+    const sessionInputNames = this._session.inputNames as string[];
+    const inputName =
+      sessionInputNames.find((n) => ['input_emb', 'inputs', 'input'].includes(n)) ??
+      sessionInputNames[0];
+    if (!inputName) return;
+
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    const feeds: Record<string, import('onnxruntime-web').Tensor> = {};
+    feeds[inputName] = inputTensor;
+
+    await this._session.run(feeds);
+  }
 
   async dispose(): Promise<void> {
     if (this._session) {

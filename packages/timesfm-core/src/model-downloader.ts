@@ -94,12 +94,15 @@ const PRECISION_PROFILES: Readonly<Record<string, PrecisionProfile>> = Object.fr
 const DOWNLOAD_DEFAULT_PRECISION = 'fp32';
 
 function precisionProfile(precision: string = DOWNLOAD_DEFAULT_PRECISION): PrecisionProfile {
-  return PRECISION_PROFILES[precision]! ?? PRECISION_PROFILES[DOWNLOAD_DEFAULT_PRECISION]!;
+  return PRECISION_PROFILES[precision] ?? PRECISION_PROFILES[DOWNLOAD_DEFAULT_PRECISION]!;
 }
 
 function releaseUrl(precision: string): string {
-  const profile = precisionProfile(precision);
-  const channel = precision === 'fp32' ? 'timesfm-latest' : `timesfm-latest-${precision}`;
+  const canonicalPrecision =
+    precision in PRECISION_PROFILES ? precision : DOWNLOAD_DEFAULT_PRECISION;
+  const profile = PRECISION_PROFILES[canonicalPrecision]!;
+  const channel =
+    canonicalPrecision === 'fp32' ? 'timesfm-latest' : `timesfm-latest-${canonicalPrecision}`;
   return `https://github.com/${REPO}/releases/download/${channel}/${profile.zipFilename}`;
 }
 
@@ -138,7 +141,15 @@ export interface ProxyConfig {
   url: string;
   /** Username for proxy authentication */
   username?: string;
-  /** Password for proxy authentication */
+  /**
+   * Password for proxy authentication.
+   *
+   * **Security:** This field is a plain string property and will be
+   * serialized by `JSON.stringify()` or structured logging.  Prefer
+   * environment variables (`TIMESFM_PROXY_PASSWORD`) or file-based
+   * secrets (`TIMESFM_PROXY_PASSWORD_FILE`) over programmatic
+   * construction of ProxyConfig objects containing passwords.
+   */
   password?: string;
 }
 
@@ -289,9 +300,12 @@ function applyProxyEnv(proxy: ProxyConfig): () => void {
  * environment variables, avoiding race conditions from concurrent downloads
  * and side effects on other fetch() calls in the same process.
  */
-async function applyProxyToFetch(
-  proxy: ProxyConfig | null,
-): Promise<{ fetchOptions: Pick<RequestInit, 'dispatcher'>; restoreEnv?: () => void }> {
+async function applyProxyToFetch(proxy: ProxyConfig | null): Promise<{
+  fetchOptions: Pick<RequestInit, 'dispatcher'>;
+  restoreEnv?: () => void;
+  /** Dispose the ProxyAgent connection pool when download is complete. */
+  dispose?: () => Promise<void>;
+}> {
   if (!proxy) return { fetchOptions: {} };
 
   try {
@@ -317,7 +331,16 @@ async function applyProxyToFetch(
       keepAliveMaxTimeout: 30_000,
     });
 
-    return { fetchOptions: { dispatcher: dispatcher as RequestInit['dispatcher'] } };
+    return {
+      fetchOptions: { dispatcher: dispatcher as RequestInit['dispatcher'] },
+      dispose: async () => {
+        try {
+          await (dispatcher as { close?: () => Promise<void> }).close?.();
+        } catch {
+          // Best-effort cleanup
+        }
+      },
+    };
   } catch {
     // Fallback: undici ProxyAgent not available (e.g., bundled environment).
     // Use environment variables — Node ≥ 20 undici respects HTTPS_PROXY.
@@ -375,9 +398,11 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
   const proxyConfig = resolveProxyConfig(options);
 
   // Apply proxy to fetch via undici dispatcher (preferred) or env vars (fallback)
-  const { fetchOptions: proxyFetchOpts, restoreEnv } = await applyProxyToFetch(
-    proxyConfig ? proxyConfig : null,
-  );
+  const {
+    fetchOptions: proxyFetchOpts,
+    restoreEnv,
+    dispose,
+  } = await applyProxyToFetch(proxyConfig ? proxyConfig : null);
 
   /* v8 ignore start — GitHub Releases download + stream require network access */
   // Stream download zip
@@ -574,9 +599,11 @@ export async function downloadModel(options: DownloadOptions = {}): Promise<stri
       `  Downloaded & extracted ${(zipSize / 1024 / 1024).toFixed(0)} MB in ${elapsed}s → ${dest}`,
     );
     restoreEnv?.();
+    await dispose?.();
     return dest;
   } catch (err) {
     restoreEnv?.();
+    await dispose?.();
     try {
       fs.unlinkSync(tmpZip);
     } catch {

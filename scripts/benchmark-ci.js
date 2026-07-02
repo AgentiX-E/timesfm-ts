@@ -1078,7 +1078,7 @@ async function main() {
       created: new Date().toISOString(),
       description: 'Performance baseline for regression detection. Updated by scheduled CI.',
       timestamp: new Date().toISOString(),
-      git_sha: report.system.git_sha,
+      git_sha: report.git_sha,
       latency: report.latency,
     };
     fs.writeFileSync(saveBaselinePath, JSON.stringify(baseline, null, 2));

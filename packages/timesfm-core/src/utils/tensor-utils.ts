@@ -16,6 +16,9 @@
  * Returns an array of `rows` Float32Arrays each of length `cols`.
  */
 export function reshape2D(flat: Float32Array, rows: number, cols: number): Float32Array[] {
+  if (rows < 0 || cols < 0 || !Number.isFinite(rows) || !Number.isFinite(cols)) {
+    throw new RangeError(`reshape2D: invalid dimensions (rows=${rows}, cols=${cols})`);
+  }
   const result: Float32Array[] = [];
   for (let r = 0; r < rows; r++) {
     result.push(flat.slice(r * cols, (r + 1) * cols));

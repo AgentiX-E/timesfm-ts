@@ -41,6 +41,7 @@ export { buildSummingMatrix } from './summing-matrix';
 export type { SummingMatrixResult } from './summing-matrix';
 
 export { computeProjectionMatrix, reconcileBaseForecasts } from './reconciliation';
+export type { ReconciledResult } from './reconciliation';
 
 export { reconcileForecast } from './hierarchical';
 

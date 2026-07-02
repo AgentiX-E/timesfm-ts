@@ -211,4 +211,26 @@ describe('buildSummingMatrix', () => {
     };
     expect(() => buildSummingMatrix(withCycle)).toThrow('Unreachable');
   });
+
+  it('works correctly when root is NOT the first node (insertion-order independence)', () => {
+    // Regression: buildSummingMatrix used Map insertion order to find the
+    // root, which fails if the user's nodes array doesn't start with root.
+    const leafFirst: HierarchyDefinition = {
+      nodes: [
+        { id: 's1', parentId: 'west' },
+        { id: 's2', parentId: 'west' },
+        { id: 's3', parentId: 'east' },
+        { id: 's4', parentId: 'east' },
+        { id: 'west', parentId: 'total' },
+        { id: 'east', parentId: 'total' },
+        { id: 'total', parentId: null },
+      ],
+    };
+    const result = buildSummingMatrix(leafFirst);
+    // Should produce same 7×4 matrix as the canonical ordering
+    expect(result.S.length).toBe(7);
+    expect(result.S[0].length).toBe(4);
+    const totalIdx = result.allNodeIds.indexOf('total');
+    expect(result.S[totalIdx]).toEqual([1, 1, 1, 1]);
+  });
 });

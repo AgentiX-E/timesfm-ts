@@ -73,7 +73,7 @@ export function getPredictionInterval(
 ): { lower: Float32Array; upper: Float32Array } {
   const mapping = CI_MAP[confidence];
   if (!mapping) {
-    throw new RangeError(`Unsupported confidence: ${confidence}. Supported: 0.8, 0.9, 0.95`);
+    throw new RangeError(`Unsupported confidence: ${confidence}. Currently only 0.8 is supported.`);
   }
   return {
     lower: getQuantile(output, seriesIndex, mapping.lower),

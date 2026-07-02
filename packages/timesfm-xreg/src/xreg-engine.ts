@@ -632,6 +632,16 @@ export async function forecastWithCovariates(
       const contextLen = backcasts[s]!.length;
       const backcastOffset = contextLen - trainLens[s]!;
 
+      // Guard: backcast must be at least as long as the training window.
+      // If inputs exceed the model's compiled maxContext, the backcast is
+      // truncated and cannot cover the full training range.
+      if (backcastOffset < 0) {
+        throw new ConfigValidationError(
+          `Series ${s}: context length (${contextLen}) is shorter than training length ` +
+            `(${trainLens[s]}). Ensure model maxContext >= longest input series.`,
+        );
+      }
+
       for (let t = 0; t < trainLens[s]!; t++) {
         residual[t] = targets[s]![t]! - backcasts[s]![backcastOffset + t]!;
       }

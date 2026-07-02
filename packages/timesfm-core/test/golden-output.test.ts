@@ -232,16 +232,19 @@ function generateLinearTrend(len: number, start: number, end: number): number[] 
 
 function generateSineWave(len: number): number[] {
   const result: number[] = [];
+  // Simple LCG with seed 42 — advances state across samples to produce
+  // varying noise (unlike the previous per-sample reset which produced
+  // constant noise).  This does NOT match numpy RandomState(42) which
+  // uses MT19937, but the golden-output comparison tolerance
+  // (POINT_MAE_TOLERANCE=0.5) is wide enough to accommodate the
+  // difference in noise structure.
+  let state = 42;
   for (let i = 0; i < len; i++) {
     const t = (i / (len - 1)) * 8 * Math.PI;
-    // Deterministic "noise" — seed 42
-    let noise = 0;
-    // Simple LCG with seed 42 to match numpy RandomState(42)
-    let state = 42;
     for (let j = 0; j < 3; j++) {
       state = (state * 1664525 + 1013904223) & 0xffffffff;
     }
-    noise = ((state & 0x7fffffff) / 0x7fffffff - 0.5) * 0.2; // scaled to ~0.1 std
+    const noise = ((state & 0x7fffffff) / 0x7fffffff - 0.5) * 0.2;
     result.push(Math.sin(t) + noise * 0.1);
   }
   return result;

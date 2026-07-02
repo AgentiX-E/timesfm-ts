@@ -450,6 +450,10 @@ export interface RawModelOutput {
 
 /**
  * Running (online) statistics for RevIN normalization.
+ *
+ * @deprecated Import from `./utils/stats` instead — the canonical definition
+ * lives there to avoid a circular dependency.  This copy is kept for backward
+ * compatibility and will be removed in a future major version.
  */
 export interface RunningStats {
   /** Count of valid (non-masked) values seen so far. */

@@ -220,10 +220,12 @@ export function buildSummingMatrix(hierarchy: HierarchyDefinition): SummingMatri
     return set;
   }
 
-  // Start traversal from root — validated earlier so at least one value exists
-  const first = adj.values().next();
-  if (first.done) throw new Error('Internal error: adjacency map is empty after validation.');
-  collectDescendants(first.value.id);
+  // Start traversal from the validated root — ensure correct root regardless of
+  // insertion order (Map iteration order follows the nodes array, which may not
+  // start with the root node).
+  const rootNode = [...adj.values()].find((vn) => vn.parentId === null);
+  if (!rootNode) throw new Error('Internal error: no root node found after validation.');
+  collectDescendants(rootNode.id);
 
   // Build S matrix
   const S: number[][] = [];

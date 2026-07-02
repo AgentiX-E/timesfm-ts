@@ -167,11 +167,7 @@ export async function loadModelDescriptor(path: string): Promise<ModelDescriptor
     } catch (err) {
       // Distinguish "file not found" from "parse error" — the latter may
       // indicate a corrupt descriptor that warrants a warning.
-      if (
-        err instanceof Error &&
-        err.message.includes('ENOENT') === false &&
-        err.message.includes('no such file') === false
-      ) {
+      if (err instanceof Error && (err as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.warn(
           `[timesfm-core] Failed to parse model descriptor at ${candidate}: ${(err as Error).message}`,
         );

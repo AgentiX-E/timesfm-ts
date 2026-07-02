@@ -137,7 +137,7 @@ export function postProcess(
     // Apply the same z-score reversal to backcast if inputs were normalized
     if (fc.normalizeInputs && inputStats) {
       backcastOutputs = backcastOutputs.map((bc, b) => {
-        const { mu, sigma } = inputStats[b]! ?? { mu: 0, sigma: 1 };
+        const { mu, sigma } = inputStats[b] ?? { mu: 0, sigma: 1 };
         const safeSigma = sigma < 1e-6 ? 1.0 : sigma;
         const result = new Float32Array(bc.length);
         for (let i = 0; i < bc.length; i++) {
@@ -352,7 +352,7 @@ export function reverseInputNormalization(
   stats: { mu: number; sigma: number }[],
 ): Float32Array[] {
   return forecasts.map((ff, b) => {
-    const { mu, sigma } = stats[b]! ?? { mu: 0, sigma: 1 };
+    const { mu, sigma } = stats[b] ?? { mu: 0, sigma: 1 };
     const safeSigma = sigma < 1e-6 ? 1.0 : sigma;
     const result = new Float32Array(ff.length);
     for (let i = 0; i < ff.length; i++) {

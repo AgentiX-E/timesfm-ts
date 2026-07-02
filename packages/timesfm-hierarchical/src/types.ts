@@ -57,7 +57,8 @@ export interface ReconcileOptions {
    * Optional residual covariance for WLS / MinT.
    * Shape: [m][m] where m = total node count. When omitted for WLS, the
    * diagonal (per-level variance) is estimated from the base forecasts.
-   * When omitted for MinT, falls back to OLS with a warning.
+   * When omitted for WLS or MinT, a diagonal covariance is auto-estimated
+   * from the per-node base forecast variances.
    */
   readonly residualCovariance?: readonly (readonly number[])[];
   /** Ridge regularization added to Wᵦ diagonal to guarantee invertibility. Default 1e-6. */

@@ -2,8 +2,8 @@
  * Typed error hierarchy for timesfm-ts.
  *
  * All project errors extend `TimesFMError` so callers can catch them
- * with a single `instanceof` check.  Each subclass carries structured
- * context (HTTP status, field name, etc.) for programmatic handling.
+ * with a single `instanceof` check.  Select subclasses (DownloadError,
+ * InferenceError) carry structured context for programmatic handling.
  *
  * Backward-compatible: every error class extends the built-in `Error`,
  * so existing `instanceof Error` / `rejects.toThrow()` assertions are
