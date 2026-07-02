@@ -1,7 +1,7 @@
 {
   "name": "@agentix-e/timesfm-web",
   "version": "0.4.0",
-  "description": "TimesFM time-series forecasting for the browser \u2014 WebAssembly inference via onnxruntime-web",
+  "description": "TimesFM time-series forecasting for the browser — WebAssembly inference via onnxruntime-web",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
